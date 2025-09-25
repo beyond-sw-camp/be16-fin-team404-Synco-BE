@@ -16,7 +16,8 @@ public class WorkSpace extends BaseEntity {
     private Long workSpaceSeq;
     private String workSpaceName;
     private String workSpaceThumbnailImageUrl;
-    private WorkSpaceType workSpaceType;
+    @Builder.Default
+    private WorkSpaceType workSpaceType = WorkSpaceType.INDIVIDUAL;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Member member;

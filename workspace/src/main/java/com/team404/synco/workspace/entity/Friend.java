@@ -17,7 +17,8 @@ public class Friend extends BaseEntity {
     @Column(nullable = false)
     private long friendMemberSeq;
     @Column(nullable = false)
-    private FriendStatus friendStatus;
+    @Builder.Default
+    private FriendStatus friendStatus = FriendStatus.PENDING;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Member member;

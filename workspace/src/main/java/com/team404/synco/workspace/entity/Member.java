@@ -1,6 +1,7 @@
 package com.team404.synco.workspace.entity;
 
 import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import jakarta.persistence.*;
@@ -27,7 +28,8 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private String name;
     @Column(nullable = false)
-    private ActiveStatus activeStatus;
+    @Builder.Default
+    private ActiveStatus activeStatus = ActiveStatus.LOGOUT;
     private String statusMessage;
     private String profileImageUrl;
     @Column(columnDefinition = "CHAR(13)")
