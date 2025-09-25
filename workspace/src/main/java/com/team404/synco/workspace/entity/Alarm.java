@@ -15,6 +15,7 @@ public class Alarm extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long alarmSeq;
+    @Column(nullable = false)
     private AlarmType alarmType;
     @Column(nullable = false)
     @Builder.Default

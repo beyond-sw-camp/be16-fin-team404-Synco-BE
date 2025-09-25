@@ -4,7 +4,7 @@ public enum AlarmType {
     MEETING,
     WORKSPACE,
     CHATTING,
-    TODO,
+    TASK,
     FRIEND,
     DRIVE
 }

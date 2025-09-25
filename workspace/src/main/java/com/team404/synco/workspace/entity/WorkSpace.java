@@ -14,6 +14,7 @@ public class WorkSpace extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long workSpaceSeq;
+    @Column(nullable = false)
     private String workSpaceName;
     private String workSpaceThumbnailImageUrl;
     @Builder.Default

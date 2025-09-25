@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -43,4 +45,6 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private String ynAlarmOffSet = YnColumn.IS_FALSE;
+    @OneToMany(mappedBy = "workspace")
+    private List<WorkSpace> workSpaceList = new ArrayList<>();
 }
