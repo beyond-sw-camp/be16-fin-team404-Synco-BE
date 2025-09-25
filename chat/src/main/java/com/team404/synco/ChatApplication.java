@@ -1,13 +1,13 @@
-package com.team404.synco.drive;
+package com.team404.synco;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DriveApplication {
+public class ChatApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DriveApplication.class, args);
+		SpringApplication.run(ChatApplication.class, args);
 	}
 
 }
