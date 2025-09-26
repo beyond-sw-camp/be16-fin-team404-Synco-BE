@@ -30,9 +30,11 @@ public class ChatChannelMember extends BaseEntity {
     @JoinColumn(name = "chat_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannel chatChannel;
 
-    @OneToMany(mappedBy = "chatMember")
+    @Builder.Default
+    @OneToMany(mappedBy = "chatChannelMember")
     private List<ChatMessage> chatMessageList = new ArrayList<>();
 
-    @OneToMany(mappedBy = "chatMember")
+    @Builder.Default
+    @OneToMany(mappedBy = "chatChannelMember")
     private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }
