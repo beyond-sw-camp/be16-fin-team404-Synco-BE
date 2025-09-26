@@ -24,7 +24,7 @@ public class ChatChannelMember extends BaseEntity {
     @Builder.Default
     private Authority authority = Authority.SUPER;
 
-    private Long lastReadChatMessageSeq;
+    private long lastReadChatMessageSeq;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
