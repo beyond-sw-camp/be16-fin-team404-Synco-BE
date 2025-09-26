@@ -1,14 +1,13 @@
 package com.team404.synco.task.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
 @Entity
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment extends BaseEntity {
 
     @Id
@@ -16,7 +15,6 @@ public class Comment extends BaseEntity {
     private Long commentSeq;
     @Column(nullable = false, length = 1000)
     private String commentContent;
-    @Column(nullable = false)
     private long parentCommentSeq;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_management_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
