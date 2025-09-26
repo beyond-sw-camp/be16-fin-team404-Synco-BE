@@ -18,9 +18,13 @@ public class Document extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long documentSeq;
+    @Column(nullable = false)
     private DocumentType documentType;
+    @Column(nullable = false)
     private String documentName;
+    @Column(nullable = false)
     private String documentUrl;
+    @Column(nullable = false)
     private long memberSeq;
     @Builder.Default
     private YnLock ynLock = YnLock.N;
