@@ -18,13 +18,13 @@ public class ChatVote extends BaseEntity {
     private Long voteSeq;
 
     @Column(nullable = false)
-    private String title;
+    private String voteTitle;
 
     @Column(nullable = false)
-    private LocalDateTime aliveDate;
+    private LocalDateTime voteAliveDate;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatting_message_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    @JoinColumn(name = "chat_message_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatMessage chatMessage;
 
     @Builder.Default

@@ -11,15 +11,14 @@ import lombok.*;
 public class ChatVoteDetail extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "vote_detail_seq")
     private Long voteDetailSeq;
 
     @Column(nullable = false)
-    private String title;
+    private String voteDetailTitle;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
-    private ChatMember chatMember;
+    @JoinColumn(name = "chat_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private ChatChannelMember chatChannelMember;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)

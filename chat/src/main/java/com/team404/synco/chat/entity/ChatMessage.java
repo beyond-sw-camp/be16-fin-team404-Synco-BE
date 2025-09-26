@@ -14,22 +14,22 @@ public class ChatMessage extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatMessageSeq;
 
-    @Column(name = "chatting_message_text", columnDefinition = "TEXT")
-    private String text;
+    @Column(columnDefinition = "TEXT")
+    private String chatMessageText;
 
-    @Column(name = "chatting_message_file_urls", columnDefinition = "TEXT")
-    private String fileUrl;
+    @Column(columnDefinition = "TEXT")
+    private String chatMessageFileUrls;
 
     @Column(nullable = false)
-    private long parentCommentSeq;
+    private long chatMessageParentSeq;
 
     @Column(nullable = false)
     @Builder.Default
-    private String delYn = YnColumn.IS_FALSE;
+    private String ynDel = YnColumn.IS_FALSE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
-    private ChatMember chatMember;
+    private ChatChannelMember chatChannelMember;
 
     @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private ChatVote chatVote;
