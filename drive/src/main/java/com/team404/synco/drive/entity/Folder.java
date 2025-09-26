@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Folder extends BaseEntity{
+public class Folder extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,10 +20,11 @@ public class Folder extends BaseEntity{
     @Column(nullable = false)
     private String folderName;
     @Column(nullable = false)
-    private long order;
+    private long orders;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shared_drive_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    @JoinColumn(name = "drive_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private DriveChannel driveChannel;
+    @Builder.Default
     @OneToMany(mappedBy = "folder")
     private List<Document> DocumentList = new ArrayList<>();
 }

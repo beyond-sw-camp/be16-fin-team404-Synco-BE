@@ -1,7 +1,7 @@
 package com.team404.synco.drive.entity;
 
 import com.team404.synco.common.constant.DocumentType;
-import com.team404.synco.common.constant.YnLock;
+import com.team404.synco.common.constant.YnColumn;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,7 +13,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Document extends BaseEntity{
+public class Document extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,11 +26,13 @@ public class Document extends BaseEntity{
     private String documentUrl;
     @Column(nullable = false)
     private long memberSeq;
+    @Column(nullable = false)
     @Builder.Default
-    private YnLock ynLock = YnLock.N;
+    private String ynLock = YnColumn.IS_FALSE;;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Folder folder;
+    @Builder.Default
     @OneToMany(mappedBy = "document")
     private List<DocumentLine> DocumentLineList = new ArrayList<>();
 
