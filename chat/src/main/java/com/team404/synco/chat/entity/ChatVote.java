@@ -4,18 +4,18 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "vote")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatVote extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "vote_seq")
-    private long voteSeq;
+    private Long voteSeq;
 
     @Column(nullable = false)
     private String title;
@@ -23,6 +23,10 @@ public class ChatVote extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime aliveDate;
 
-    @Column(name = "chatting_message_seq", nullable = false)
-    private long chatMessageSeq;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chatting_message_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private ChatMessage chatMessage;
+
+    @OneToMany(mappedBy = "chatVoteDetail")
+    private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }

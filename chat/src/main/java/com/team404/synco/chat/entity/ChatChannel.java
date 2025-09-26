@@ -3,20 +3,26 @@ package com.team404.synco.chat.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "chatting_channel")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatChannel extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chatting_channel_seq")
-    private long chatChannelSeq;
+    private Long chatChannelSeq;
 
+    @Column(nullable = false)
     private String chatChannelName;
 
     @Column(nullable = false)
     private long workSpaceSeq;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "chatChannel")
+    private List<ChatMember> chatMemberList = new ArrayList<>();
 }

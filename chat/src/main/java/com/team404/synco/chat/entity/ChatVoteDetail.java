@@ -7,20 +7,24 @@ import lombok.*;
 @Entity
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "vote_detail")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatVoteDetail extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "vote_detail_seq")
-    private long voteDetailSeq;
+    private Long voteDetailSeq;
 
     @Column(nullable = false)
     private String title;
 
     @Column(name = "vote_seq", nullable = false)
-    private long voteSeq;
+    private Long voteSeq;
 
-    @Column(name = "chatting_channel_member_seq", nullable = false)
-    private long chatChannelMemberSeq;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private ChatMember chatMember;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vote_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private ChatVote chatVote;
 }

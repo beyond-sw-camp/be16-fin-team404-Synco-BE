@@ -8,13 +8,11 @@ import lombok.*;
 @Entity
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "chatting_message")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMessage extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chatting_message_seq")
-    private long chatMessageSeq;
+    private Long chatMessageSeq;
 
     @Column(name = "chatting_message_text", length = 500)
     private String text;
@@ -23,12 +21,16 @@ public class ChatMessage extends BaseEntity {
     private String fileUrl;
 
     @Column(nullable = false)
-    private long parentCommentSeq;
+    private Long parentCommentSeq;
 
     @Column(nullable = false)
     @Builder.Default
-    private String yn_del = YnColumn.IS_FALSE;
+    private String delYn = YnColumn.IS_FALSE;
 
-    @Column(name = "chatting_channel_member_seq", nullable = false)
-    private long chatChannelMemberSeq;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private ChatMember chatMember;
+
+    @OneToOne(mappedBy = "chattingMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private ChatVote chatVote;
 }
