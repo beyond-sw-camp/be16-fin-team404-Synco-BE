@@ -20,7 +20,6 @@ public class ChatMessage extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String chatMessageFileUrls;
 
-    @Column(nullable = false)
     private long chatMessageParentSeq;
 
     @Column(nullable = false)
@@ -28,7 +27,7 @@ public class ChatMessage extends BaseEntity {
     private String ynDel = YnColumn.IS_FALSE;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    @JoinColumn(name = "chat_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannelMember chatChannelMember;
 
     @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
