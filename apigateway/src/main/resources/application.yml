@@ -38,7 +38,7 @@ spring:
           filters:
             - StripPrefix=1
           uri: lb://task-service
-        - id: worksapce-service
+        - id: workspace-service
           predicates:
             - Path=/workspace-service/**
           filters:

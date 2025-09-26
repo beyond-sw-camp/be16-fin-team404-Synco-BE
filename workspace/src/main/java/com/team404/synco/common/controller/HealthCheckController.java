@@ -1,4 +1,4 @@
-package com.team404.synco.common;
+package com.team404.synco.common.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
