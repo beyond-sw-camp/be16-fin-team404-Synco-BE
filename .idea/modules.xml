@@ -3,6 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Synco.iml" filepath="$PROJECT_DIR$/Synco.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/chat.main.iml" filepath="$PROJECT_DIR$/.idea/modules/chat.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/drive.main.iml" filepath="$PROJECT_DIR$/.idea/modules/drive.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/task.main.iml" filepath="$PROJECT_DIR$/.idea/modules/task.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/workspace.main.iml" filepath="$PROJECT_DIR$/.idea/modules/workspace.main.iml" />
     </modules>
   </component>
 </project>
