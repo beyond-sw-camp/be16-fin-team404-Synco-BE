@@ -148,7 +148,7 @@
 
 <details>
   <summary><b>피그마</b></summary>
-  <!-- <a href='https://www.figma.com/design/0r1vmACeBTegtlH9OHZaMn/%EC%9A%94%EB%A6%AC%ED%95%9C%EC%88%98?node-id=0-1&t=eIxg72ONjSulXOTA-1' style="text-decoration: none; color: inherit;">🎨 피그마 바로가기</a> -->
+  <a href='https://www.figma.com/design/0r1vmACeBTegtlH9OHZaMn/%EC%9A%94%EB%A6%AC%ED%95%9C%EC%88%98?node-id=0-1&t=eIxg72ONjSulXOTA-1' style="text-decoration: none; color: inherit;">🎨 피그마 바로가기</a>
 </details>
 
 <details>
