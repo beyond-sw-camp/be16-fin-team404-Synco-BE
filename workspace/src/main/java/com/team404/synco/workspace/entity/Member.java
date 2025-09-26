@@ -45,10 +45,10 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private String ynAlarmOffSet = YnColumn.IS_FALSE;
-    @OneToMany(mappedBy = "alram")
+    @OneToMany(mappedBy = "member")
     private List<Alarm> alarmList = new ArrayList<>();
-    @OneToMany(mappedBy = "friend")
+    @OneToMany(mappedBy = "member")
     private List<Friend> friendList = new ArrayList<>();
-    @OneToMany(mappedBy = "workspace")
+    @OneToMany(mappedBy = "member")
     private List<WorkSpace> workSpaceList = new ArrayList<>();
 }
