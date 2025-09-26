@@ -4,6 +4,9 @@ import com.team404.synco.common.constant.Authority;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Entity
 @Builder
@@ -15,7 +18,7 @@ public class ChatMember extends BaseEntity {
     private Long chatChannelMemberSeq;
 
     @Column(nullable = false)
-    private Long memberSeq;
+    private long memberSeq;
 
     @Column(nullable = false)
     @Builder.Default
@@ -26,4 +29,10 @@ public class ChatMember extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chatting_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannel chatChannel;
+
+    @OneToMany(mappedBy = "chatMember")
+    private List<ChatMessage> chatMessageList = new ArrayList<>();
+
+    @OneToMany(mappedBy = "chatMember")
+    private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }

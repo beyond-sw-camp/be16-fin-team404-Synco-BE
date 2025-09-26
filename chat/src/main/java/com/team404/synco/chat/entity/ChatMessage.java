@@ -14,14 +14,14 @@ public class ChatMessage extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long chatMessageSeq;
 
-    @Column(name = "chatting_message_text", length = 500)
+    @Column(name = "chatting_message_text", columnDefinition = "TEXT")
     private String text;
 
     @Column(name = "chatting_message_file_urls", columnDefinition = "TEXT")
     private String fileUrl;
 
     @Column(nullable = false)
-    private Long parentCommentSeq;
+    private long parentCommentSeq;
 
     @Column(nullable = false)
     @Builder.Default
@@ -31,6 +31,6 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "chatting_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatMember chatMember;
 
-    @OneToOne(mappedBy = "chattingMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private ChatVote chatVote;
 }

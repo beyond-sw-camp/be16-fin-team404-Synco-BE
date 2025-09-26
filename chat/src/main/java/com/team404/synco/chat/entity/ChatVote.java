@@ -27,6 +27,7 @@ public class ChatVote extends BaseEntity {
     @JoinColumn(name = "chatting_message_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatMessage chatMessage;
 
-    @OneToMany(mappedBy = "chatVoteDetail")
+    @Builder.Default
+    @OneToMany(mappedBy = "chatVote")
     private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }
