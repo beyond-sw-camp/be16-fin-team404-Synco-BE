@@ -24,10 +24,10 @@ public class ChatMember extends BaseEntity {
     @Builder.Default
     private Authority authority = Authority.SUPER;
 
-    private Long lastReadMessageSeq;
+    private Long lastReadChatMessageSeq;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatting_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    @JoinColumn(name = "chat_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannel chatChannel;
 
     @OneToMany(mappedBy = "chatMember")
