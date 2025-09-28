@@ -1,5 +1,6 @@
 package com.team404.synco.task.entity;
 
+import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
