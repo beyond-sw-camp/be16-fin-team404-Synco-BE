@@ -1,4 +1,4 @@
-package com.team404.synco.task.entity;
+package com.team404.synco.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
