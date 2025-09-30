@@ -44,3 +44,6 @@ spring:
           filters:
             - StripPrefix=1
           uri: lb://workspace-service
+
+jwt:
+  secretKey : YmV5b25kYWNjZXNzdG9rZW5zZWNyZXRrZXliZXlvbmRhY2Nlc3N0b2tlbnNlY3JldGtleWJleW9uZGFjY2Vzc3Rva2Vuc2VjcmV0a2V5

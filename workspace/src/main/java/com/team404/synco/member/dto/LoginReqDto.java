@@ -1,4 +1,4 @@
-package com.team404.synco.workspace.dto;
+package com.team404.synco.member.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginReqDTO {
-    private String id;
+public class LoginReqDto {
+    private String email;
     private String password;
 }

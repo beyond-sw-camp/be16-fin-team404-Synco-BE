@@ -1,4 +1,4 @@
-package com.team404.synco.workspace.dto;
+package com.team404.synco.member.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MemberUpdateDTO {
+public class MemberUpdateDto {
     private String id;
     private String name;
     private String email;
