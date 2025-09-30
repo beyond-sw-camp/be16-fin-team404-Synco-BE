@@ -5,19 +5,23 @@ import com.team404.synco.workspace.dto.*;
 import com.team404.synco.workspace.entity.WorkSpace;
 import com.team404.synco.workspace.repository.WorkSpaceRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
 public class WorkSpaceService {
     private final WorkSpaceRepository workSpaceRepository;
+    private final RedisTemplate<String, Object> workSpaceRedisTemplate;
     private final ChatFeign chatFeign;
     private final DriveFeign driveFeign;
     private final TaskFeign taskFeign;
 
-    public WorkSpaceService(WorkSpaceRepository workSpaceRepository, ChatFeign chatFeign, DriveFeign driveFeign, TaskFeign taskFeign) {
+    public WorkSpaceService(WorkSpaceRepository workSpaceRepository, @Qualifier("workSpaceInventory") RedisTemplate<String, Object> workSpaceRedisTemplate, ChatFeign chatFeign, DriveFeign driveFeign, TaskFeign taskFeign) {
         this.workSpaceRepository = workSpaceRepository;
+        this.workSpaceRedisTemplate = workSpaceRedisTemplate;
         this.chatFeign = chatFeign;
         this.driveFeign = driveFeign;
         this.taskFeign = taskFeign;
@@ -37,21 +41,34 @@ public class WorkSpaceService {
         // 워크스페이스 생성
         workSpace = workSpaceRepository.save(workSpaceCreateReqDto.toEntity(WorkSpaceType.TEAM));
 
-        // 기본 채널 생성
+        // workspace 정보 redis에 저장
+        workSpaceRedisTemplate.opsForValue().set(1L, );
+
+        // 기본 채팅 채널 생성
         chatFeign.createChatChannel(
             ChatChannelCreateReqDto.builder()
-                    .chatChannelName("기본")
+                    .chatChannelName("일반")
                     .workSpaceSeq(workSpace.getWorkSpaceSeq())
                     .build()
         );
 
-        // 드라이브 채널 생성
+        // 기본 드라이브 채널 생성
         driveFeign.createDriveChannel(
             DriveChannelCreateReqDto.builder()
-                    .driveChannelName("기본")
+                    .driveChannelName("팀 드라이브")
                     .workspaceSeq(workSpace.getWorkSpaceSeq())
                     .build()
         );
+
+        // 기본 화상회의 채널 생성
+        taskFeign.createVirtualMeetChannel(
+                VirtualMeetingChannelCreateReqDto.builder()
+                        .virtualMeetingChannelName("회의")
+                        .workSpaceSeq(workSpace.getWorkSpaceSeq())
+                        .build()
+        );
+
+        // 기본 task(상태 보드, 사용자별 커스텀 보드 생성
 
         return workSpace.getWorkSpaceSeq();
     }

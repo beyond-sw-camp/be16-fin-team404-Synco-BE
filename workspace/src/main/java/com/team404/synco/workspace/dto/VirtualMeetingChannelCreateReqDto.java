@@ -5,13 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
-public class ChatChannelCreateReqDto {
-    private String chatChannelName;
+public class VirtualMeetingChannelCreateReqDto {
+    private String virtualMeetingChannelName;
     private Long workSpaceSeq;
 }

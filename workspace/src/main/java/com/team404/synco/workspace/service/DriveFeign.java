@@ -7,5 +7,5 @@ import org.springframework.web.bind.annotation.PostMapping;
 @FeignClient(name = "drive-service")
 public interface DriveFeign {
     @PostMapping("/drive/create-channel")
-    Long createDriveChannel(DriveChannelCreateReqDto 기본);
+    void createDriveChannel(DriveChannelCreateReqDto 기본);
 }

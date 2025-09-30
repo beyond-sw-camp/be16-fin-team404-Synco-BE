@@ -8,5 +8,5 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "chat-service")
 public interface ChatFeign {
     @PostMapping("/chat/create-channel")
-    Long createChatChannel(@RequestBody ChatChannelCreateReqDto chatChannelCreateReqDto);
+    void createChatChannel(@RequestBody ChatChannelCreateReqDto chatChannelCreateReqDto);
 }

@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
-public class ChatChannelCreateReqDto {
-    private String chatChannelName;
-    private Long workSpaceSeq;
+public class WorkSpaceInfoResDto {
+    private String workSpaceProfileUrl;
+    private List<String> myWorkSpaceList;
 }

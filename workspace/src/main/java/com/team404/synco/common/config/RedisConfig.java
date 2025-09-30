@@ -1,5 +1,7 @@
 package com.team404.synco.common.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,7 +10,10 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.util.List;
 
 @Configuration
 public class RedisConfig {
@@ -45,6 +50,32 @@ public class RedisConfig {
 //        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         
         // 0번 DB와 연결된 객체(@Qualifier("rtInventory")) 사용
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
+
+    // WorkSpace 관련 redis 설정
+    @Bean
+    @Qualifier("workspaceInventory")
+    public RedisConnectionFactory workSpaceConnectionFactory(){
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        configuration.setDatabase(1);
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    // workSpace 관련 redisTemplate 생성
+    @Bean
+    @Qualifier("workSpaceInventory")
+    public RedisTemplate<String, Object> workSpaceRedisTemplate(
+            @Qualifier("workSpaceInventory") RedisConnectionFactory redisConnectionFactory) {
+
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         return redisTemplate;
     }
