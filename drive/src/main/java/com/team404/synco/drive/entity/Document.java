@@ -19,6 +19,7 @@ public class Document extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long documentSeq;
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private DocumentType documentType;
     @Column(nullable = false)
     private String documentName;
@@ -36,4 +37,11 @@ public class Document extends BaseEntity {
     @OneToMany(mappedBy = "document")
     private List<DocumentLine> DocumentLineList = new ArrayList<>();
 
+    public void updateFolder(Folder folder) {
+        this.folder = folder;
+    }
+
+    public void updateLockStatus(String ynLock) {
+        this.ynLock = ynLock;
+    }
 }

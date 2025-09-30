@@ -27,4 +27,8 @@ public class Folder extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "folder")
     private List<Document> DocumentList = new ArrayList<>();
+
+    public void updateParentFolderSeq(Long newParentFolderSeq) {
+        this.parentFolderSeq = newParentFolderSeq;
+    }
 }
