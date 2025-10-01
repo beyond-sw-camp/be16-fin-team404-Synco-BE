@@ -50,7 +50,7 @@ public class MemberController {
         return new ResponseEntity<>(ResponseDto.ok("OK", HttpStatus.OK), HttpStatus.OK);
     }
 
-    @PostMapping("/refresh-at")
+    @PostMapping("/refreshAt")
     public ResponseEntity<?> generateNewAt(@RequestBody RefreshTokenDto refreshTokenDto) {
         Member member = jwtTokenProvider.validateRt(refreshTokenDto.getRefreshToken());
         String accessToken = jwtTokenProvider.createAtToken(member);
@@ -63,7 +63,7 @@ public class MemberController {
     }
 
 
-    @GetMapping("/check-member-id")
+    @GetMapping("/checkMemberId")
     public ResponseEntity<?> checkMemberId(@RequestHeader("X-User-Id") String userId) {
         String message = memberService.checkMemberId(userId);
         return new ResponseEntity<>(ResponseDto.ok(message, HttpStatus.OK), HttpStatus.OK);
