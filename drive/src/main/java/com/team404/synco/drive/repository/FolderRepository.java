@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findByParentFolderSeq(Long parentFolderSeq);
-    List<Folder> findByDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq);
+    List<Folder> findByDriveChannelDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq);
 }

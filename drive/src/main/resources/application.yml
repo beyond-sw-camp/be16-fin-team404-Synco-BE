@@ -21,3 +21,7 @@ spring:
     hibernate:
       ddl-auto: create
     show__sql: true
+  servlet:
+    multipart:
+      max-file-size: -1  # 파일 크기 제한 없음
+      max-request-size: -1  # 요청 크기 제한 없음

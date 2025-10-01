@@ -12,43 +12,35 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/documents")
+@RequestMapping("/documents")
 @RequiredArgsConstructor
 public class DocumentController {
 
     private final DocumentService documentService;
 
-    /**
-     * 공유문서 상세 조회
-     */
+    // 공유문서 상세 조회
     @GetMapping("/{documentSeq}")
-    public ResponseEntity<CommonDto<DriveItemDto>> getDocument(@PathVariable Long documentSeq) {
+    public ResponseEntity<?> getDocument(@PathVariable Long documentSeq) {
         DriveItemDto document = documentService.getDocument(documentSeq);
         return new ResponseEntity<>(CommonDto.ok(document, HttpStatus.OK), HttpStatus.OK);
     }
 
-    /**
-     * 공유문서 내용 업데이트
-     */
+    // 문서 내용 업데이트
     @PutMapping("/{documentSeq}/content")
-    public ResponseEntity<CommonDto<DriveItemDto>> updateDocumentContent(@PathVariable Long documentSeq, @RequestBody UpdateDocumentRequest request) {
+    public ResponseEntity<?> updateDocumentContent(@PathVariable Long documentSeq, @RequestBody UpdateDocumentRequest request) {
 
         DriveItemDto document = documentService.updateDocumentContent(documentSeq, request);
         return new ResponseEntity<>(CommonDto.ok(document, HttpStatus.OK), HttpStatus.OK);
     }
 
-    /**
-     * 문서 잠금/해제 토글
-     */
+    // 문서 잠금/잠금해제 토글
     @PutMapping("/{documentSeq}/lock")
-    public ResponseEntity<CommonDto<DriveItemDto>> toggleDocumentLock(@PathVariable Long documentSeq) {
+    public ResponseEntity<?> toggleDocumentLock(@PathVariable Long documentSeq) {
         DriveItemDto document = documentService.toggleDocumentLock(documentSeq);
         return new ResponseEntity<>(CommonDto.ok(document, HttpStatus.OK), HttpStatus.OK);
     }
 
-    /**
-     * 문서 다운로드 (텍스트 파일)
-     */
+    // 문서 다운로드
     @GetMapping("/{documentSeq}/download")
     public ResponseEntity<byte[]> downloadDocument(@PathVariable Long documentSeq) {
         return documentService.downloadDocument(documentSeq);

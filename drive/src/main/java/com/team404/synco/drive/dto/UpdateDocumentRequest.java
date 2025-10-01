@@ -11,5 +11,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateDocumentRequest {
     private String content;
-    private Boolean isLocked;
 }
