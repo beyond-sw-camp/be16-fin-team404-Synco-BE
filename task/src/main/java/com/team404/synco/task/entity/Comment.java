@@ -16,7 +16,7 @@ public class Comment extends BaseEntity {
     private Long commentSeq;
     @Column(nullable = false, length = 1000)
     private String commentContent;
-    private long parentCommentSeq;
+    private Long parentCommentSeq;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_management_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ScheduleManagementChannelMember scheduleManagementChannelMember;
