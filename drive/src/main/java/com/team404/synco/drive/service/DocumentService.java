@@ -1,7 +1,6 @@
 package com.team404.synco.drive.service;
 
-import com.team404.synco.common.constant.DocumentType;
-import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.drive.dto.DriveItemDto;
 import com.team404.synco.drive.dto.UpdateDocumentRequest;
 import com.team404.synco.drive.entity.Document;
@@ -30,13 +29,16 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DocumentLineRepository documentLineRepository;
+    private final CommonDriveService commonDriveService;
 
     // 공유문서 상세 조회
     public DriveItemDto getDocument(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        return convertDocumentToDto(document);
+        // 드라이브 타입에 따라 적절한 변환 메서드 사용
+        WorkSpaceType workspaceType = document.getFolder().getDriveChannel().getWorkspaceType();
+        return commonDriveService.convertDocumentToDto(document, workspaceType);
     }
 
     // 문서 내용 업데이트
@@ -50,66 +52,87 @@ public class DocumentService {
         }
         
         Document savedDocument = documentRepository.save(document);
-        return convertDocumentToDto(savedDocument);
+        // 드라이브 타입에 따라 적절한 변환 메서드 사용
+        WorkSpaceType workspaceType = savedDocument.getFolder().getDriveChannel().getWorkspaceType();
+        return commonDriveService.convertDocumentToDto(savedDocument, workspaceType);
     }
 
-    /**
-     * 문서 잠금/해제 토글
-     */
+    // 문서 잠금/해제 토글
     public DriveItemDto toggleDocumentLock(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        boolean isCurrentlyLocked = YnColumn.IS_TRUE.equals(document.getYnLock());
-        document.updateLockStatus(isCurrentlyLocked ? YnColumn.IS_FALSE : YnColumn.IS_TRUE);
+        // 개인 드라이브에서는 잠금 기능 불필요
+        WorkSpaceType workspaceType = document.getFolder().getDriveChannel().getWorkspaceType();
+        if (workspaceType == WorkSpaceType.INDIVIDUAL) {
+            log.warn("개인 드라이브 문서는 잠금 기능을 사용할 수 없습니다: documentSeq={}", documentSeq);
+            // 개인 드라이브에서는 잠금 상태를 변경하지 않고 그대로 반환
+        } else {
+            // 팀 드라이브에서만 잠금 토글
+            String currentLockStatus = document.getYnLock();
+            String newLockStatus = "Y".equals(currentLockStatus) ? "N" : "Y";
+            document.updateLockStatus(newLockStatus);
+        }
         
         Document savedDocument = documentRepository.save(document);
-        return convertDocumentToDto(savedDocument);
+        return commonDriveService.convertDocumentToDto(savedDocument, workspaceType);
     }
 
-    /**
-     * 문서 다운로드 (텍스트 파일)
-     */
+    // 문서 다운로드
     public ResponseEntity<byte[]> downloadDocument(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        String content = getDocumentContent(document);
-        byte[] fileContent = content.getBytes(StandardCharsets.UTF_8);
-        
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
-        headers.setContentDispositionFormData("attachment", document.getDocumentName() + ".txt");
-        
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(fileContent);
+        try {
+            // 문서 내용을 바이트 배열로 변환
+            String content = getDocumentContent(document);
+            byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", document.getDocumentName() + ".txt");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(contentBytes);
+                
+        } catch (Exception e) {
+            log.error("문서 다운로드 실패: {}", document.getDocumentName(), e);
+            throw new RuntimeException("문서 다운로드에 실패했습니다.", e);
+        }
     }
 
     // Helper Methods
 
-    private DriveItemDto convertDocumentToDto(Document document) {
-        boolean isShared = DocumentType.CUSTOM.equals(document.getDocumentType());
-        String content = getDocumentContent(document);
-        
-        return DriveItemDto.builder()
-            .id(document.getDocumentSeq())
-            .name(document.getDocumentName())
-            .type(isShared ? "shared-doc" : "file")
-            .size(isShared ? "-" : "0 KB")
-            .uploadDate(document.getCreatedAt())
-            .modifiedDate(document.getUpdatedAt())
-            .icon(isShared ? "mdi-file-document-multiple" : "mdi-file")
-            .parentId(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
-            .isShared(isShared)
-            .isLocked(YnColumn.IS_TRUE.equals(document.getYnLock()))
-            .content(content)
-            .documentUrl(document.getDocumentUrl())
-            .documentType(document.getDocumentType())
-            .memberSeq(document.getMemberSeq())
-            .build();
+    // 문서 내용 업데이트 (내부 메서드)
+    private void updateDocumentContent(Document document, String content) {
+        try {
+            // 기존 문서 라인 삭제
+            List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+            documentLineRepository.deleteAll(existingLines);
+            
+            // 새 내용을 라인별로 저장
+            String[] lines = content.split("\n");
+            List<DocumentLine> newLines = new ArrayList<>();
+            
+            for (int i = 0; i < lines.length; i++) {
+                DocumentLine line = DocumentLine.builder()
+                    .documentContent(lines[i])
+                    .documentLineSeq((long) (i + 1))
+                    .document(document)
+                    .build();
+                newLines.add(line);
+            }
+            
+            documentLineRepository.saveAll(newLines);
+            
+        } catch (Exception e) {
+            log.error("문서 내용 업데이트 실패", e);
+            throw new RuntimeException("문서 내용 업데이트에 실패했습니다.", e);
+        }
     }
 
+    // 문서 내용 조회
     private String getDocumentContent(Document document) {
         try {
             List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
@@ -124,29 +147,6 @@ public class DocumentService {
         } catch (Exception e) {
             log.error("문서 내용 조회 실패", e);
             return "문서 내용을 불러올 수 없습니다.";
-        }
-    }
-
-    private void updateDocumentContent(Document document, String content) {
-        // 기존 DocumentLine 삭제
-        List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-        documentLineRepository.deleteAll(existingLines);
-        
-        // 새로운 내용을 DocumentLine으로 저장
-        if (content != null && !content.trim().isEmpty()) {
-            String[] lines = content.split("\n");
-            List<DocumentLine> newLines = new ArrayList<>();
-            
-            for (int i = 0; i < lines.length; i++) {
-                DocumentLine documentLine = DocumentLine.builder()
-                    .documentParentLineSeq(0L)
-                    .documentContent(lines[i])
-                    .document(document)
-                    .build();
-                newLines.add(documentLine);
-            }
-            
-            documentLineRepository.saveAll(newLines);
         }
     }
 }

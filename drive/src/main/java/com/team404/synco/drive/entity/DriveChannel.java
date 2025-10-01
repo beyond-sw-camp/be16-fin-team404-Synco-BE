@@ -1,5 +1,6 @@
 package com.team404.synco.drive.entity;
 
+import com.team404.synco.common.constant.WorkSpaceType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,10 @@ public class DriveChannel extends BaseEntity {
     private String driveChannelName;
     @Column(nullable = false)
     private long workspaceSeq;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private WorkSpaceType workspaceType = WorkSpaceType.TEAM;
     @Builder.Default
     @OneToMany(mappedBy = "driveChannel")
     private List<Folder> FolderList = new ArrayList<>();
