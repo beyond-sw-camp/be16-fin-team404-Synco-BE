@@ -57,11 +57,10 @@ public class PersonalDriveController {
     // 개인 드라이브 파일 업로드
     @PostMapping("/upload")
     public CommonDto<?> uploadPersonalFiles(
-            @RequestHeader("X-User-Id" ) Long userId,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestParam(required = false) Long parentFolderId) {
+            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+            @ModelAttribute FileUploadRequest request) {
 
-        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, files, parentFolderId);
+        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request.getFiles(), request.getParentFolderId());
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
     }
 

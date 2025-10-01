@@ -7,6 +7,5 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateDriveChannelRequest {
-    private String driveChannelName;
     private Long workspaceSeq;
 }

@@ -139,7 +139,6 @@ public class TeamDriveService {
     // 팀 드라이브 채널 생성
     public DriveItemDto createTeamDriveChannel(Long userId, CreateDriveChannelRequest request) {
         DriveChannel channel = DriveChannel.builder()
-            .driveChannelName(request.getDriveChannelName())
             .workspaceSeq(request.getWorkspaceSeq())
             .workspaceType(WorkSpaceType.TEAM)
             .build();

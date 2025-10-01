@@ -5,13 +5,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class FileUploadRequest {
-    
     private List<MultipartFile> files;
-    private Long driveChannelSeq;
     private Long parentFolderId;
+    private Long driveChannelSeq; // 팀 드라이브용
 }

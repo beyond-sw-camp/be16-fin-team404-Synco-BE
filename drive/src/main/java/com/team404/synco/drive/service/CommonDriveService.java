@@ -3,6 +3,7 @@ package com.team404.synco.drive.service;
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DriveChannel;
@@ -32,8 +33,7 @@ public class CommonDriveService {
     private final DriveChannelRepository driveChannelRepository;
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
-    
-    private static final String UPLOAD_DIR = "uploads/";
+    private final S3Uploader s3Uploader;
 
     // 드라이브 채널 조회
     public DriveChannel getDriveChannel(Long driveChannelSeq) {
@@ -125,7 +125,8 @@ public class CommonDriveService {
         for (MultipartFile file : files) {
             try {
                 String fileName = file.getOriginalFilename();
-                String fileUrl = saveFile(file);
+                // S3에 파일 업로드
+                String fileUrl = s3Uploader.upload(file, "drive/" + driveChannel.getDriveChannelSeq());
                 
                 // 폴더 조회
                 Folder folder = parentFolderId != null ? 
@@ -143,7 +144,7 @@ public class CommonDriveService {
                 Document savedDocument = documentRepository.save(document);
                 uploadedFiles.add(convertDocumentToDto(savedDocument, driveChannel.getWorkspaceType()));
                 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("파일 업로드 실패: {}", file.getOriginalFilename(), e);
                 throw new RuntimeException("파일 업로드에 실패했습니다.", e);
             }
@@ -301,11 +302,4 @@ public class CommonDriveService {
         return fileName.substring(fileName.lastIndexOf(".") + 1);
     }
 
-    private String saveFile(MultipartFile file) throws IOException {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(UPLOAD_DIR + fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, file.getBytes());
-        return UPLOAD_DIR + fileName;
-    }
 }
