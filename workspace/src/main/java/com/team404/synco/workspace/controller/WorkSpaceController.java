@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class WorkSpaceController {
     private final WorkSpaceService workSpaceService;
 
-    // 워크스페이스 생성
+    // 팀 워크스페이스 생성
     @PostMapping("/create")
     public ResponseEntity<?> createWorkSpace(@RequestBody WorkSpaceCreateReqDto workSpaceCreateReqDto, @RequestHeader("X-User-Id")Long userId){
         Long id = workSpaceService.createTeamWorkSpace(workSpaceCreateReqDto);

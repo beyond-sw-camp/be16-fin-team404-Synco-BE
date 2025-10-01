@@ -3,12 +3,12 @@ package com.team404.synco.workspace.dto;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.workspace.entity.WorkSpace;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
 public class WorkSpaceCreateReqDto {
     private String workSpaceName;
     private String workSpaceThumbnailImageUrl;

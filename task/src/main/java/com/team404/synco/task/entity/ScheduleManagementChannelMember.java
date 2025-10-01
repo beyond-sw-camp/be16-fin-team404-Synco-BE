@@ -21,13 +21,16 @@ public class ScheduleManagementChannelMember extends BaseEntity {
     @Column(nullable = false)
     private long memberSeq;
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     @Builder.Default
     private Authority authority = Authority.SUPER;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_management_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
-    private ScheduleManagementChannel scheduleManagementChannel;
+    @Column(nullable = false)
+    private long workSpaceSeq;
     @Builder.Default
     @OneToMany(mappedBy = "scheduleManagementChannelMember")
+    private List<Board> boardList = new ArrayList<>();
+    @Builder.Default
+    @OneToMany(mappedBy = "picMemberSeq")
     private List<Task> taskList = new ArrayList<>();
     @Builder.Default
     @OneToMany(mappedBy = "scheduleManagementChannelMember")
