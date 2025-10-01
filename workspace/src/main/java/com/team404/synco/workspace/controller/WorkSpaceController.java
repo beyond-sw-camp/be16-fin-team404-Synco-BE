@@ -2,6 +2,7 @@ package com.team404.synco.workspace.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.workspace.dto.WorkSpaceCreateReqDto;
+import com.team404.synco.workspace.dto.WorkSpaceResDto;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +22,8 @@ public class WorkSpaceController {
     public ResponseEntity<?> createWorkSpace(@ModelAttribute WorkSpaceCreateReqDto workSpaceCreateReqDto, @RequestHeader("X-User-Id")Long userId){
         log.info("요청값 : {}", workSpaceCreateReqDto.getWorkSpaceName());
         log.info("파일명 : {}", workSpaceCreateReqDto.getWorkSpaceThumbnailImage());
-        Long id = workSpaceService.createTeamWorkSpace(workSpaceCreateReqDto, userId);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
+        WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(workSpaceCreateReqDto, userId);
+        return new ResponseEntity<>(ResponseDto.ok(workSpaceResDto, HttpStatus.OK), HttpStatus.OK);
     }
     // 워크스페이스 수정
     // 워크스페이스 삭제

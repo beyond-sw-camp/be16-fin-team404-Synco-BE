@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TaskCreateReqDto {
     private Long memberSeq;
+    private Long workSpaceSeq;
     private Authority authority;
 }
