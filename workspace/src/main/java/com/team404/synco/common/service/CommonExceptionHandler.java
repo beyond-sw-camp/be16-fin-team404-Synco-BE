@@ -14,23 +14,27 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgumentException(IllegalArgumentException e) {
-        return new ResponseEntity<>(ResponseDto.fail(HttpStatus.BAD_REQUEST, e.getMessage()), HttpStatus.BAD_REQUEST);
+        return ResponseEntity.badRequest()
+                .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, e.getMessage()));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<?> handleEntityNotFoundException(EntityNotFoundException e) {
-        return new ResponseEntity<>(ResponseDto.fail(HttpStatus.NOT_FOUND, e.getMessage()), HttpStatus.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ResponseDto.fail(HttpStatus.NOT_FOUND, e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         String errorMessage = fieldError != null ? fieldError.getDefaultMessage() : "입력값이 올바르지 않습니다.";
-        return new ResponseEntity<>(ResponseDto.fail(HttpStatus.BAD_REQUEST, errorMessage), HttpStatus.BAD_REQUEST);
+        return ResponseEntity.badRequest()
+                .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, errorMessage));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneralException(Exception e) {
-        return new ResponseEntity<>(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."), HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."));
     }
 }

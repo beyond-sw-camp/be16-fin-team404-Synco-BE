@@ -22,7 +22,7 @@ public class JwtAuthFilter implements GlobalFilter {
     private static final List<String> ALLOWED_PATHS = List.of(
             "/member/create",
             "/member/doLogin",
-            "/member/refresh-token"
+            "/member/refreshAt"
     );
 
     @Override
@@ -49,11 +49,11 @@ public class JwtAuthFilter implements GlobalFilter {
                     .parseClaimsJws(token)
                     .getBody();
 
-            String userId = claims.getSubject();
+            String memberSeq = claims.getSubject();
 
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(builder -> builder
-                            .header("X-User-Id", userId)
+                            .header("X-Member-Seq", memberSeq)
                     )
                     .build();
 

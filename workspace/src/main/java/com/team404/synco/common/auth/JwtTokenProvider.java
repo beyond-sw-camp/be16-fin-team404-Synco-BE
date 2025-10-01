@@ -54,10 +54,10 @@ public class JwtTokenProvider {
     }
 
     public String createAtToken(Member member) {
-        Long memberId = member.getMemberSeq();
+        Long memberSeq = member.getMemberSeq();
         init();
 
-        Claims claims = Jwts.claims().setSubject(String.valueOf(memberId));
+        Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
         String token =Jwts.builder()
@@ -71,10 +71,10 @@ public class JwtTokenProvider {
     }
 
     public String createRtToken(Member member) {
-        Long memberId = member.getMemberSeq();
+        Long memberSeq = member.getMemberSeq();
         init();
 
-        Claims claims = Jwts.claims().setSubject(String.valueOf(memberId));
+        Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
         String refreshToken =Jwts.builder()
@@ -84,7 +84,7 @@ public class JwtTokenProvider {
                 .signWith(secretRtKey)
                 .compact();
 
-        redisTemplate.opsForValue().set(String.valueOf(memberId), refreshToken);
+        redisTemplate.opsForValue().set(String.valueOf(memberSeq), refreshToken);
         return refreshToken;
     }
 
@@ -95,8 +95,8 @@ public class JwtTokenProvider {
                 .parseClaimsJws(refreshToken)
                 .getBody();
 
-        Long memberId = Long.parseLong(claims.getSubject());
-        Member member = memberRepository.findById(memberId).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        Long memberSeq = Long.parseLong(claims.getSubject());
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
         String redisRt = redisTemplate.opsForValue().get(member.getEmail());
         if (!redisRt.equals(refreshToken)) {

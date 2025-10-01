@@ -77,31 +77,45 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberResDto myInfo(Long id) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+    public MemberResDto myInfo(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
         return MemberResDto.fromEntity(member);
     }
 
-    public MemberResDto updateMember(Long id, MemberUpdateDto memberUpdateDto) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
-        Member updateMember = member.updateMember(memberUpdateDto);
-        return MemberResDto.fromEntity(updateMember);
+    public MemberResDto updateMember(Long memberSeq, MemberUpdateDto memberUpdateDto) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        member.updateMember(memberUpdateDto);
+
+        MultipartFile profileImage = memberUpdateDto.getProfileImage();
+        if (profileImage != null && !profileImage.isEmpty()) {
+            if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
+                try {
+                    s3Uploader.delete(member.getProfileImageUrl());
+                } catch (Exception e) {
+                    log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
+                }
+            }
+            String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
+            member.updateImageUrl(newProfileImageUrl);
+        }
+
+        return MemberResDto.fromEntity(member);
     }
 
-    public void delete(Long id) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
-        member.deleteMember("Y");
+    public void memberDeleteYn(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        member.deleteMember();
     }
 
     @Transactional(readOnly = true)
-    public String checkMemberId(String userId) {
-        Long memberId = Long.parseLong(userId);
-        
-        if (!memberRepository.existsById(memberId)) {
+    public String checkMemberId(Long memberSeq) {
+        if (!memberRepository.existsById(memberSeq)) {
             throw new EntityNotFoundException("회원을 찾을 수 없습니다.");
         }
-        
-        return "전달받은 memberId는 " + memberId + " 입니다.";
+
+        return "전달받은 memberSeq는 " + memberSeq + " 입니다.";
     }
 
 }

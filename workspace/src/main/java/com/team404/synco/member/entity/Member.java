@@ -59,18 +59,20 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member")
     private List<WorkSpace> workSpaceList = new ArrayList<>();
 
-    public Member updateMember(MemberUpdateDto memberUpdateDTO) {
-        this.memberId = memberUpdateDTO.getId();
-        this.name = memberUpdateDTO.getName();
-        this.email = memberUpdateDTO.getEmail();
-        this.statusMessage = memberUpdateDTO.getStatusMessage();
-        this.profileImageUrl = memberUpdateDTO.getProfileImageUrl();
-        this.telNo = memberUpdateDTO.getTelNo();
-
-        return this;
+    public void updateMember(MemberUpdateDto memberUpdateDto) {
+        this.memberId = memberUpdateDto.getId();
+        this.name = memberUpdateDto.getName();
+        this.email = memberUpdateDto.getEmail();
+        this.statusMessage = memberUpdateDto.getStatusMessage();
+        this.telNo = memberUpdateDto.getTelNo();
+        this.birthDate = memberUpdateDto.getBirthDate();
     }
 
-    public void deleteMember(String ynDel){
-        this.ynDel = ynDel;
+    public void updateImageUrl(String imgUrl){
+        this.profileImageUrl = imgUrl;
+    }
+
+    public void deleteMember(){
+        this.ynDel = YnColumn.IS_TRUE;
     }
 }

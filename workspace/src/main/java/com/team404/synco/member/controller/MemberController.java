@@ -22,32 +22,33 @@ public class MemberController {
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@ModelAttribute @Validated CreateMemberDto createMemberDto) {
-        Long id = memberService.createMemberWithValidation(createMemberDto);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.CREATED), HttpStatus.CREATED);
+        Long memberSeq = memberService.createMemberWithValidation(createMemberDto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ResponseDto.ok(memberSeq, HttpStatus.CREATED));
     }
 
     @PostMapping("/doLogin")
     public ResponseEntity<?> doLogin(@RequestBody LoginReqDto loginReqDto) {
         LoginResDto loginResDto = memberService.doLogin(loginReqDto);
-        return new ResponseEntity<>(ResponseDto.ok(loginResDto, HttpStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
     }
 
     @GetMapping("/myPage")
-    public ResponseEntity<?> myPage(@RequestHeader("X-User-Id")Long id) {
-        return new ResponseEntity<>(ResponseDto.ok(memberService.myInfo(id), HttpStatus.OK), HttpStatus.OK);
+    public ResponseEntity<?> myPage(@RequestHeader("X-Member-Seq") Long memberSeq) {
+        return ResponseEntity.ok(ResponseDto.ok(memberService.myInfo(memberSeq), HttpStatus.OK));
     }
 
     @PatchMapping("/update")
-    public ResponseEntity<?> updateMyPage(@RequestHeader("X-User-Id") Long memberId,
-                                          @Valid @RequestBody MemberUpdateDto dto) {
-        MemberResDto result = memberService.updateMember(memberId, dto);
-        return new ResponseEntity<>(ResponseDto.ok(result, HttpStatus.OK), HttpStatus.OK);
+    public ResponseEntity<?> updateMyPage(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                          @ModelAttribute @Validated MemberUpdateDto dto) {
+        MemberResDto result = memberService.updateMember(memberSeq, dto);
+        return ResponseEntity.ok(ResponseDto.ok(result, HttpStatus.OK));
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<?> delete(@RequestHeader("X-User-Id")Long id){
-        memberService.delete(id);
-        return new ResponseEntity<>(ResponseDto.ok("OK", HttpStatus.OK), HttpStatus.OK);
+    public ResponseEntity<?> delete(@RequestHeader("X-Member-Seq") Long memberSeq){
+        memberService.memberDeleteYn(memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
     }
 
     @PostMapping("/refreshAt")
@@ -59,15 +60,14 @@ public class MemberController {
                 .accessToken(accessToken)
                 .build();
 
-        return new ResponseEntity<>(ResponseDto.ok(loginResDto, HttpStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
     }
-
 
     @GetMapping("/checkMemberId")
-    public ResponseEntity<?> checkMemberId(@RequestHeader("X-User-Id") String userId) {
-        String message = memberService.checkMemberId(userId);
-        return new ResponseEntity<>(ResponseDto.ok(message, HttpStatus.OK), HttpStatus.OK);
+    public ResponseEntity<?> checkMemberId(@RequestHeader("X-Member-Seq") Long memberSeq) {
+        String message = memberService.checkMemberId(memberSeq);
+        return ResponseEntity
+                .ok(ResponseDto.ok(message, HttpStatus.OK));
     }
-
 
 }
