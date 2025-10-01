@@ -11,6 +11,6 @@ public interface TaskFeign {
     @PostMapping("/task/create-channel")
     void createTask(@RequestBody TaskCreateReqDto taskCreateReqDto);
 
-    @PostMapping("/task/virtual-meet/create-channel")
+    @PostMapping("/virtual-meeting/create-channel")
     void createVirtualMeetChannel(@RequestBody VirtualMeetingChannelCreateReqDto virtualMeetingChannelCreateReqDto);
 }

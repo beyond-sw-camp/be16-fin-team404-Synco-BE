@@ -21,7 +21,7 @@ public class VirtualMeetingService {
     // ToDO : 우선은 기본 채널 생성만 작업했습니다. 추후 채널 추가 가능하도록 코드 수정 예정입니다.
     public Long createChannel(VirtualMeetingChannelCreateReqDto virtualMeetingChannelCreateReqDto){
         VirtualMeetingChannel virtualMeetingChannel = VirtualMeetingChannel.builder()
-                .virtualMeetingChannelName(virtualMeetingChannelCreateReqDto.getChatChannelName())
+                .virtualMeetingChannelName(virtualMeetingChannelCreateReqDto.getVirtualMeetingChannelName())
                 .workSpaceSeq(virtualMeetingChannelCreateReqDto.getWorkSpaceSeq())
                 .build();
 

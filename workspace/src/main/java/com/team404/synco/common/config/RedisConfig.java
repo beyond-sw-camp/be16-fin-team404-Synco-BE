@@ -52,7 +52,7 @@ public class RedisConfig {
 
     // WorkSpace 관련 redis 설정
     @Bean
-    @Qualifier("workspaceInventory")
+    @Qualifier("workSpaceInventory")
     public RedisConnectionFactory workSpaceConnectionFactory(){
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(host);

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class VirtualMeetingChannelCreateReqDto {
-    private String chatChannelName;
+    private String virtualMeetingChannelName;
     private Long workSpaceSeq;
 }
