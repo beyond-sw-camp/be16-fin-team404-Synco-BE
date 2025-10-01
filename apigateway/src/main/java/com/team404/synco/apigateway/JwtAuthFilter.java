@@ -1,6 +1,7 @@
 package com.team404.synco.apigateway;
 
 import io.jsonwebtoken.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
+@Slf4j
 public class JwtAuthFilter implements GlobalFilter {
 
     @Value("${jwt.secretKey}")
@@ -25,12 +27,12 @@ public class JwtAuthFilter implements GlobalFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // token 검증
-        System.out.println("token 검증 시작");
+
+        log.info("token 검증 시작");
         String bearerToken = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         String path = exchange.getRequest().getURI().getRawPath();
-        System.out.println(path);
-        // 인증이 필요 없는 경로는 필터를 통과
+        log.info(path);
+
         if (ALLOWED_PATHS.contains(path)) {
             return chain.filter(exchange);
         }
@@ -41,26 +43,20 @@ public class JwtAuthFilter implements GlobalFilter {
             }
             String token = bearerToken.substring(7);
 
-            // token 검증 및 claims 추출
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
 
-            // 사용자 ID 추출
             String userId = claims.getSubject();
 
-            // 헤더에 X-User-Id변수로 id값 추가 및 ROLE 추가
-            // X를 붙이는 것은 custom header라는 것을 의미하는 널리 쓰이는 관례
             ServerWebExchange modifiedExchange = exchange.mutate()
                     .request(builder -> builder
                             .header("X-User-Id", userId)
                     )
                     .build();
 
-            // Spring Cloud Gateway는 여러 필터를 GatewayFilterChain이라는 구조로 관리
-            // 다시 filter chain으로 되돌아 가는 로직.
             return chain.filter(modifiedExchange);
         } catch (IllegalArgumentException | MalformedJwtException | ExpiredJwtException | SignatureException |
                  UnsupportedJwtException e) {

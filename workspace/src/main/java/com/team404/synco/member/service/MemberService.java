@@ -1,10 +1,12 @@
 package com.team404.synco.member.service;
 
+import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.member.dto.CreateMemberDto;
 import com.team404.synco.member.dto.LoginReqDto;
+import com.team404.synco.member.dto.LoginResDto;
 import com.team404.synco.member.dto.MemberResDto;
 import com.team404.synco.member.dto.MemberUpdateDto;
 import com.team404.synco.member.entity.Member;
@@ -17,36 +19,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-@Transactional      // 영속성 컨텍스트 반영 시 해당 어노테이션 사용
+@Transactional
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MemberService {
 
+    private static final String PROFILE_IMAGE_DIRECTORY = "profile";
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3Uploader;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    // 회원가입
-    public Long save(CreateMemberDto createMemberDto) {
+    public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
-        if (memberRepository.findByMemberId(createMemberDto.getId()).isPresent()) {
+        if (memberRepository.existsByMemberId(createMemberDto.getId())) {
             throw new IllegalArgumentException("이미 가입된 아이디입니다.");
         }
 
-        if (memberRepository.findByEmailAndSocialType(createMemberDto.getEmail(), SocialType.NORMAL).isPresent()) {
+        if (memberRepository.existsByEmailAndSocialType(createMemberDto.getEmail(), SocialType.NORMAL)) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다. (일반 회원가입)");
         }
 
-        if (createMemberDto.getPassword().length() < 11) {
-            throw new IllegalArgumentException("비밀번호는 11자 이상으로 입력해주세요.");
-        }
         String encodedPassword = passwordEncoder.encode(createMemberDto.getPassword());
 
         String profileImageUrl = null;
         MultipartFile profileImage = createMemberDto.getProfileImage();
         if (profileImage != null && !profileImage.isEmpty()) {
-            profileImageUrl = s3Uploader.upload(profileImage, "profile");
+            profileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
         }
 
         Member member = memberRepository.save(createMemberDto.toEntity(encodedPassword, profileImageUrl)
@@ -54,7 +55,7 @@ public class MemberService {
         return member.getMemberSeq();
     }
 
-    public Member doLogin(LoginReqDto loginReqDto) {
+    public LoginResDto doLogin(LoginReqDto loginReqDto) {
         Member member = memberRepository.findByEmailAndSocialType(loginReqDto.getEmail(), SocialType.NORMAL)
                 .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
 
@@ -65,25 +66,42 @@ public class MemberService {
         if (!passwordEncoder.matches(loginReqDto.getPassword(), member.getPassword())) {
             throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
         }
-        return member;
+
+        String accessToken = jwtTokenProvider.createAtToken(member);
+        String refreshToken = jwtTokenProvider.createRtToken(member);
+
+        return LoginResDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
+    @Transactional(readOnly = true)
     public MemberResDto myInfo(Long id) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("member is not found"));
+        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
         return MemberResDto.fromEntity(member);
     }
 
     public MemberResDto updateMember(Long id, MemberUpdateDto memberUpdateDto) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("member is not found"));
+        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
         Member updateMember = member.updateMember(memberUpdateDto);
         return MemberResDto.fromEntity(updateMember);
     }
 
     public void delete(Long id) {
-        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("member is not found"));
+        Member member = memberRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
         member.deleteMember("Y");
     }
 
-
+    @Transactional(readOnly = true)
+    public String checkMemberId(String userId) {
+        Long memberId = Long.parseLong(userId);
+        
+        if (!memberRepository.existsById(memberId)) {
+            throw new EntityNotFoundException("회원을 찾을 수 없습니다.");
+        }
+        
+        return "전달받은 memberId는 " + memberId + " 입니다.";
+    }
 
 }

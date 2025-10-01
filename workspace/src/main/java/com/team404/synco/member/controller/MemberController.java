@@ -22,24 +22,14 @@ public class MemberController {
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@ModelAttribute @Validated CreateMemberDto createMemberDto) {
-        Long id = memberService.save(createMemberDto);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.CREATED)
-                , HttpStatus.CREATED);
+        Long id = memberService.createMemberWithValidation(createMemberDto);
+        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.CREATED), HttpStatus.CREATED);
     }
 
     @PostMapping("/doLogin")
     public ResponseEntity<?> doLogin(@RequestBody LoginReqDto loginReqDto) {
-        Member member = memberService.doLogin(loginReqDto);
-        String accessToken = jwtTokenProvider.createAtToken(member);
-        String refreshToken = jwtTokenProvider.createRtToken(member);
-        
-        LoginResDto loginResDto = LoginResDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
-
+        LoginResDto loginResDto = memberService.doLogin(loginReqDto);
         return new ResponseEntity<>(ResponseDto.ok(loginResDto, HttpStatus.OK), HttpStatus.OK);
-
     }
 
     @GetMapping("/myPage")
@@ -75,9 +65,8 @@ public class MemberController {
 
     @GetMapping("/check-member-id")
     public ResponseEntity<?> checkMemberId(@RequestHeader("X-User-Id") String userId) {
-        System.out.println("API Gateway로부터 전달받은 X-User-Id 헤더: " + userId);
-
-        return new ResponseEntity<>(ResponseDto.ok("전달받은 memberId는 " + userId + " 입니다.", HttpStatus.OK), HttpStatus.OK);
+        String message = memberService.checkMemberId(userId);
+        return new ResponseEntity<>(ResponseDto.ok(message, HttpStatus.OK), HttpStatus.OK);
     }
 
 

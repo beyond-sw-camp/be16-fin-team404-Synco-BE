@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Builder
 public class CreateMemberDto {
 
-    @Size(max = 8, message = "이름은 8자 이하로 입력해야 합니다.")
+    @Size(min = 2, max = 8, message = "이름은 2자 이상 8자 이하로 입력해야 합니다.")
     private String name;
     private String id;
     private String email;
