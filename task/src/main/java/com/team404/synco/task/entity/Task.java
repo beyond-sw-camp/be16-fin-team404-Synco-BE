@@ -30,7 +30,7 @@ public class Task extends BaseEntity {
     private LocalDate startDate;
     @Column(nullable = false)
     private LocalDate endDate;
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pic_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ScheduleManagementChannelMember picMemberSeq;
     @ManyToOne(fetch = FetchType.LAZY)
