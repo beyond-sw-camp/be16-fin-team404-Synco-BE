@@ -17,8 +17,6 @@ public class DriveChannel extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long driveChannelSeq;
     @Column(nullable = false)
-    private String driveChannelName;
-    @Column(nullable = false)
     private long workspaceSeq;
     @Builder.Default
     @OneToMany(mappedBy = "driveChannel")

@@ -9,12 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class DriveChannelCreateReqDto {
-    private String driveChannelName;
     private Long workspaceSeq;
 
     public DriveChannel toEntity(Long workspaceSeq){
         return DriveChannel.builder()
-                .driveChannelName(this.driveChannelName)
                 .workspaceSeq(workspaceSeq)
                 .build();
     }

@@ -2,6 +2,7 @@ package com.team404.synco.workspace.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.workspace.dto.WorkSpaceCreateReqDto;
+import com.team404.synco.workspace.dto.WorkSpaceInviteReqDto;
 import com.team404.synco.workspace.dto.WorkSpaceResDto;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,7 +25,15 @@ public class WorkSpaceController {
     public ResponseEntity<?> createWorkSpace(@ModelAttribute WorkSpaceCreateReqDto workSpaceCreateReqDto, @RequestHeader("X-User-Id")Long userId){
         log.info("요청값 : {}", workSpaceCreateReqDto.getWorkSpaceName());
         log.info("파일명 : {}", workSpaceCreateReqDto.getWorkSpaceThumbnailImage());
+        log.info("초대된 멤버seq 목록 : {}", workSpaceCreateReqDto.getMembers());
+        List<Long> members = workSpaceCreateReqDto.getMembers();
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(workSpaceCreateReqDto, userId);
+        if (members != null && !members.isEmpty()) {
+            WorkSpaceInviteReqDto workSpaceInviteReqDto = new WorkSpaceInviteReqDto();
+            workSpaceInviteReqDto.setMemberSpaceReq(userId);
+            workSpaceInviteReqDto.setWorkSpaceReq(workSpaceResDto.getWorkSpaceSeq());
+            workSpaceService.workSpaceInvite(workSpaceInviteReqDto);
+        }
         return new ResponseEntity<>(ResponseDto.ok(workSpaceResDto, HttpStatus.OK), HttpStatus.OK);
     }
     // 워크스페이스 수정
