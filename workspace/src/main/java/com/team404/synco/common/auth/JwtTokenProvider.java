@@ -63,7 +63,7 @@ public class JwtTokenProvider {
         String token =Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + expirationAt * 90 * 1000L))
+                .setExpiration(new Date(now.getTime() + expirationAt * 1000L))
                 .signWith(secretAtKey)
                 .compact();
 
@@ -90,7 +90,7 @@ public class JwtTokenProvider {
 
     public Member validateRt(String refreshToken) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKeyRt)
+                .setSigningKey(secretRtKey)
                 .build()
                 .parseClaimsJws(refreshToken)
                 .getBody();
@@ -98,8 +98,8 @@ public class JwtTokenProvider {
         Long memberSeq = Long.parseLong(claims.getSubject());
         Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
-        String redisRt = redisTemplate.opsForValue().get(member.getEmail());
-        if (!redisRt.equals(refreshToken)) {
+        String redisRt = redisTemplate.opsForValue().get(String.valueOf(memberSeq));
+        if (redisRt == null || !redisRt.equals(refreshToken)) {
             throw new IllegalArgumentException("잘못된 토큰 입니다.");
         }
 

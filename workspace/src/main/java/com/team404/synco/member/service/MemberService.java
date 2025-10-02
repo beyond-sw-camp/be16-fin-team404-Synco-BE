@@ -4,11 +4,7 @@ import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.member.dto.CreateMemberDto;
-import com.team404.synco.member.dto.LoginReqDto;
-import com.team404.synco.member.dto.LoginResDto;
-import com.team404.synco.member.dto.MemberResDto;
-import com.team404.synco.member.dto.MemberUpdateDto;
+import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -50,8 +46,7 @@ public class MemberService {
             profileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
         }
 
-        Member member = memberRepository.save(createMemberDto.toEntity(encodedPassword, profileImageUrl)
-        );
+        Member member = memberRepository.save(createMemberDto.toEntity(encodedPassword, profileImageUrl));
         return member.getMemberSeq();
     }
 
@@ -100,7 +95,6 @@ public class MemberService {
             String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
             member.updateImageUrl(newProfileImageUrl);
         }
-
         return MemberResDto.fromEntity(member);
     }
 
@@ -109,13 +103,12 @@ public class MemberService {
         member.deleteMember();
     }
 
-    @Transactional(readOnly = true)
-    public String checkMemberId(Long memberSeq) {
-        if (!memberRepository.existsById(memberSeq)) {
-            throw new EntityNotFoundException("회원을 찾을 수 없습니다.");
-        }
-
-        return "전달받은 memberSeq는 " + memberSeq + " 입니다.";
+    public LoginResDto generateNewAt(RefreshTokenDto refreshTokenDto) {
+        Member member = jwtTokenProvider.validateRt(refreshTokenDto.getRefreshToken());
+        String accessToken = jwtTokenProvider.createAtToken(member);
+        return LoginResDto.builder()
+                .accessToken(accessToken)
+                .build();
     }
 
 }
