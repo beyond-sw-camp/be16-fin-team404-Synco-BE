@@ -1,7 +1,5 @@
 package com.team404.synco.drive.service;
 
-import com.team404.synco.common.constant.DriveItemType;
-import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Document;
@@ -85,6 +83,13 @@ public class TeamDriveService {
             log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
             throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
         }
+    }
+
+    // 팀 드라이브 폴더 이름 변경
+    public DriveItemDto renameTeamFolder(Long userId, Long folderId, RenameFolderRequest request) {
+        // TODO: 팀 멤버 권한 확인 로직 추가 필요
+        
+        return commonDriveService.renameFolder(folderId, request.getNewFolderName());
     }
 
     // 팀 드라이브 아이템 삭제

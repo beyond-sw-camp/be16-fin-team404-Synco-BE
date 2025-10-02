@@ -1,6 +1,5 @@
 package com.team404.synco.drive.service;
 
-import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Document;
@@ -85,6 +84,11 @@ public class PersonalDriveService {
             log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
             throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
         }
+    }
+
+    // 개인 드라이브 폴더 이름 변경
+    public DriveItemDto renamePersonalFolder(Long folderId, RenameFolderRequest request) {
+        return commonDriveService.renameFolder(folderId, request.getNewFolderName());
     }
 
     // 개인 드라이브 아이템 삭제

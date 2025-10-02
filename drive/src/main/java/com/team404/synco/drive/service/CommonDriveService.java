@@ -172,6 +172,19 @@ public class CommonDriveService {
     }
 
 
+    // 폴더 이름 변경 (공통)
+    public DriveItemDto renameFolder(Long folderId, String newFolderName) {
+        Folder folder = folderRepository.findById(folderId)
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        
+        folder.updateFolderName(newFolderName);
+        
+        log.info("폴더 이름 변경 완료: folderId={}, newName={}", 
+            folderId, newFolderName);
+        
+        return convertFolderToDto(folder);
+    }
+
     // 아이템 삭제 (공통)
     public void deleteItem(String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {

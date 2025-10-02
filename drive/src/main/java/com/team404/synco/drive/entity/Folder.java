@@ -35,4 +35,8 @@ public class Folder extends BaseEntity {
     public void updateOrder(Long newOrder) {
         this.orders = newOrder;
     }
+    
+    public void updateFolderName(String newFolderName) {
+        this.folderName = newFolderName;
+    }
 }

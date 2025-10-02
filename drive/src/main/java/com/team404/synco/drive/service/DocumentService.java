@@ -33,17 +33,14 @@ public class DocumentService {
 
     // 공유문서 상세 조회
     public DriveItemDto getDocument(Long documentSeq) {
-        Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-        
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         return commonDriveService.convertDocumentToDto(document);
     }
 
     // 문서 내용 업데이트
     // TODO: 실시간 문서편집 기능 추가시 수정 필요. 현재는 기존 라인 전체 삭제 후 새로 저장.
     public DriveItemDto updateDocumentContent(Long documentSeq, UpdateDocumentRequest request) {
-        Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 내용 업데이트
         if (request.getContent() != null) {
@@ -57,7 +54,6 @@ public class DocumentService {
     public DriveItemDto toggleDocumentLock(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        // 잠금 토글
         String currentLockStatus = document.getYnLock();
         String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
         document.updateLockStatus(newLockStatus);
@@ -70,7 +66,6 @@ public class DocumentService {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         try {
-            // 문서 내용을 바이트 배열로 변환
             String content = getDocumentContent(document);
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
             

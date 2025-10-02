@@ -85,6 +85,17 @@ public class TeamDriveController {
         return teamDriveService.downloadTeamFile(documentSeq);
     }
 
+    // 팀 드라이브 폴더 이름 변경
+    @PatchMapping("/folders/{folderId}/rename")
+    public CommonDto<?> renameTeamFolder(
+            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+            @PathVariable Long folderId,
+            @RequestBody RenameFolderRequest request) {
+        
+        DriveItemDto renamedFolder = teamDriveService.renameTeamFolder(userId, folderId, request);
+        return CommonDto.ok(renamedFolder, HttpStatus.OK);
+    }
+
     // 팀 드라이브 아이템 삭제
     @DeleteMapping("/{itemType}/{itemId}")
     public CommonDto<?> deleteTeamItem(

@@ -83,6 +83,15 @@ public class PersonalDriveController {
         return personalDriveService.downloadPersonalFile(userId, documentSeq);
     }
 
+    // 폴더 이름 변경
+    @PatchMapping("/folders/{folderId}/rename")
+    public CommonDto<?> renamePersonalFolder(
+            @PathVariable Long folderId,
+            @RequestBody RenameFolderRequest request) {
+        DriveItemDto renamedFolder = personalDriveService.renamePersonalFolder(folderId, request);
+        return CommonDto.ok(renamedFolder, HttpStatus.OK);
+    }
+
     // 개인 드라이브 아이템 삭제
     @DeleteMapping("/{itemType}/{itemId}")
     public CommonDto<?> deletePersonalItem(
