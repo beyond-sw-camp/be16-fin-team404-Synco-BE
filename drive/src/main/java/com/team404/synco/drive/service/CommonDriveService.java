@@ -1,7 +1,6 @@
 package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.DocumentType;
-import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
@@ -19,11 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,12 +39,6 @@ public class CommonDriveService {
         return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
-    // 개인 드라이브 채널 조회
-    public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
-        return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("개인 드라이브를 찾을 수 없습니다."));
-    }
-
-
     // 드라이브 아이템 목록 조회 (공통)
     public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq) {
         List<DriveItemDto> items = new ArrayList<>();
@@ -57,14 +47,14 @@ public class CommonDriveService {
             List<Folder> rootFolders = folderRepository.findByDriveChannelDriveChannelSeqAndParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
             List<Document> rootDocuments = documentRepository.findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
             
-            items.addAll(convertFoldersToDto(rootFolders, driveChannel.getWorkspaceType()));
-            items.addAll(convertDocumentsToDto(rootDocuments, driveChannel.getWorkspaceType()));
+            items.addAll(convertFoldersToDto(rootFolders));
+            items.addAll(convertDocumentsToDto(rootDocuments));
         } else {
             List<Folder> folders = folderRepository.findByParentFolderSeq(parentFolderSeq);
             List<Document> documents = documentRepository.findByFolderFolderSeq(parentFolderSeq);
             
-            items.addAll(convertFoldersToDto(folders, driveChannel.getWorkspaceType()));
-            items.addAll(convertDocumentsToDto(documents, driveChannel.getWorkspaceType()));
+            items.addAll(convertFoldersToDto(folders));
+            items.addAll(convertDocumentsToDto(documents));
         }
         
         return items;
@@ -73,20 +63,25 @@ public class CommonDriveService {
 
     // 폴더 생성 (공통)
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
+        long parentFolderSeq = parentFolderId != null ? parentFolderId : 0L;
+        
+        Long maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(
+            parentFolderSeq, driveChannel.getDriveChannelSeq()).orElse(0L);
+        
         Folder folder = Folder.builder()
             .folderName(folderName)
-            .parentFolderSeq(parentFolderId != null ? parentFolderId : 0L)
-            .orders(1L)
+            .parentFolderSeq(parentFolderSeq)
+            .orders(maxOrder + 1L)
             .driveChannel(driveChannel)
             .build();
         
         Folder savedFolder = folderRepository.save(folder);
-        return convertFolderToDto(savedFolder, driveChannel.getWorkspaceType());
+        return convertFolderToDto(savedFolder);
     }
 
 
     // 공유문서 생성 (공통)
-    public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, 
+    public DriveItemDto createSharedDoc(Long userId, String documentName,
                                        Long parentFolderId, Boolean isLocked) {
         // 폴더 조회
         Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
@@ -101,7 +96,7 @@ public class CommonDriveService {
             .build();
         
         Document savedDocument = documentRepository.save(document);
-        return convertDocumentToDto(savedDocument, driveChannel.getWorkspaceType());
+        return convertDocumentToDto(savedDocument);
     }
 
 
@@ -129,7 +124,7 @@ public class CommonDriveService {
                     .build();
                 
                 Document savedDocument = documentRepository.save(document);
-                uploadedFiles.add(convertDocumentToDto(savedDocument, driveChannel.getWorkspaceType()));
+                uploadedFiles.add(convertDocumentToDto(savedDocument));
                 
             } catch (Exception e) {
                 log.error("파일 업로드 실패: {}", file.getOriginalFilename(), e);
@@ -145,21 +140,34 @@ public class CommonDriveService {
     public void moveItem(String itemType, Long itemId, Long newParentId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
-
-            List<Document> documents = documentRepository.findByFolderFolderSeq(folder.getFolderSeq());
-            for (Document doc : documents) {
-                doc.updateFolder(newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null);
-                documentRepository.save(doc);
-            }
+            
             folder.updateParentFolderSeq(newParentId);
-            folderRepository.save(folder);
+
+            log.info("폴더 이동 완료: folderId={}, folderName={}, newParentId={}", 
+                itemId, folder.getFolderName(), newParentId);
             
         } else if (DriveItemType.DOCUMENT.equals(itemType)) {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
             Folder newFolder = newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null;
             document.updateFolder(newFolder);
-            documentRepository.save(document);
+
+            log.info("문서 이동 완료: documentId={}, documentName={}, newParentId={}", 
+                itemId, document.getDocumentName(), newParentId);
+        }
+    }
+
+    // 아이템 순서 변경 (공통)
+    public void reorderItem(String itemType, Long itemId, Long newOrder) {
+        if (DriveItemType.FOLDER.equals(itemType)) {
+            Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+            folder.updateOrder(newOrder);
+
+            log.info("폴더 순서 변경 완료: folderId={}, folderName={}, newOrder={}", 
+                itemId, folder.getFolderName(), newOrder);
+            
+        } else if (DriveItemType.DOCUMENT.equals(itemType)) {
+            throw new UnsupportedOperationException("문서의 순서 변경은 현재 지원하지 않습니다.");
         }
     }
 
@@ -167,35 +175,79 @@ public class CommonDriveService {
     // 아이템 삭제 (공통)
     public void deleteItem(String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
-            Folder folder = folderRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
-            
-            folderRepository.delete(folder);
+            deleteFolderRecursively(itemId);
             
         } else if (DriveItemType.DOCUMENT.equals(itemType)) {
-            Document document = documentRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-            
+            Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            if (document.getDocumentType() == DocumentType.LOCAL) {
+                s3Uploader.delete(document.getDocumentUrl());
+            }
             documentRepository.delete(document);
         }
     }
 
+    private void deleteFolderRecursively(Long folderId) {
+        folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        
+        // 1. 모든 하위 폴더 ID 수집
+        List<Long> allFolderIds = new ArrayList<>();
+        collectAllSubFolderIds(folderId, allFolderIds);
+        allFolderIds.add(folderId); // 현재 폴더도 포함
+        
+        // 2. S3 파일들 수집 및 삭제
+        List<String> s3UrlsToDelete = new ArrayList<>();
+        for (Long folderIdToDelete : allFolderIds) {
+            List<Document> documents = documentRepository.findByFolderFolderSeq(folderIdToDelete);
+            for (Document doc : documents) {
+                if (doc.getDocumentType() == DocumentType.LOCAL) {
+                    s3UrlsToDelete.add(doc.getDocumentUrl());
+                }
+            }
+        }
+        
+        if (!s3UrlsToDelete.isEmpty()) {
+            try {
+                for (String s3Url : s3UrlsToDelete) {
+                    s3Uploader.delete(s3Url);
+                }
+                log.info("S3 파일 삭제 완료: {} 개 파일", s3UrlsToDelete.size());
+            } catch (Exception e) {
+                log.error("S3 파일 삭제 실패", e);
+            }
+        }
+        
+        // 4. 폴더 삭제 (CASCADE로 해당 폴더의 문서들과 DocumentLine들 자동 삭제)
+        Collections.reverse(allFolderIds); // 하위 폴더부터 삭제
+        for (Long folderIdToDelete : allFolderIds) {
+            folderRepository.deleteById(folderIdToDelete); // CASCADE 적용
+        }
+        
+        log.info("폴더 CASCADE 삭제 완료: {} 개 폴더", allFolderIds.size());
+    }
+
+    private void collectAllSubFolderIds(Long parentFolderId, List<Long> allFolderIds) {
+        List<Folder> subFolders = folderRepository.findByParentFolderSeq(parentFolderId);
+        for (Folder subFolder : subFolders) {
+            allFolderIds.add(subFolder.getFolderSeq());
+            collectAllSubFolderIds(subFolder.getFolderSeq(), allFolderIds);
+        }
+    }
+
     // Helper Methods
-    public List<DriveItemDto> convertFoldersToDto(List<Folder> folders, WorkSpaceType workspaceType) {
+    public List<DriveItemDto> convertFoldersToDto(List<Folder> folders) {
         return folders.stream()
-            .map(folder -> convertFolderToDto(folder, workspaceType))
+            .map(this::convertFolderToDto)
             .collect(Collectors.toList());
     }
 
-    public List<DriveItemDto> convertDocumentsToDto(List<Document> documents, WorkSpaceType workspaceType) {
+    public List<DriveItemDto> convertDocumentsToDto(List<Document> documents) {
         return documents.stream()
-            .map(document -> convertDocumentToDto(document, workspaceType))
+            .map(this::convertDocumentToDto)
             .collect(Collectors.toList());
     }
 
-    public DriveItemDto convertFolderToDto(Folder folder, WorkSpaceType workspaceType) {
+    public DriveItemDto convertFolderToDto(Folder folder) {
         FileTypeClassifier.FolderTypeInfo typeInfo = FileTypeClassifier.FolderTypeInfo.of(folder);
-        String icon = workspaceType == WorkSpaceType.INDIVIDUAL ? "mdi-folder-account" : typeInfo.icon;
 
         return DriveItemDto.builder()
             .id(folder.getFolderSeq())
@@ -204,13 +256,13 @@ public class CommonDriveService {
             .size(typeInfo.size)
             .uploadDate(folder.getCreatedAt())
             .modifiedDate(folder.getUpdatedAt())
-            .icon(icon)
+            .icon(typeInfo.icon)
             .parentFolderSeq(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
             .children(new ArrayList<>())
             .build();
     }
 
-    public DriveItemDto convertDocumentToDto(Document document, WorkSpaceType workspaceType) {
+    public DriveItemDto convertDocumentToDto(Document document) {
         FileTypeClassifier.DocumentTypeInfo typeInfo = FileTypeClassifier.DocumentTypeInfo.of(document);
 
         return DriveItemDto.builder()
@@ -230,23 +282,4 @@ public class CommonDriveService {
             .memberSeq(document.getMemberSeq())
             .build();
     }
-
-    public DriveItemDto convertDriveChannelToDto(DriveChannel channel) {
-        FileTypeClassifier.ChannelTypeInfo typeInfo = FileTypeClassifier.ChannelTypeInfo.of();
-        
-        return DriveItemDto.builder()
-            .id(channel.getDriveChannelSeq())
-            .name(channel.getDriveChannelName())
-            .type(typeInfo.type)
-            .size(typeInfo.size)
-            .uploadDate(channel.getCreatedAt())
-            .modifiedDate(channel.getUpdatedAt())
-            .icon(typeInfo.icon)
-            .parentFolderSeq(null)
-            .children(new ArrayList<>())
-            .build();
-    }
-
-
-
 }

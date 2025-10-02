@@ -1,6 +1,5 @@
 package com.team404.synco.drive.service;
 
-import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.drive.dto.DriveItemDto;
 import com.team404.synco.drive.dto.UpdateDocumentRequest;
@@ -37,9 +36,7 @@ public class DocumentService {
         Document document = documentRepository.findById(documentSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        // 드라이브 타입에 따라 적절한 변환 메서드 사용
-        WorkSpaceType workspaceType = document.getFolder().getDriveChannel().getWorkspaceType();
-        return commonDriveService.convertDocumentToDto(document, workspaceType);
+        return commonDriveService.convertDocumentToDto(document);
     }
 
     // 문서 내용 업데이트
@@ -54,28 +51,19 @@ public class DocumentService {
         }
         
         Document savedDocument = documentRepository.save(document);
-        WorkSpaceType workspaceType = savedDocument.getFolder().getDriveChannel().getWorkspaceType();
-        return commonDriveService.convertDocumentToDto(savedDocument, workspaceType);
+        return commonDriveService.convertDocumentToDto(savedDocument);
     }
 
     // 문서 잠금/해제 토글
     public DriveItemDto toggleDocumentLock(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
-        // 개인 드라이브에서는 잠금 기능 불필요
-        WorkSpaceType workspaceType = document.getFolder().getDriveChannel().getWorkspaceType();
-        if (workspaceType == WorkSpaceType.INDIVIDUAL) {
-            log.warn("개인 드라이브 문서는 잠금 기능을 사용할 수 없습니다: documentSeq={}", documentSeq);
-            // 개인 드라이브에서는 잠금 상태를 변경하지 않고 그대로 반환
-        } else {
-            // 팀 드라이브에서만 잠금 토글
-            String currentLockStatus = document.getYnLock();
-            String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
-            document.updateLockStatus(newLockStatus);
-        }
+        // 잠금 토글
+        String currentLockStatus = document.getYnLock();
+        String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
+        document.updateLockStatus(newLockStatus);
         
-        Document savedDocument = documentRepository.save(document);
-        return commonDriveService.convertDocumentToDto(savedDocument, workspaceType);
+        return commonDriveService.convertDocumentToDto(document);
     }
 
     // 문서 다운로드

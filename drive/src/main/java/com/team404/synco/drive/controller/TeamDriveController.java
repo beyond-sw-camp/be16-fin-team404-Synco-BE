@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -63,20 +62,27 @@ public class TeamDriveController {
     // 팀 드라이브 아이템 이동
     @PutMapping("/move")
     public CommonDto<?> moveTeamItem(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @RequestBody MoveItemRequest request) {
         
-        teamDriveService.moveTeamItem(userId, request);
+        teamDriveService.moveTeamItem(request);
+        return CommonDto.ok(null, HttpStatus.NO_CONTENT);
+    }
+
+    // 팀 드라이브 아이템 순서 변경
+    @PutMapping("/reorder")
+    public CommonDto<?> reorderTeamItem(
+            @RequestBody ReorderItemRequest request) {
+        
+        teamDriveService.reorderTeamItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 
     // 팀 드라이브 파일 다운로드
     @GetMapping("/download/{documentSeq}")
     public ResponseEntity<byte[]> downloadTeamFile(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @PathVariable Long documentSeq) {
         
-        return teamDriveService.downloadTeamFile(userId, documentSeq);
+        return teamDriveService.downloadTeamFile(documentSeq);
     }
 
     // 팀 드라이브 아이템 삭제
@@ -90,13 +96,14 @@ public class TeamDriveController {
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 
+    // TODO: 팀 스페이스 생성자가 진행할 예정.
     // 팀 드라이브 채널 생성
-    @PostMapping("/channels")
-    public CommonDto<?> createTeamDriveChannel(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestBody CreateDriveChannelRequest request) {
-        
-        DriveItemDto channel = teamDriveService.createTeamDriveChannel(userId, request);
-        return CommonDto.ok(channel, HttpStatus.CREATED);
-    }
+//    @PostMapping("/channels")
+//    public CommonDto<?> createTeamDriveChannel(
+//            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+//            @RequestBody CreateDriveChannelRequest request) {
+//        
+//        DriveItemDto channel = teamDriveService.createTeamDriveChannel(userId, request);
+//        return CommonDto.ok(channel, HttpStatus.CREATED);
+//    }
 }

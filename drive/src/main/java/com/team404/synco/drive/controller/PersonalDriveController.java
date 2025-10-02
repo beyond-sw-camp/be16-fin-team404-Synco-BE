@@ -52,7 +52,7 @@ public class PersonalDriveController {
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @ModelAttribute FileUploadRequest request) {
 
-        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request.getFiles(), request.getParentFolderSeq());
+        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request);
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
     }
 
@@ -62,6 +62,15 @@ public class PersonalDriveController {
             @RequestBody MoveItemRequest request) {
         
         personalDriveService.movePersonalItem(request);
+        return CommonDto.ok(null, HttpStatus.NO_CONTENT);
+    }
+
+    // 개인 드라이브 아이템 순서 변경
+    @PutMapping("/reorder")
+    public CommonDto<?> reorderPersonalItem(
+            @RequestBody ReorderItemRequest request) {
+        
+        personalDriveService.reorderPersonalItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 
@@ -77,11 +86,10 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 삭제
     @DeleteMapping("/{itemType}/{itemId}")
     public CommonDto<?> deletePersonalItem(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @PathVariable String itemType,
             @PathVariable Long itemId) {
         
-        personalDriveService.deletePersonalItem(userId, itemType, itemId);
-        return CommonDto.ok(null, HttpStatus.NO_CONTENT);
+        personalDriveService.deletePersonalItem(itemType, itemId);
+        return CommonDto.ok("성공적으로 삭제하였습니다.", HttpStatus.NO_CONTENT);
     }
 }

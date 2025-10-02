@@ -11,7 +11,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,35 +29,37 @@ public class PersonalDriveService {
 
     // 개인 드라이브 아이템 목록 조회
     public List<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(driveChannelSeq);
+        DriveChannel personalDrive = commonDriveService.getDriveChannel(driveChannelSeq);
         return commonDriveService.getDriveItems(personalDrive, parentFolderId);
     }
 
     // 개인 드라이브 폴더 생성
     public DriveItemDto createPersonalFolder(CreateFolderRequest request) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        DriveChannel personalDrive = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 공유문서 생성
     public DriveItemDto createPersonalSharedDoc(Long userId,CreateSharedDocRequest request) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createSharedDoc(personalDrive, userId, request.getDocumentName(),
+        commonDriveService.getDriveChannel(request.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(userId, request.getDocumentName(),
                 request.getParentFolderSeq(), true);
     }
 
     // 개인 드라이브 파일 업로드
-    public List<DriveItemDto> uploadPersonalFiles(Long userId, List<MultipartFile> files, Long parentFolderId) {
-        // 사용자의 개인 드라이브 채널 조회
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(userId);
-        
-        // 공통 서비스 사용
-        return commonDriveService.uploadFiles(personalDrive, userId, files, parentFolderId);
+    public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadRequest request) {
+        DriveChannel personalDrive = commonDriveService.getDriveChannel(userId);
+        return commonDriveService.uploadFiles(personalDrive, userId, request.getFiles(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 아이템 이동
     public void movePersonalItem(MoveItemRequest request) {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
+    }
+
+    // 개인 드라이브 아이템 순서 변경
+    public void reorderPersonalItem(ReorderItemRequest request) {
+        commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
     }
 
     // 개인 드라이브 파일 다운로드
@@ -86,9 +87,7 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 아이템 삭제
-    public void deletePersonalItem(Long userId, String itemType, Long itemId) {
-
-        // 공통 서비스 사용
+    public void deletePersonalItem(String itemType, Long itemId) {
         commonDriveService.deleteItem(itemType, itemId);
     }
 }

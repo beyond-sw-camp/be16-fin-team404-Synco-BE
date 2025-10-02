@@ -34,8 +34,8 @@ public class Document extends BaseEntity {
     @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Folder folder;
     @Builder.Default
-    @OneToMany(mappedBy = "document")
-    private List<DocumentLine> DocumentLineList = new ArrayList<>();
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DocumentLine> documentLineList = new ArrayList<>();
 
     public void updateFolder(Folder folder) {
         this.folder = folder;

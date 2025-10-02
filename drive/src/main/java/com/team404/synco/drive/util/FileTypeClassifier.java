@@ -73,19 +73,4 @@ public class FileTypeClassifier {
             return lastDotIndex == -1 ? "" : fileName.substring(lastDotIndex + 1);
         }
     }
-
-    /**
-     * 드라이브 채널 타입 정보
-     */
-    public static class ChannelTypeInfo {
-        public final String type = "channel";
-        public final String size = "-";
-        public final String icon = "mdi-folder-multiple";
-        public final boolean isShared = false;
-        public final boolean isLocked = false;
-
-        public static ChannelTypeInfo of() {
-            return new ChannelTypeInfo();
-        }
-    }
 }
