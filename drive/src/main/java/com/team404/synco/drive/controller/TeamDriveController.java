@@ -60,7 +60,7 @@ public class TeamDriveController {
     }
 
     // 팀 드라이브 아이템 이동
-    @PutMapping("/move")
+    @PatchMapping("/move")
     public CommonDto<?> moveTeamItem(
             @RequestBody MoveItemRequest request) {
         
@@ -69,7 +69,7 @@ public class TeamDriveController {
     }
 
     // 팀 드라이브 아이템 순서 변경
-    @PutMapping("/reorder")
+    @PatchMapping("/reorder")
     public CommonDto<?> reorderTeamItem(
             @RequestBody ReorderItemRequest request) {
         

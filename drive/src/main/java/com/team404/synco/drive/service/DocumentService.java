@@ -50,8 +50,7 @@ public class DocumentService {
             updateDocumentContent(document, request.getContent());
         }
         
-        Document savedDocument = documentRepository.save(document);
-        return commonDriveService.convertDocumentToDto(savedDocument);
+        return commonDriveService.convertDocumentToDto(document);
     }
 
     // 문서 잠금/해제 토글

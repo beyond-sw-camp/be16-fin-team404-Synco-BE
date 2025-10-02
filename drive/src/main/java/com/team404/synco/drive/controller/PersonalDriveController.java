@@ -57,7 +57,7 @@ public class PersonalDriveController {
     }
 
     // 개인 드라이브 아이템 이동
-    @PutMapping("/move")
+    @PatchMapping("/move")
     public CommonDto<?> movePersonalItem(
             @RequestBody MoveItemRequest request) {
         
@@ -66,7 +66,7 @@ public class PersonalDriveController {
     }
 
     // 개인 드라이브 아이템 순서 변경
-    @PutMapping("/reorder")
+    @PatchMapping("/reorder")
     public CommonDto<?> reorderPersonalItem(
             @RequestBody ReorderItemRequest request) {
         
