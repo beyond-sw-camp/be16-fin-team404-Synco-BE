@@ -41,8 +41,7 @@ public class DocumentService {
     // TODO: 실시간 문서편집 기능 추가시 수정 필요. 현재는 기존 라인 전체 삭제 후 새로 저장.
     public DriveItemDto updateDocumentContent(Long documentSeq, UpdateDocumentRequest request) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-        
-        // 내용 업데이트
+
         if (request.getContent() != null) {
             updateDocumentContent(document, request.getContent());
         }
