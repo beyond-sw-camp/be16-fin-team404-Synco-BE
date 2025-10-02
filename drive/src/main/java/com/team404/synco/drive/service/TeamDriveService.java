@@ -1,10 +1,12 @@
 package com.team404.synco.drive.service;
 
+import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.repository.DocumentRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,45 +33,19 @@ public class TeamDriveService {
 
     // 팀 드라이브 아이템 목록 조회
     public List<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId) {
-        // 드라이브 채널 조회
         DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
-
-        // 팀 드라이브인지 확인
-        if (!driveChannel.getWorkspaceType().equals(WorkSpaceType.TEAM)) {
-            throw new RuntimeException("팀 드라이브가 아닙니다.");
-        }
-
-        // TODO: 팀 멤버 권한 확인 로직 추가
-
-        // 공통 서비스 사용
         return commonDriveService.getDriveItems(driveChannel, parentFolderId);
     }
 
     // 팀 드라이브 폴더 생성
     public DriveItemDto createTeamFolder(Long userId, CreateFolderRequest request) {
-        // 드라이브 채널 조회
         DriveChannel driveChannel = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
-
-        // 팀 드라이브인지 확인
-        if (!driveChannel.getWorkspaceType().equals(WorkSpaceType.TEAM)) {
-            throw new RuntimeException("팀 드라이브가 아닙니다.");
-        }
-
-        // TODO: 팀 멤버 권한 확인 로직 추가
-
-        // 공통 서비스 사용
         return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 팀 드라이브 공유문서 생성
     public DriveItemDto createTeamSharedDoc(Long userId, CreateSharedDocRequest request) {
-        DriveChannel driveChannel = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
-
-        // 팀 드라이브인지 확인
-        if (!driveChannel.getWorkspaceType().equals(WorkSpaceType.TEAM)) {
-            throw new IllegalArgumentException("팀 드라이브가 아닙니다.");
-        }
-
+        commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createSharedDoc(userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
     }
 
@@ -91,7 +67,7 @@ public class TeamDriveService {
 
     // 팀 드라이브 파일 다운로드
     public ResponseEntity<byte[]> downloadTeamFile(Long documentSeq) {
-        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
 
         try {
             Path filePath = Paths.get(document.getDocumentUrl());
@@ -113,7 +89,7 @@ public class TeamDriveService {
 
     // 팀 드라이브 아이템 삭제
     public void deleteTeamItem(Long userId, String itemType, Long itemId) {
-        // TODO: 팀 멤버 권한 확인 로직 추가
+        // TODO: 팀 멤버 권한 확인 로직 추가 필요
 
         commonDriveService.deleteItem(itemType, itemId);
     }

@@ -176,7 +176,7 @@ public class CommonDriveService {
     public void deleteItem(String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             deleteFolderRecursively(itemId);
-            
+
         } else if (DriveItemType.DOCUMENT.equals(itemType)) {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             if (document.getDocumentType() == DocumentType.LOCAL) {
