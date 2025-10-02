@@ -59,10 +59,9 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 이동
     @PutMapping("/move")
     public CommonDto<?> movePersonalItem(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @RequestBody MoveItemRequest request) {
         
-        personalDriveService.movePersonalItem(userId, request);
+        personalDriveService.movePersonalItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 

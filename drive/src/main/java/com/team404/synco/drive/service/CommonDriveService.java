@@ -12,6 +12,7 @@ import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
 import com.team404.synco.drive.util.FileTypeClassifier;
+import com.team404.synco.common.constant.DriveItemType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,15 +87,14 @@ public class CommonDriveService {
 
     // 공유문서 생성 (공통)
     public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, 
-                                       Long parentFolderId, Boolean isLocked, String content) {
+                                       Long parentFolderId, Boolean isLocked) {
         // 폴더 조회
-        Folder folder = folderRepository.findById(parentFolderId)
-            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         
         Document document = Document.builder()
             .documentType(DocumentType.CUSTOM)
             .documentName(documentName)
-            .documentUrl("/documents/" + UUID.randomUUID() + ".docx")
+            .documentUrl("/documents/" + UUID.randomUUID() + ".txt")
             .memberSeq(userId)
             .ynLock(isLocked != null && isLocked ? YnColumn.IS_TRUE : YnColumn.IS_FALSE)
             .folder(folder)
@@ -143,19 +143,21 @@ public class CommonDriveService {
 
     // 아이템 이동 (공통)
     public void moveItem(String itemType, Long itemId, Long newParentId) {
-        if ("folder".equals(itemType)) {
-            Folder folder = folderRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
-            
+        if (DriveItemType.FOLDER.equals(itemType)) {
+            Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+            List<Document> documents = documentRepository.findByFolderFolderSeq(folder.getFolderSeq());
+            for (Document doc : documents) {
+                doc.updateFolder(newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null);
+                documentRepository.save(doc);
+            }
             folder.updateParentFolderSeq(newParentId);
             folderRepository.save(folder);
             
-        } else if ("document".equals(itemType)) {
-            Document document = documentRepository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        } else if (DriveItemType.DOCUMENT.equals(itemType)) {
+            Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
-            Folder newFolder = newParentId != null ? 
-                folderRepository.findById(newParentId).orElse(null) : null;
+            Folder newFolder = newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null;
             document.updateFolder(newFolder);
             documentRepository.save(document);
         }
@@ -164,13 +166,13 @@ public class CommonDriveService {
 
     // 아이템 삭제 (공통)
     public void deleteItem(String itemType, Long itemId) {
-        if ("folder".equals(itemType)) {
+        if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
             
             folderRepository.delete(folder);
             
-        } else if ("document".equals(itemType)) {
+        } else if (DriveItemType.DOCUMENT.equals(itemType)) {
             Document document = documentRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             

@@ -41,12 +41,10 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 공유문서 생성
-    public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocRequest request) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(userId);
-        
-        // 개인 드라이브에서는 잠금 기능 불필요 (본인만 접근)
-        return commonDriveService.createSharedDoc(personalDrive, userId, request.getDocumentName(), 
-            request.getParentFolderSeq(), false, request.getContent());
+    public DriveItemDto createPersonalSharedDoc(Long userId,CreateSharedDocRequest request) {
+        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(personalDrive, userId, request.getDocumentName(),
+                request.getParentFolderSeq(), true);
     }
 
     // 개인 드라이브 파일 업로드
@@ -59,9 +57,7 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 아이템 이동
-    public void movePersonalItem(Long userId, MoveItemRequest request) {
-        
-        // 공통 서비스 사용
+    public void movePersonalItem(MoveItemRequest request) {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 

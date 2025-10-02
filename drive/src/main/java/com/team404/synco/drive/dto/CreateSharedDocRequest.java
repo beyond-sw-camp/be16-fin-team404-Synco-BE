@@ -11,5 +11,4 @@ public class CreateSharedDocRequest {
     private Long parentFolderSeq;
     private Long driveChannelSeq;
     private Boolean isLocked;
-    private String content;
 }
