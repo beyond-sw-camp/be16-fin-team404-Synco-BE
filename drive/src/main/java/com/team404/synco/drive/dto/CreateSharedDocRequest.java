@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 public class CreateSharedDocRequest {
     private String documentName;
-    private Long parentFolderId;
+    private Long parentFolderSeq;
     private Long driveChannelSeq;
     private Boolean isLocked;
     private String content;

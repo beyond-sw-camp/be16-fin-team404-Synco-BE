@@ -8,6 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 public class CreateFolderRequest {
     private String folderName;
-    private Long parentFolderId;
+    private Long parentFolderSeq;
     private Long driveChannelSeq;
 }

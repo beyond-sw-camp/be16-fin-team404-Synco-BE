@@ -9,5 +9,5 @@ import lombok.*;
 public class MoveItemRequest {
     private Long itemId;
     private String itemType; // 'folder' or 'document'
-    private Long newParentId;
+    private Long newParentSeq;
 }

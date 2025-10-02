@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DriveItemDto {
     private Long id; // folderId, fileId, sharedDocId
-    private Long parentId; // parentFolderId
+    private Long parentFolderSeq; // parentFolderId
     private String name; // folderName, fileName, documentName
     private String type; // 'folder', 'file', 'shared-doc'
     private String size; // 파일 크기 (폴더인 경우 null)

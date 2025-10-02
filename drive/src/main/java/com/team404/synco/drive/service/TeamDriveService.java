@@ -58,7 +58,7 @@ public class TeamDriveService {
         // TODO: 팀 멤버 권한 확인 로직 추가
         
         // 공통 서비스 사용
-        return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderId());
+        return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 팀 드라이브 공유문서 생성
@@ -75,7 +75,7 @@ public class TeamDriveService {
         
         // 팀 드라이브에서는 잠금 기능 사용 가능
         return commonDriveService.createSharedDoc(driveChannel, userId, request.getDocumentName(), 
-            request.getParentFolderId(), request.getIsLocked(), request.getContent());
+            request.getParentFolderSeq(), request.getIsLocked(), request.getContent());
     }
 
     // 팀 드라이브 파일 업로드
@@ -99,7 +99,7 @@ public class TeamDriveService {
         // TODO: 팀 멤버 권한 확인 로직 추가
         
         // 공통 서비스 사용
-        commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentId());
+        commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
     // 팀 드라이브 파일 다운로드

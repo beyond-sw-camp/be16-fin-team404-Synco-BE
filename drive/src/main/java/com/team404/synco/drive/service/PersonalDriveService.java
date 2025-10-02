@@ -30,30 +30,23 @@ public class PersonalDriveService {
 
     // 개인 드라이브 아이템 목록 조회
     public List<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId) {
-        // 사용자의 개인 드라이브 채널 조회
         DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(driveChannelSeq);
-        
-        // 공통 서비스 사용
         return commonDriveService.getDriveItems(personalDrive, parentFolderId);
     }
 
     // 개인 드라이브 폴더 생성
     public DriveItemDto createPersonalFolder(CreateFolderRequest request) {
-        // 사용자의 개인 드라이브 채널 조회
         DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
-        
-        // 공통 서비스 사용
-        return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderId());
+        return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 공유문서 생성
     public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocRequest request) {
-        // 사용자의 개인 드라이브 채널 조회
         DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(userId);
         
         // 개인 드라이브에서는 잠금 기능 불필요 (본인만 접근)
         return commonDriveService.createSharedDoc(personalDrive, userId, request.getDocumentName(), 
-            request.getParentFolderId(), false, request.getContent());
+            request.getParentFolderSeq(), false, request.getContent());
     }
 
     // 개인 드라이브 파일 업로드
@@ -69,7 +62,7 @@ public class PersonalDriveService {
     public void movePersonalItem(Long userId, MoveItemRequest request) {
         
         // 공통 서비스 사용
-        commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentId());
+        commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
     // 개인 드라이브 파일 다운로드

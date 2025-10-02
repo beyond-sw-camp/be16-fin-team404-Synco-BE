@@ -39,32 +39,28 @@ public class CommonDriveService {
 
     // 드라이브 채널 조회
     public DriveChannel getDriveChannel(Long driveChannelSeq) {
-        return driveChannelRepository.findById(driveChannelSeq)
-            .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
     // 개인 드라이브 채널 조회
     public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
-        return driveChannelRepository.findById(driveChannelSeq)
-            .orElseThrow(() -> new EntityNotFoundException("개인 드라이브를 찾을 수 없습니다."));
+        return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("개인 드라이브를 찾을 수 없습니다."));
     }
 
 
     // 드라이브 아이템 목록 조회 (공통)
-    public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderId) {
+    public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq) {
         List<DriveItemDto> items = new ArrayList<>();
         
-        if (parentFolderId == null) {
-            // 루트 폴더의 아이템들 조회
+        if (parentFolderSeq == null) {
             List<Folder> rootFolders = folderRepository.findByDriveChannelDriveChannelSeqAndParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
             List<Document> rootDocuments = documentRepository.findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
             
             items.addAll(convertFoldersToDto(rootFolders, driveChannel.getWorkspaceType()));
             items.addAll(convertDocumentsToDto(rootDocuments, driveChannel.getWorkspaceType()));
         } else {
-            // 특정 폴더의 아이템들 조회
-            List<Folder> folders = folderRepository.findByParentFolderSeq(parentFolderId);
-            List<Document> documents = documentRepository.findByFolderFolderSeq(parentFolderId);
+            List<Folder> folders = folderRepository.findByParentFolderSeq(parentFolderSeq);
+            List<Document> documents = documentRepository.findByFolderFolderSeq(parentFolderSeq);
             
             items.addAll(convertFoldersToDto(folders, driveChannel.getWorkspaceType()));
             items.addAll(convertDocumentsToDto(documents, driveChannel.getWorkspaceType()));
@@ -207,7 +203,7 @@ public class CommonDriveService {
             .uploadDate(folder.getCreatedAt())
             .modifiedDate(folder.getUpdatedAt())
             .icon(icon)
-            .parentId(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
+            .parentFolderSeq(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
             .children(new ArrayList<>())
             .build();
     }
@@ -223,7 +219,7 @@ public class CommonDriveService {
             .uploadDate(document.getCreatedAt())
             .modifiedDate(document.getUpdatedAt())
             .icon(typeInfo.icon)
-            .parentId(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
+            .parentFolderSeq(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
             .isShared(typeInfo.isShared)
             .isLocked(typeInfo.isLocked)
             .content("")
@@ -244,7 +240,7 @@ public class CommonDriveService {
             .uploadDate(channel.getCreatedAt())
             .modifiedDate(channel.getUpdatedAt())
             .icon(typeInfo.icon)
-            .parentId(null)
+            .parentFolderSeq(null)
             .children(new ArrayList<>())
             .build();
     }

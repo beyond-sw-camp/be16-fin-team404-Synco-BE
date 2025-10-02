@@ -11,6 +11,6 @@ import java.util.List;
 @Builder
 public class FileUploadRequest {
     private List<MultipartFile> files;
-    private Long parentFolderId;
+    private Long parentFolderSeq;
     private Long driveChannelSeq; // 팀 드라이브용
 }

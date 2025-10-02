@@ -24,15 +24,14 @@ public class PersonalDriveController {
     public CommonDto<?> getPersonalDriveItems(
             @PathVariable Long driveChannelSeq,
             @RequestParam(required = false) Long parentFolderId) {
-
         List<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 
     // 개인 드라이브 폴더 생성
     @PostMapping("/folders")
-    public CommonDto<?> createPersonalFolder(@RequestBody CreateFolderRequest request) {
-        
+    public CommonDto<?> createPersonalFolder(
+            @RequestBody CreateFolderRequest request) {
         DriveItemDto folder = personalDriveService.createPersonalFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
@@ -53,7 +52,7 @@ public class PersonalDriveController {
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @ModelAttribute FileUploadRequest request) {
 
-        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request.getFiles(), request.getParentFolderId());
+        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request.getFiles(), request.getParentFolderSeq());
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
     }
 

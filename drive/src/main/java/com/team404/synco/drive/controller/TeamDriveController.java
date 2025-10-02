@@ -56,7 +56,7 @@ public class TeamDriveController {
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @ModelAttribute FileUploadRequest request) {
 
-        List<DriveItemDto> uploadedFiles = teamDriveService.uploadTeamFiles(userId, request.getFiles(), request.getDriveChannelSeq(), request.getParentFolderId());
+        List<DriveItemDto> uploadedFiles = teamDriveService.uploadTeamFiles(userId, request.getFiles(), request.getDriveChannelSeq(), request.getParentFolderSeq());
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
     }
 
