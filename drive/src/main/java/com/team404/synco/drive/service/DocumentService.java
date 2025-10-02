@@ -1,6 +1,7 @@
 package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.WorkSpaceType;
+import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.drive.dto.DriveItemDto;
 import com.team404.synco.drive.dto.UpdateDocumentRequest;
 import com.team404.synco.drive.entity.Document;
@@ -42,6 +43,7 @@ public class DocumentService {
     }
 
     // 문서 내용 업데이트
+    // TODO: 실시간 문서편집 기능 추가시 수정 필요. 현재는 기존 라인 전체 삭제 후 새로 저장.
     public DriveItemDto updateDocumentContent(Long documentSeq, UpdateDocumentRequest request) {
         Document document = documentRepository.findById(documentSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
@@ -52,15 +54,13 @@ public class DocumentService {
         }
         
         Document savedDocument = documentRepository.save(document);
-        // 드라이브 타입에 따라 적절한 변환 메서드 사용
         WorkSpaceType workspaceType = savedDocument.getFolder().getDriveChannel().getWorkspaceType();
         return commonDriveService.convertDocumentToDto(savedDocument, workspaceType);
     }
 
     // 문서 잠금/해제 토글
     public DriveItemDto toggleDocumentLock(Long documentSeq) {
-        Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 개인 드라이브에서는 잠금 기능 불필요
         WorkSpaceType workspaceType = document.getFolder().getDriveChannel().getWorkspaceType();
@@ -70,7 +70,7 @@ public class DocumentService {
         } else {
             // 팀 드라이브에서만 잠금 토글
             String currentLockStatus = document.getYnLock();
-            String newLockStatus = "Y".equals(currentLockStatus) ? "N" : "Y";
+            String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
             document.updateLockStatus(newLockStatus);
         }
         
@@ -80,8 +80,7 @@ public class DocumentService {
 
     // 문서 다운로드
     public ResponseEntity<byte[]> downloadDocument(Long documentSeq) {
-        Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         try {
             // 문서 내용을 바이트 배열로 변환
@@ -102,12 +101,11 @@ public class DocumentService {
         }
     }
 
-    // Helper Methods
 
-    // 문서 내용 업데이트 (내부 메서드)
+    // 문서 내용 업데이트
+    // TODO: 실시간 문서편집 기능 추가시 수정 필요. 현재는 기존 라인 전체 삭제.
     private void updateDocumentContent(Document document, String content) {
         try {
-            // 기존 문서 라인 삭제
             List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
             documentLineRepository.deleteAll(existingLines);
             
@@ -136,11 +134,11 @@ public class DocumentService {
     private String getDocumentContent(Document document) {
         try {
             List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-            
+
             if (documentLines.isEmpty()) {
-                return "문서를 작성해보세요...";
+                return "문서 내용이 없습니다.";
             }
-            
+
             return documentLines.stream()
                 .map(DocumentLine::getDocumentContent)
                 .collect(Collectors.joining("\n"));

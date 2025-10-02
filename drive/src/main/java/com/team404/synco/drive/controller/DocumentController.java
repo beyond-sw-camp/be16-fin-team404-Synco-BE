@@ -34,7 +34,7 @@ public class DocumentController {
     }
 
     // 문서 잠금/잠금해제 토글
-    @PutMapping("/{documentSeq}/lock")
+    @PatchMapping("/{documentSeq}/lock")
     public CommonDto<?> toggleDocumentLock(@PathVariable Long documentSeq) {
         DriveItemDto document = documentService.toggleDocumentLock(documentSeq);
         return CommonDto.ok(document, HttpStatus.OK);

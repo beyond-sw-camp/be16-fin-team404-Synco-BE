@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,26 +20,20 @@ public class PersonalDriveController {
     private final PersonalDriveService personalDriveService;
 
     // 개인 드라이브 아이템 목록 조회
-    @GetMapping("/items")
+    @GetMapping("/{driveChannelSeq}/items")
     public CommonDto<?> getPersonalDriveItems(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestParam(required = false) Long parentFolderId,
-            @RequestParam(required = false) String searchQuery,
-            @RequestParam(required = false, defaultValue = "name") String sortBy,
-            @RequestParam(required = false, defaultValue = "asc") String sortOrder) {
+            @PathVariable Long driveChannelSeq,
+            @RequestParam(required = false) Long parentFolderId) {
 
-        List<DriveItemDto> items = personalDriveService.getPersonalDriveItems(
-            userId, parentFolderId, searchQuery, sortBy, sortOrder);
+        List<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 
     // 개인 드라이브 폴더 생성
     @PostMapping("/folders")
-    public CommonDto<?> createPersonalFolder(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestBody CreateFolderRequest request) {
+    public CommonDto<?> createPersonalFolder(@RequestBody CreateFolderRequest request) {
         
-        DriveItemDto folder = personalDriveService.createPersonalFolder(userId, request);
+        DriveItemDto folder = personalDriveService.createPersonalFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
 

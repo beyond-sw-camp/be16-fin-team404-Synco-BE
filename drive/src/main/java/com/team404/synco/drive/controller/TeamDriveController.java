@@ -24,13 +24,9 @@ public class TeamDriveController {
     @GetMapping("/{driveChannelSeq}/items")
     public CommonDto<?> getTeamDriveItems(
             @PathVariable Long driveChannelSeq,
-            @RequestParam(required = false) Long parentFolderId,
-            @RequestParam(required = false) String searchQuery,
-            @RequestParam(required = false, defaultValue = "name") String sortBy,
-            @RequestParam(required = false, defaultValue = "asc") String sortOrder) {
+            @RequestParam(required = false) Long parentFolderId) {
 
-        List<DriveItemDto> items = teamDriveService.getTeamDriveItems(
-            driveChannelSeq, parentFolderId, searchQuery, sortBy, sortOrder);
+        List<DriveItemDto> items = teamDriveService.getTeamDriveItems(driveChannelSeq, parentFolderId);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 

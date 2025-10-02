@@ -11,6 +11,8 @@ import com.team404.synco.drive.entity.Folder;
 import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
+import com.team404.synco.drive.util.FileTypeClassifier;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,19 +40,18 @@ public class CommonDriveService {
     // 드라이브 채널 조회
     public DriveChannel getDriveChannel(Long driveChannelSeq) {
         return driveChannelRepository.findById(driveChannelSeq)
-            .orElseThrow(() -> new RuntimeException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+            .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
     // 개인 드라이브 채널 조회
-    public DriveChannel getPersonalDriveChannel(Long userId) {
-        return driveChannelRepository.findByWorkspaceTypeAndWorkspaceSeq(WorkSpaceType.INDIVIDUAL, userId)
-            .orElseThrow(() -> new RuntimeException("개인 드라이브를 찾을 수 없습니다."));
+    public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
+        return driveChannelRepository.findById(driveChannelSeq)
+            .orElseThrow(() -> new EntityNotFoundException("개인 드라이브를 찾을 수 없습니다."));
     }
 
 
     // 드라이브 아이템 목록 조회 (공통)
-    public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderId, 
-                                          String searchQuery, String sortBy, String sortOrder) {
+    public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderId) {
         List<DriveItemDto> items = new ArrayList<>();
         
         if (parentFolderId == null) {
@@ -68,16 +69,6 @@ public class CommonDriveService {
             items.addAll(convertFoldersToDto(folders, driveChannel.getWorkspaceType()));
             items.addAll(convertDocumentsToDto(documents, driveChannel.getWorkspaceType()));
         }
-        
-        // 검색 필터링
-        if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-            items = items.stream()
-                .filter(item -> item.getName().toLowerCase().contains(searchQuery.toLowerCase()))
-                .collect(Collectors.toList());
-        }
-        
-        // 정렬
-        items = sortItems(items, sortBy, sortOrder);
         
         return items;
     }
@@ -102,7 +93,7 @@ public class CommonDriveService {
                                        Long parentFolderId, Boolean isLocked, String content) {
         // 폴더 조회
         Folder folder = folderRepository.findById(parentFolderId)
-            .orElseThrow(() -> new RuntimeException("폴더를 찾을 수 없습니다."));
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         
         Document document = Document.builder()
             .documentType(DocumentType.CUSTOM)
@@ -158,14 +149,14 @@ public class CommonDriveService {
     public void moveItem(String itemType, Long itemId, Long newParentId) {
         if ("folder".equals(itemType)) {
             Folder folder = folderRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
             
             folder.updateParentFolderSeq(newParentId);
             folderRepository.save(folder);
             
         } else if ("document".equals(itemType)) {
             Document document = documentRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("문서를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
             Folder newFolder = newParentId != null ? 
                 folderRepository.findById(newParentId).orElse(null) : null;
@@ -179,13 +170,13 @@ public class CommonDriveService {
     public void deleteItem(String itemType, Long itemId) {
         if ("folder".equals(itemType)) {
             Folder folder = folderRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
             
             folderRepository.delete(folder);
             
         } else if ("document".equals(itemType)) {
             Document document = documentRepository.findById(itemId)
-                .orElseThrow(() -> new RuntimeException("문서를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
             documentRepository.delete(document);
         }
@@ -205,14 +196,14 @@ public class CommonDriveService {
     }
 
     public DriveItemDto convertFolderToDto(Folder folder, WorkSpaceType workspaceType) {
-        // 개인 드라이브와 팀 드라이브에 따른 아이콘/색상 구분
-        String icon = workspaceType == WorkSpaceType.INDIVIDUAL ? "mdi-folder-account" : "mdi-folder";
+        FileTypeClassifier.FolderTypeInfo typeInfo = FileTypeClassifier.FolderTypeInfo.of(folder);
+        String icon = workspaceType == WorkSpaceType.INDIVIDUAL ? "mdi-folder-account" : typeInfo.icon;
 
         return DriveItemDto.builder()
             .id(folder.getFolderSeq())
             .name(folder.getFolderName())
-            .type("folder")
-            .size("-")
+            .type(typeInfo.type)
+            .size(typeInfo.size)
             .uploadDate(folder.getCreatedAt())
             .modifiedDate(folder.getUpdatedAt())
             .icon(icon)
@@ -222,19 +213,19 @@ public class CommonDriveService {
     }
 
     public DriveItemDto convertDocumentToDto(Document document, WorkSpaceType workspaceType) {
-        boolean isShared = DocumentType.CUSTOM.equals(document.getDocumentType());
+        FileTypeClassifier.DocumentTypeInfo typeInfo = FileTypeClassifier.DocumentTypeInfo.of(document);
 
         return DriveItemDto.builder()
             .id(document.getDocumentSeq())
             .name(document.getDocumentName())
-            .type(isShared ? "shared-doc" : "file")
-            .size(isShared ? "-" : "0 KB")
+            .type(typeInfo.type)
+            .size(typeInfo.size)
             .uploadDate(document.getCreatedAt())
             .modifiedDate(document.getUpdatedAt())
-            .icon(isShared ? "mdi-file-document-multiple" : getFileIcon(document.getDocumentName()))
+            .icon(typeInfo.icon)
             .parentId(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
-            .isShared(isShared)
-            .isLocked(YnColumn.IS_TRUE.equals(document.getYnLock()))
+            .isShared(typeInfo.isShared)
+            .isLocked(typeInfo.isLocked)
             .content("")
             .documentUrl(document.getDocumentUrl())
             .documentType(document.getDocumentType())
@@ -243,63 +234,21 @@ public class CommonDriveService {
     }
 
     public DriveItemDto convertDriveChannelToDto(DriveChannel channel) {
+        FileTypeClassifier.ChannelTypeInfo typeInfo = FileTypeClassifier.ChannelTypeInfo.of();
+        
         return DriveItemDto.builder()
             .id(channel.getDriveChannelSeq())
             .name(channel.getDriveChannelName())
-            .type("channel")
-            .size("-")
+            .type(typeInfo.type)
+            .size(typeInfo.size)
             .uploadDate(channel.getCreatedAt())
             .modifiedDate(channel.getUpdatedAt())
-            .icon("mdi-folder-multiple")
+            .icon(typeInfo.icon)
             .parentId(null)
             .children(new ArrayList<>())
             .build();
     }
 
-    public List<DriveItemDto> sortItems(List<DriveItemDto> items, String sortBy, String sortOrder) {
-        return items.stream()
-            .sorted((a, b) -> {
-                int comparison = 0;
-                switch (sortBy) {
-                    case "name":
-                        comparison = a.getName().compareTo(b.getName());
-                        break;
-                    case "date":
-                        comparison = a.getModifiedDate().compareTo(b.getModifiedDate());
-                        break;
-                    case "size":
-                        comparison = a.getSize().compareTo(b.getSize());
-                        break;
-                    case "type":
-                        comparison = a.getType().compareTo(b.getType());
-                        break;
-                }
-                return "desc".equals(sortOrder) ? -comparison : comparison;
-            })
-            .collect(Collectors.toList());
-    }
 
-    private String getFileIcon(String fileName) {
-        String extension = getFileExtension(fileName).toLowerCase();
-        switch (extension) {
-            case "pdf": return "mdi-file-pdf";
-            case "doc":
-            case "docx": return "mdi-file-word";
-            case "xls":
-            case "xlsx": return "mdi-file-excel";
-            case "ppt":
-            case "pptx": return "mdi-file-powerpoint";
-            case "jpg":
-            case "jpeg":
-            case "png":
-            case "gif": return "mdi-file-image";
-            case "txt": return "mdi-file-document";
-            default: return "mdi-file";
-        }
-    }
-
-    private String getFileExtension(String fileName) {
-        return fileName.substring(fileName.lastIndexOf(".") + 1);
-    }
 
 }

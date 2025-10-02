@@ -30,8 +30,7 @@ public class TeamDriveService {
     private final DocumentRepository documentRepository;
 
     // 팀 드라이브 아이템 목록 조회
-    public List<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, 
-                                               String searchQuery, String sortBy, String sortOrder) {
+    public List<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId) {
         // 드라이브 채널 조회
         DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
         
@@ -43,7 +42,7 @@ public class TeamDriveService {
         // TODO: 팀 멤버 권한 확인 로직 추가
         
         // 공통 서비스 사용
-        return commonDriveService.getDriveItems(driveChannel, parentFolderId, searchQuery, sortBy, sortOrder);
+        return commonDriveService.getDriveItems(driveChannel, parentFolderId);
     }
 
     // 팀 드라이브 폴더 생성
