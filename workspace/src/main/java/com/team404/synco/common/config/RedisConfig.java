@@ -40,6 +40,31 @@ public class RedisConfig {
         return redisTemplate;
     }
 
+    // member 정보 관련 redis 설정
+    @Bean
+    @Qualifier("memberInventory")
+    public RedisConnectionFactory memberConnectionFactory(){
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        configuration.setDatabase(1);
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    // workSpace 정보 관련 redisTemplate 생성
+    @Bean
+    @Qualifier("memberInventory")
+    public RedisTemplate<String, Object>membereRedisTemplate(
+            @Qualifier("memberInventory") RedisConnectionFactory memberConnectionFactory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setConnectionFactory(memberConnectionFactory);
+        return redisTemplate;
+    }
+
     // WorkSpace 관련 redis 설정
     @Bean
     @Qualifier("workSpaceInventory")
@@ -47,7 +72,7 @@ public class RedisConfig {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(host);
         configuration.setPort(port);
-        configuration.setDatabase(1);
+        configuration.setDatabase(2);
         return new LettuceConnectionFactory(configuration);
     }
 

@@ -1,17 +1,13 @@
 package com.team404.synco.workspace.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
-import com.team404.synco.workspace.dto.WorkSpaceCreateReqDto;
-import com.team404.synco.workspace.dto.ChannelInviteReqDto;
+import com.team404.synco.workspace.dto.TeamWorkSpaceCreateReqDto;
 import com.team404.synco.workspace.dto.WorkSpaceResDto;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,8 +18,8 @@ public class WorkSpaceController {
 
     // 팀 워크스페이스 생성
     @PostMapping("/create")
-    public ResponseDto<?> createWorkSpace(@ModelAttribute WorkSpaceCreateReqDto workSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
-        WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(workSpaceCreateReqDto, memberSeq);
+    public ResponseDto<?> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
+        WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
         return ResponseDto.ok(workSpaceResDto, HttpStatus.OK);
     }
     // 워크스페이스 수정

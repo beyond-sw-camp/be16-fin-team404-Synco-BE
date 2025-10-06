@@ -12,7 +12,7 @@ public interface TaskFeign {
     @PostMapping("/task/create")
     void createTask(@RequestBody TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto);
 
-    @PostMapping("/virtual-meeting/create-channel")
+    @PostMapping("/virtual-meeting/createChannel")
     void createVirtualMeetChannel(@RequestBody ChannelCreateReqDto virtualMeetingChannelCreateReqDto);
 
     @PostMapping("/virtual-meeting/addMember")

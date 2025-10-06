@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/virtual-meeting")
 public class VirtualMeetingController {
     private final VirtualMeetingService virtualMeetingService;
-    @PostMapping("/create-channel")
+    @PostMapping("/createChannel")
     public ResponseEntity<?> createVirtualMeetChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = virtualMeetingService.createChannel(channelCreateReqDto);
         return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);

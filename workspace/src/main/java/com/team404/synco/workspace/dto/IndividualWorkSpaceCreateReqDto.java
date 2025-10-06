@@ -4,11 +4,7 @@ import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.workspace.entity.WorkSpace;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
+import lombok.*;
 
 import java.util.List;
 
@@ -16,17 +12,18 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class WorkSpaceCreateReqDto {
+@Builder
+public class IndividualWorkSpaceCreateReqDto {
     @NotEmpty
     private String workSpaceName;
-    private MultipartFile workSpaceThumbnailImage;
+    private String workSpaceThumbnailImage;
     private List<Long> memberList;
 
-    public WorkSpace toEntity(Member member, WorkSpaceType workSpaceType, String workSpaceThumbnailImageUrl){
+    public WorkSpace toEntity(Member member, WorkSpaceType workSpaceType){
         return WorkSpace.builder()
                 .member(member)
                 .workSpaceName(this.workSpaceName)
-                .workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
+                .workSpaceThumbnailImageUrl(this.workSpaceThumbnailImage)
                 .workSpaceType(workSpaceType)
                 .build();
     }
