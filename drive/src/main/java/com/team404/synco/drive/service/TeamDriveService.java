@@ -8,6 +8,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,10 +31,10 @@ public class TeamDriveService {
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
 
-    // 팀 드라이브 아이템 목록 조회
-    public List<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId) {
+    // 팀 드라이브 아이템 목록 조회 (페이지네이션)
+    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable) {
         DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(driveChannel, parentFolderId);
+        return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable);
     }
 
     // 팀 드라이브 폴더 생성

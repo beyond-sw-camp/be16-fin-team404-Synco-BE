@@ -7,6 +7,8 @@ import com.team404.synco.drive.repository.DocumentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +29,10 @@ public class PersonalDriveService {
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
 
-    // 개인 드라이브 아이템 목록 조회
-    public List<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId) {
+    // 개인 드라이브 아이템 목록 조회 (페이지네이션)
+    public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable) {
         DriveChannel personalDrive = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(personalDrive, parentFolderId);
+        return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable);
     }
 
     // 개인 드라이브 폴더 생성

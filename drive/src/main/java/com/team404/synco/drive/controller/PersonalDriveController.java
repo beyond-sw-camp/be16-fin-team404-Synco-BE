@@ -5,6 +5,10 @@ import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.service.PersonalDriveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +23,13 @@ public class PersonalDriveController {
 
     private final PersonalDriveService personalDriveService;
 
-    // 개인 드라이브 아이템 목록 조회
+    // 개인 드라이브 아이템 목록 조회 (페이지네이션)
     @GetMapping("/{driveChannelSeq}/items")
     public CommonDto<?> getPersonalDriveItems(
             @PathVariable Long driveChannelSeq,
-            @RequestParam(required = false) Long parentFolderId) {
-        List<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId);
+            @RequestParam(required = false) Long parentFolderId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 

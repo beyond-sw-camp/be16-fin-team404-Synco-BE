@@ -15,6 +15,9 @@ import com.team404.synco.common.constant.DriveItemType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,25 +43,32 @@ public class CommonDriveService {
         return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
-    // 드라이브 아이템 목록 조회 (공통)
-    public List<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq) {
-        List<DriveItemDto> items = new ArrayList<>();
-
+    // 드라이브 아이템 목록 조회 (공통) - 페이지네이션 (JPA 방식)
+    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq, Pageable pageable) {
+        Page<Folder> folders;
+        Page<Document> documents;
+        
         if (parentFolderSeq == null) {
-            List<Folder> rootFolders = folderRepository.findByDriveChannelDriveChannelSeqAndParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
-            List<Document> rootDocuments = documentRepository.findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(driveChannel.getDriveChannelSeq(), 0L);
-
-            items.addAll(convertFoldersToDto(rootFolders));
-            items.addAll(convertDocumentsToDto(rootDocuments));
+            // 루트 폴더 조회
+            folders = folderRepository.findByDriveChannelDriveChannelSeqAndParentFolderSeq(
+                driveChannel.getDriveChannelSeq(), 0L, pageable);
+            documents = documentRepository.findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(
+                driveChannel.getDriveChannelSeq(), 0L, pageable);
         } else {
-            List<Folder> folders = folderRepository.findByParentFolderSeq(parentFolderSeq);
-            List<Document> documents = documentRepository.findByFolderFolderSeq(parentFolderSeq);
-
-            items.addAll(convertFoldersToDto(folders));
-            items.addAll(convertDocumentsToDto(documents));
+            // 특정 폴더 내부 조회
+            folders = folderRepository.findByParentFolderSeq(parentFolderSeq, pageable);
+            documents = documentRepository.findByFolderFolderSeq(parentFolderSeq, pageable);
         }
-
-        return items;
+        
+        // 폴더와 문서를 합쳐서 하나의 Page로 만들기
+        List<DriveItemDto> allItems = new ArrayList<>();
+        allItems.addAll(convertFoldersToDto(folders.getContent()));
+        allItems.addAll(convertDocumentsToDto(documents.getContent()));
+        
+        // 전체 개수는 폴더와 문서의 합
+        long totalElements = folders.getTotalElements() + documents.getTotalElements();
+        
+        return new PageImpl<>(allItems, pageable, totalElements);
     }
 
 

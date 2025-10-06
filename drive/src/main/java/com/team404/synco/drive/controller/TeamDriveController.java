@@ -5,6 +5,10 @@ import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.service.TeamDriveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,13 +23,14 @@ public class TeamDriveController {
 
     private final TeamDriveService teamDriveService;
 
-    // 팀 드라이브 아이템 목록 조회
+    // 팀 드라이브 아이템 목록 조회 (페이지네이션)
     @GetMapping("/{driveChannelSeq}/items")
     public CommonDto<?> getTeamDriveItems(
             @PathVariable Long driveChannelSeq,
-            @RequestParam(required = false) Long parentFolderId) {
+            @RequestParam(required = false) Long parentFolderId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        List<DriveItemDto> items = teamDriveService.getTeamDriveItems(driveChannelSeq, parentFolderId);
+        Page<DriveItemDto> items = teamDriveService.getTeamDriveItems(driveChannelSeq, parentFolderId, pageable);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 
