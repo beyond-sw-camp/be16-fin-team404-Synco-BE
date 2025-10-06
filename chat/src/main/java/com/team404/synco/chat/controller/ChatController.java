@@ -1,6 +1,7 @@
 package com.team404.synco.chat.controller;
 
-import com.team404.synco.chat.dto.ChatChannelCreateReqDto;
+import com.team404.synco.chat.dto.ChannelCreateReqDto;
+import com.team404.synco.chat.dto.ChannelInviteReqDto;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,16 @@ public class ChatController {
     private final ChatService chatService;
 
     // 채널 생성
-    @PostMapping("/create-channel")
-    public ResponseEntity<?> createChannel(@RequestBody ChatChannelCreateReqDto chatChannelCreateReqDto){
-        Long id = chatService.createChannel(chatChannelCreateReqDto);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
+    @PostMapping("/createChannel")
+    public ResponseDto createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
+        Long id = chatService.createChannel(channelCreateReqDto);
+        return ResponseDto.ok(id, HttpStatus.OK);
+    }
+
+    // 채널에 멤버 추가
+    @PostMapping("/addMember")
+    public ResponseDto addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
+        Long id = chatService.addMemberToChannel(channelInviteReqDto);
+        return ResponseDto.ok(id, HttpStatus.OK);
     }
 }

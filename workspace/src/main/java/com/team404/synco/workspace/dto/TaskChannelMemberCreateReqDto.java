@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 @Builder
-public class TaskCreateReqDto {
+public class TaskChannelMemberCreateReqDto {
     private Long memberSeq;
-    private Long workSpaceSeq;
     private Authority authority;
+    private Long workSpaceReq;
 }

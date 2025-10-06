@@ -1,7 +1,8 @@
 package com.team404.synco.virtualmeeting.controller;
 
 import com.team404.synco.common.constant.dto.ResponseDto;
-import com.team404.synco.virtualmeeting.dto.VirtualMeetingChannelCreateReqDto;
+import com.team404.synco.virtualmeeting.dto.ChannelCreateReqDto;
+import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class VirtualMeetingController {
     private final VirtualMeetingService virtualMeetingService;
     @PostMapping("/create-channel")
-    public ResponseEntity<?> createVirtualMeetChannel(@RequestBody VirtualMeetingChannelCreateReqDto virtualMeetingChannelCreateReqDto){
-        Long id = virtualMeetingService.createChannel(virtualMeetingChannelCreateReqDto);
+    public ResponseEntity<?> createVirtualMeetChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
+        Long id = virtualMeetingService.createChannel(channelCreateReqDto);
         return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
     };
+
+    // 채널에 멤버 추가
+    @PostMapping("/addMember")
+    public ResponseEntity<?> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
+        Long id = virtualMeetingService.addMemberToChannel(channelInviteReqDto);
+        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
+    }
 }

@@ -44,20 +44,22 @@ public class WorkSpaceService {
     }
 
     // 개인 워크스페이스 생성
-    public WorkSpaceResDto createIndividualWorkSpace(WorkSpaceCreateReqDto workSpaceCreateReqDto, Long userId){
+    public WorkSpaceResDto createIndividualWorkSpace(WorkSpaceCreateReqDto workSpaceCreateReqDto, Long memberSeq) {
         // 워크스페이스 프로필 이미지 업로드
         String workSpaceThumbnailImageUrl = addWorkSpaceThumbnailImageUrl(workSpaceCreateReqDto);
 
         // 멤버 불러오기
-        Member member = memberRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
 
         // 워크스페이스 생성
         WorkSpace workSpace = workSpaceRepository.save(workSpaceCreateReqDto.toEntity(member, WorkSpaceType.INDIVIDUAL, workSpaceThumbnailImageUrl));
 
         // 개인 드라이브 생성
-        driveFeign.createDriveChannel(
-                DriveChannelCreateReqDto.builder()
-                        .workspaceSeq(workSpace.getWorkSpaceSeq())
+        driveFeign.createDrive(
+                DriveCreateReqDto.builder()
+                        .workSpaceType(WorkSpaceType.INDIVIDUAL)
+                        .workSpaceName(workSpace.getWorkSpaceName())
+                        .workSpaceReq(workSpace.getWorkSpaceSeq())
                         .build()
         );
 
@@ -65,59 +67,64 @@ public class WorkSpaceService {
     }
 
     // 팀 워크스페이스 생성
-    public WorkSpaceResDto createTeamWorkSpace(WorkSpaceCreateReqDto workSpaceCreateReqDto, Long userId){
+    public WorkSpaceResDto createTeamWorkSpace(WorkSpaceCreateReqDto workSpaceCreateReqDto, Long memberSeq) {
         // 워크스페이스 프로필 이미지 업로드
         String workSpaceThumbnailImageUrl = addWorkSpaceThumbnailImageUrl(workSpaceCreateReqDto);
         // 워크스페이스 생성한 멤버 정보 불러오기
-        Member member = memberRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
         // 워크스페이스 생성
         WorkSpace workSpace = workSpaceRepository.save(workSpaceCreateReqDto.toEntity(member, WorkSpaceType.TEAM, workSpaceThumbnailImageUrl));
-
         // 워크스페이스 생성한 member정보 redis에 저장
         addMemberInfo(member);
         // 워크스페이스 정보 redis에 저장
         addWorkSpace(member, workSpace);
+        // 워크스페이스에 초대된 멤버정보 redis에 저장
+
 
         // 기본 채팅 채널 생성
         chatFeign.createChatChannel(
-            ChatChannelCreateReqDto.builder()
-                    .chatChannelName("일반")
-                    .workSpaceSeq(workSpace.getWorkSpaceSeq())
-                    .build()
+                ChannelCreateReqDto.builder()
+                        .ChannelName("일반")
+                        .workSpaceSeq(workSpace.getWorkSpaceSeq())
+                        .memberSeq(memberSeq)
+                        .memberList(workSpaceCreateReqDto.getMemberList())
+                        .build()
         );
 
-        // 기본 드라이브 채널 생성
-        driveFeign.createDriveChannel(
-            DriveChannelCreateReqDto.builder()
-                    .workspaceSeq(workSpace.getWorkSpaceSeq())
-                    .build()
+        // 기본 드라이브 생성
+        driveFeign.createDrive(
+                DriveCreateReqDto.builder()
+                        .workSpaceType(WorkSpaceType.TEAM)
+                        .workSpaceName(workSpace.getWorkSpaceName())
+                        .workSpaceReq(workSpace.getWorkSpaceSeq())
+                        .build()
         );
 
         // 기본 화상회의 채널 생성
         taskFeign.createVirtualMeetChannel(
-                VirtualMeetingChannelCreateReqDto.builder()
-                        .virtualMeetingChannelName("회의")
+                ChannelCreateReqDto.builder()
+                        .ChannelName("일반")
                         .workSpaceSeq(workSpace.getWorkSpaceSeq())
+                        .memberSeq(memberSeq)
+                        .memberList(workSpaceCreateReqDto.getMemberList())
                         .build()
         );
 
         // 기본 task 생성
         taskFeign.createTask(
-            TaskCreateReqDto.builder()
-                    .workSpaceSeq(workSpace.getWorkSpaceSeq())
-                    .authority(Authority.SUPER)
-                    .build()
+                TaskChannelMemberCreateReqDto.builder()
+                        .memberSeq(memberSeq)
+                        .authority(Authority.SUPER)
+                        .workSpaceReq(workSpace.getWorkSpaceSeq())
+                        .build()
         );
-
-
         return WorkSpaceResDto.fromEntity(workSpace);
     }
 
-    // 워크스페이스 초대
-    public WorkSpaceInviteResDto workSpaceInvite(WorkSpaceInviteReqDto workSpaceInviteReqDto){
-        List<Long> memberList = workSpaceInviteReqDto.getMemberList();
-
-        return null;
+    // 각 채널에 멤버 초대
+    public void channelInvite(ChannelInviteReqDto channelInviteReqDto) {
+        chatFeign.addMemberToChannel(channelInviteReqDto);
+        taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto);
     }
 
 //    // 내 워크스페이스 목록 조회
@@ -142,7 +149,7 @@ public class WorkSpaceService {
 //
 
     // 워크스페이스 프로필 이미지 삽입
-    private String addWorkSpaceThumbnailImageUrl(WorkSpaceCreateReqDto workSpaceCreateReqDto){
+    private String addWorkSpaceThumbnailImageUrl(WorkSpaceCreateReqDto workSpaceCreateReqDto) {
         String workSpaceThumbnailImageUrl = null;
         MultipartFile workSpaceThumbnailImage = workSpaceCreateReqDto.getWorkSpaceThumbnailImage();
         if (workSpaceThumbnailImage != null && !workSpaceThumbnailImage.isEmpty()) {
@@ -151,8 +158,8 @@ public class WorkSpaceService {
         return workSpaceThumbnailImageUrl;
     }
 
-    // 멤버정보 redis에 추가
-    private void addMemberInfo(Member member){
+    // 멤버 정보 redis에 추가
+    private void addMemberInfo(Member member) {
         String keyPrefix = "memberListeq:";
         String memberKey = keyPrefix + member.getMemberSeq();
 
@@ -177,7 +184,8 @@ public class WorkSpaceService {
 
         if (existing != null) {
             try {
-                workSpaces = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {});
+                workSpaces = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
+                });
             } catch (Exception e) {
                 log.error("워크스페이스 리스트 변환 실패: {}", e.getMessage());
             }
@@ -197,7 +205,7 @@ public class WorkSpaceService {
     }
 
     // 워크스페이스에 초대된 멤버 redis에 추가
-    private void addMemberToWorkSpace(Member member, WorkSpace workSpace){
+    private void addMemberToWorkSpace(Member member, WorkSpace workSpace) {
         String keyPrefix = "workSpaceSeq:";
         String workSpaceKey = keyPrefix + workSpace.getWorkSpaceSeq();
 
@@ -207,7 +215,8 @@ public class WorkSpaceService {
 
         if (existing != null) {
             try {
-                memberList = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {});
+                memberList = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
+                });
             } catch (Exception e) {
                 log.error("멤버 리스트 변환 실패: {}", e.getMessage());
             }

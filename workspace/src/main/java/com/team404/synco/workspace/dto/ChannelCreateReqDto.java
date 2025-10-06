@@ -1,16 +1,19 @@
-package com.team404.synco.workspace.service;
+package com.team404.synco.workspace.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@Setter
-public class WorkSpaceInviteResDto {
+@Builder
+public class ChannelCreateReqDto {
+    private String ChannelName;
+    private Long workSpaceSeq;
+    private Long memberSeq;
     private List<Long> memberList;
 }
