@@ -10,6 +10,7 @@ import com.team404.synco.drive.entity.Folder;
 import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
+import com.team404.synco.drive.specification.DriveItemSpecification;
 import com.team404.synco.drive.util.FileTypeClassifier;
 import com.team404.synco.common.constant.DriveItemType;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,24 +45,17 @@ public class CommonDriveService {
         return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
-    // 드라이브 아이템 목록 조회 (공통) - 페이지네이션 (JPA 방식)
-    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq, Pageable pageable) {
-        Page<Folder> folders;
-        Page<Document> documents;
+    // 드라이브 아이템 목록 조회
+    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq, String sortBy, String sortOrder, Pageable pageable) {
+        Specification<Folder> folderSpec = DriveItemSpecification.folderFilter(driveChannel.getDriveChannelSeq(), parentFolderSeq)
+            .and(DriveItemSpecification.folderSort(sortBy, sortOrder));
         
-        if (parentFolderSeq == null) {
-            // 루트 폴더 조회
-            folders = folderRepository.findByDriveChannelDriveChannelSeqAndParentFolderSeq(
-                driveChannel.getDriveChannelSeq(), 0L, pageable);
-            documents = documentRepository.findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(
-                driveChannel.getDriveChannelSeq(), 0L, pageable);
-        } else {
-            // 특정 폴더 내부 조회
-            folders = folderRepository.findByParentFolderSeq(parentFolderSeq, pageable);
-            documents = documentRepository.findByFolderFolderSeq(parentFolderSeq, pageable);
-        }
+        Specification<Document> documentSpec = DriveItemSpecification.documentFilter(driveChannel.getDriveChannelSeq(), parentFolderSeq)
+            .and(DriveItemSpecification.documentSort(sortBy, sortOrder));
         
-        // 폴더와 문서를 합쳐서 하나의 Page로 만들기
+        Page<Folder> folders = folderRepository.findAll(folderSpec, pageable);
+        Page<Document> documents = documentRepository.findAll(documentSpec, pageable);
+        
         List<DriveItemDto> allItems = new ArrayList<>();
         allItems.addAll(convertFoldersToDto(folders.getContent()));
         allItems.addAll(convertDocumentsToDto(documents.getContent()));
@@ -72,7 +67,7 @@ public class CommonDriveService {
     }
 
 
-    // 폴더 생성 (공통)
+    // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
         long parentFolderSeq = parentFolderId != null ? parentFolderId : 0L;
 
@@ -91,7 +86,7 @@ public class CommonDriveService {
     }
 
 
-    // 공유문서 생성 (공통)
+    // 공유문서 생성
     public DriveItemDto createSharedDoc(Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
         // 폴더 조회
         Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
@@ -110,7 +105,7 @@ public class CommonDriveService {
     }
 
 
-    // 파일 업로드 (공통)
+    // 파일 업로드
     public List<DriveItemDto> uploadFiles(DriveChannel driveChannel, Long userId, List<MultipartFile> files, Long parentFolderId) {
         List<DriveItemDto> uploadedFiles = new ArrayList<>();
 
@@ -144,7 +139,7 @@ public class CommonDriveService {
     }
 
 
-    // 아이템 이동 (공통)
+    // 아이템 이동
     public void moveItem(String itemType, Long itemId, Long newParentId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
@@ -161,7 +156,7 @@ public class CommonDriveService {
         }
     }
 
-    // 아이템 순서 변경 (공통)
+    // 아이템 순서 변경
     public void reorderItem(String itemType, Long itemId, Long newOrder) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
@@ -175,7 +170,7 @@ public class CommonDriveService {
     }
 
 
-    // 폴더 이름 변경 (공통)
+    // 폴더 이름 변경
     public DriveItemDto renameFolder(Long folderId, String newFolderName) {
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         folder.updateFolderName(newFolderName);
@@ -185,7 +180,7 @@ public class CommonDriveService {
         return convertFolderToDto(folder);
     }
 
-    // 아이템 삭제 (공통)
+    // 아이템 삭제
     public void deleteItem(String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             deleteFolderRecursively(itemId);
