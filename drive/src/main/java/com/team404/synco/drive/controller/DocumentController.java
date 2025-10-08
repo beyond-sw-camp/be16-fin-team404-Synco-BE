@@ -27,7 +27,9 @@ public class DocumentController {
 
     // 문서 내용 업데이트
     @PutMapping("/{documentSeq}/content")
-    public CommonDto<?> updateDocumentContent(@PathVariable Long documentSeq, @RequestBody UpdateDocumentReqDto request) {
+    public CommonDto<?> updateDocumentContent(
+            @PathVariable Long documentSeq,
+            @RequestBody UpdateDocumentReqDto request) {
 
         DriveItemDto document = documentService.updateDocumentContent(documentSeq, request);
         return CommonDto.ok(document, HttpStatus.OK);

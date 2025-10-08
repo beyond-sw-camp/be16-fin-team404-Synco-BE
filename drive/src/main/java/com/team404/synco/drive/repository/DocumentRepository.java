@@ -14,5 +14,5 @@ import java.util.Optional;
 public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
     List<Document> findByFolderFolderSeq(Long folderSeq);
 
-    Optional<Document> findByDocumentNameAndFolderFolderSeqNot(String documentName, Long folderFolderSeq);
+    Optional<Document> findByDocumentNameAndFolderFolderSeqNot(String documentName, Long folderSeq);
 }

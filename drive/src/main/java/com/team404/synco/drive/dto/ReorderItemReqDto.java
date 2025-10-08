@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReorderItemReqDto {
     private Long itemId;
-    private String itemType; // 'folder' or 'document'
-    private Long newOrder; // 새로운 순서
+    private String itemType;
+    private Long newOrder;
 }

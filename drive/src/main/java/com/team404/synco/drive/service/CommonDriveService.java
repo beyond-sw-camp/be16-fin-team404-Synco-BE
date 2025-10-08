@@ -42,7 +42,7 @@ public class CommonDriveService {
         return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
-    // 드라이브 아이템 목록 조회 (정렬 포함)
+    // 드라이브 아이템 목록 조회
     public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
                                             Long parentFolderSeq,
                                             Pageable pageable,
@@ -191,12 +191,35 @@ public class CommonDriveService {
     // 아이템 순서 변경
     public void reorderItem(String itemType, Long itemId, Long newOrder) {
         if (DriveItemType.FOLDER.equals(itemType)) {
-            Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
-            folder.updateOrder(newOrder);
-
+            reorderFolder(itemId, newOrder);
         } else {
             throw new UnsupportedOperationException("문서의 순서 변경은 현재 지원하지 않습니다.");
         }
+    }
+
+    // 폴더 순서 변경 로직
+    private void reorderFolder(Long folderId, Long newOrder) {
+        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+        Long currentOrder = folder.getOrders();
+        Long parentFolderSeq = folder.getParentFolderSeq();
+        Long driveChannelSeq = folder.getDriveChannel().getDriveChannelSeq();
+
+        // 같은 순서로 변경하는 경우는 아무것도 하지 않음
+        if (currentOrder.equals(newOrder)) {
+            return;
+        }
+
+        if (currentOrder < newOrder) {
+            // 뒤로 이동: 현재 순서보다 크고 새로운 순서 이하인 아이템들을 -1
+            folderRepository.decrementOrdersFrom(parentFolderSeq, driveChannelSeq, newOrder);
+        } else {
+            // 앞으로 이동: 새로운 순서 이상인 아이템들을 +1
+            folderRepository.incrementOrdersFrom(parentFolderSeq, driveChannelSeq, newOrder);
+        }
+
+        // 폴더의 순서 업데이트
+        folder.updateOrder(newOrder);
     }
 
 
@@ -220,9 +243,8 @@ public class CommonDriveService {
             validateFolderDeletePermission(userId, itemId);
             deleteFolderRecursively(itemId);
         } else {
-            // 문서 삭제 권한 체크
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-            
+            // 문서 삭제 권한 체크
             if (document.getMemberSeq() != userId) {
                 throw new SecurityException("자신이 생성한 문서만 삭제할 수 있습니다.");
             }

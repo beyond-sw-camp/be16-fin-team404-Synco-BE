@@ -66,8 +66,7 @@ public class TeamDriveController {
 
     // 팀 드라이브 아이템 이동
     @PatchMapping("/move")
-    public CommonDto<?> moveTeamItem(
-            @RequestBody MoveItemReqDto request) {
+    public CommonDto<?> moveTeamItem(@RequestBody MoveItemReqDto request) {
         
         teamDriveService.moveTeamItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -75,8 +74,7 @@ public class TeamDriveController {
 
     // 팀 드라이브 아이템 순서 변경
     @PatchMapping("/reorder")
-    public CommonDto<?> reorderTeamItem(
-            @RequestBody ReorderItemReqDto request) {
+    public CommonDto<?> reorderTeamItem(@RequestBody ReorderItemReqDto request) {
         
         teamDriveService.reorderTeamItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -84,8 +82,7 @@ public class TeamDriveController {
 
     // 팀 드라이브 파일 다운로드
     @GetMapping("/download/{documentSeq}")
-    public ResponseEntity<byte[]> downloadTeamFile(
-            @PathVariable Long documentSeq) {
+    public ResponseEntity<byte[]> downloadTeamFile(@PathVariable Long documentSeq) {
         
         return teamDriveService.downloadTeamFile(documentSeq);
     }

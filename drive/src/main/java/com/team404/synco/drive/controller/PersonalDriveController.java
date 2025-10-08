@@ -37,8 +37,7 @@ public class PersonalDriveController {
 
     // 개인 드라이브 폴더 생성
     @PostMapping("/folders")
-    public CommonDto<?> createPersonalFolder(
-            @RequestBody CreateFolderReqDto request) {
+    public CommonDto<?> createPersonalFolder(@RequestBody CreateFolderReqDto request) {
         DriveItemDto folder = personalDriveService.createPersonalFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
@@ -74,8 +73,7 @@ public class PersonalDriveController {
 
     // 개인 드라이브 아이템 순서 변경
     @PatchMapping("/reorder")
-    public CommonDto<?> reorderPersonalItem(
-            @RequestBody ReorderItemReqDto request) {
+    public CommonDto<?> reorderPersonalItem(@RequestBody ReorderItemReqDto request) {
         
         personalDriveService.reorderPersonalItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
