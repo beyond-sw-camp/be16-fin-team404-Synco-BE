@@ -11,7 +11,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -26,6 +25,7 @@ public class WorkSpaceService {
     private final ChatFeign chatFeign;
     private final DriveFeign driveFeign;
     private final TaskFeign taskFeign;
+    private static final String WORKSPACE_THUMBNAIL_DIRECTORY = "workspaceThumbnail";
 
     public WorkSpaceService(WorkSpaceRepository workSpaceRepository, MemberRepository memberRepository, WorkSpaceRedisService workSpaceRedisService, S3Uploader s3Uploader, ChatFeign chatFeign, DriveFeign driveFeign, TaskFeign taskFeign) {
         this.workSpaceRepository = workSpaceRepository;
@@ -75,7 +75,10 @@ public class WorkSpaceService {
         // 워크스페이스 생성한 멤버 정보 불러오기
         Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
         // 워크스페이스 썸네일 이미지 업로드
-        String workSpaceThumbnailImageUrl = addWorkSpaceThumbnailImageUrl(teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage());
+        String workSpaceThumbnailImageUrl = null;
+        if (teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage() != null && !teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage().isEmpty()) {
+            workSpaceThumbnailImageUrl = s3Uploader.upload(teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage(), WORKSPACE_THUMBNAIL_DIRECTORY);;
+        }
         // 워크스페이스 생성
         WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder()
                 .member(member)
@@ -166,13 +169,4 @@ public class WorkSpaceService {
 //        return null;
 //    }
 //
-
-    // 워크스페이스 프로필 이미지 삽입
-    private String addWorkSpaceThumbnailImageUrl(MultipartFile workSpaceThumbnailImage) {
-        String workSpaceThumbnailImageUrl = null;
-        if (workSpaceThumbnailImage != null && !workSpaceThumbnailImage.isEmpty()) {
-            workSpaceThumbnailImageUrl = s3Uploader.upload(workSpaceThumbnailImage, "workSpaceThumbnail");
-        }
-        return workSpaceThumbnailImageUrl;
-    }
 }
