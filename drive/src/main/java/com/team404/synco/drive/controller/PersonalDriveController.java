@@ -23,13 +23,16 @@ public class PersonalDriveController {
 
     private final PersonalDriveService personalDriveService;
 
-    // 개인 드라이브 아이템 목록 조회 (페이지네이션)
+    // 개인 드라이브 아이템 목록 조회
     @GetMapping("/{driveChannelSeq}/items")
     public CommonDto<?> getPersonalDriveItems(
             @PathVariable Long driveChannelSeq,
             @RequestParam(required = false) Long parentFolderId,
+            @RequestParam(required = false) String nameFilter,
+            @RequestParam(required = false) String modifiedDateFilter,
+            @RequestParam(required = false) String byteSizeFilter,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable);
+        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 

@@ -31,10 +31,10 @@ public class TeamDriveService {
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
 
-    // 팀 드라이브 아이템 목록 조회 (페이지네이션)
-    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable) {
+    // 팀 드라이브 아이템 목록 조회
+    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String nameFilter, String modifiedDateFilter, String byteSizeFilter) {
         DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable);
+        return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
     }
 
     // 팀 드라이브 폴더 생성
@@ -81,9 +81,9 @@ public class TeamDriveService {
                     .headers(headers)
                     .body(fileContent);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
-            throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
+            throw new IllegalStateException("파일 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
     }
 

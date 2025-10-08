@@ -4,6 +4,7 @@ import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.repository.DocumentRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +30,10 @@ public class PersonalDriveService {
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
 
-    // 개인 드라이브 아이템 목록 조회 (페이지네이션)
-    public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable) {
+    // 개인 드라이브 아이템 목록 조회
+    public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String nameFilter, String modifiedDateFilter, String byteSizeFilter) {
         DriveChannel personalDrive = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable);
+        return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
     }
 
     // 개인 드라이브 폴더 생성
@@ -68,7 +69,7 @@ public class PersonalDriveService {
     public ResponseEntity<byte[]> downloadPersonalFile(Long userId, Long documentSeq) {
 
         Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new RuntimeException("파일을 찾을 수 없습니다."));
+            .orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
         
         try {
             Path filePath = Paths.get(document.getDocumentUrl());
@@ -82,9 +83,9 @@ public class PersonalDriveService {
                 .headers(headers)
                 .body(fileContent);
                 
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
-            throw new RuntimeException("파일 다운로드에 실패했습니다.", e);
+            throw new IllegalStateException("파일 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
     }
 

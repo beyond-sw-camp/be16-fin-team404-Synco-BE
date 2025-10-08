@@ -21,12 +21,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,24 +45,54 @@ public class CommonDriveService {
     }
 
     // 드라이브 아이템 목록 조회
-    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel, Long parentFolderSeq, String sortBy, String sortOrder, Pageable pageable) {
-        Specification<Folder> folderSpec = DriveItemSpecification.folderFilter(driveChannel.getDriveChannelSeq(), parentFolderSeq)
-            .and(DriveItemSpecification.folderSort(sortBy, sortOrder));
+    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
+                                            Long parentFolderSeq,
+                                            Pageable pageable,
+                                            String nameFilter,
+                                            String modifiedDateFilter,
+                                            String byteSizeFilter) {
         
-        Specification<Document> documentSpec = DriveItemSpecification.documentFilter(driveChannel.getDriveChannelSeq(), parentFolderSeq)
-            .and(DriveItemSpecification.documentSort(sortBy, sortOrder));
+        Map<String, Object> filterKey = new HashMap<>();
+        filterKey.put("driveChannelSeq", driveChannel.getDriveChannelSeq());
+        filterKey.put("parentFolderSeq", parentFolderSeq);
         
-        Page<Folder> folders = folderRepository.findAll(folderSpec, pageable);
-        Page<Document> documents = documentRepository.findAll(documentSpec, pageable);
+        if (nameFilter != null && !nameFilter.trim().isEmpty()) {
+            filterKey.put("nameFilter", nameFilter);
+        }
+        if (modifiedDateFilter != null && !modifiedDateFilter.trim().isEmpty()) {
+            filterKey.put("dateFilter", modifiedDateFilter);
+        }
+        if (byteSizeFilter != null && !byteSizeFilter.trim().isEmpty()) {
+            filterKey.put("sizeFilter", parseSizeToBytes(byteSizeFilter));
+        }
+        
+        Page<Folder> folders = folderRepository.findAll(DriveItemSpecification.filterFolder(filterKey), pageable);
+        Page<Document> documents = documentRepository.findAll(DriveItemSpecification.filterDocument(filterKey), pageable);
         
         List<DriveItemDto> allItems = new ArrayList<>();
         allItems.addAll(convertFoldersToDto(folders.getContent()));
         allItems.addAll(convertDocumentsToDto(documents.getContent()));
         
-        // 전체 개수는 폴더와 문서의 합
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
         
         return new PageImpl<>(allItems, pageable, totalElements);
+    }
+    
+    // 크기 문자열을 바이트로 변환
+    private Long parseSizeToBytes(String sizeFilter) {
+        try {
+            if (sizeFilter.endsWith("MB")) {
+                long sizeInMB = Long.parseLong(sizeFilter.replace("MB", ""));
+                return sizeInMB * 1024 * 1024L;
+            } else if (sizeFilter.endsWith("KB")) {
+                long sizeInKB = Long.parseLong(sizeFilter.replace("KB", ""));
+                return sizeInKB * 1024L;
+            } else {
+                return Long.parseLong(sizeFilter);
+            }
+        } catch (Exception e) {
+            return 0L;
+        }
     }
 
 
@@ -131,7 +160,7 @@ public class CommonDriveService {
 
             } catch (Exception e) {
                 log.error("파일 업로드 실패: {}", file.getOriginalFilename(), e);
-                throw new RuntimeException("파일 업로드에 실패했습니다.", e);
+                throw new MultipartException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + file.getOriginalFilename(), e);
             }
         }
 

@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -78,7 +79,7 @@ public class DocumentService {
                 
         } catch (Exception e) {
             log.error("문서 다운로드 실패: {}", document.getDocumentName(), e);
-            throw new RuntimeException("문서 다운로드에 실패했습니다.", e);
+            throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
     }
 
@@ -107,7 +108,7 @@ public class DocumentService {
             
         } catch (Exception e) {
             log.error("문서 내용 업데이트 실패", e);
-            throw new RuntimeException("문서 내용 업데이트에 실패했습니다.", e);
+            throw new MultipartException("문서 내용 업데이트에 실패했습니다.", e);
         }
     }
 
