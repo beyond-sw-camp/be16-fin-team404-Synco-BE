@@ -19,7 +19,12 @@ public class WorkSpaceRedisService {
     private final RedisTemplate<String, Object> memberRedisTemplate;
     private final RedisTemplate<String, Object> workSpaceRedisTemplate;
     private static final String MEMBER_KEY_PREFIX = "memberSeq:";
-    private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq";
+    private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
+    private static final String WORKSPACE_LIST = "workSpaceList";
+    private static final String MEMBER_LIST = "memberList";
+    private static final String SERIALIZATION_EXCEPTION = "직렬화에 실패하였습니다.";
+    private static final String MEBMER_NAME = "memberName";
+    private static final String MEMBER_PROFILE_URL = "memberProfileUrl";
 
     public WorkSpaceRedisService(@Qualifier("memberInventory") RedisTemplate<String, Object> memberRedisTemplate, @Qualifier("workSpaceInventory")RedisTemplate<String, Object> workSpaceRedisTemplate) {
         this.memberRedisTemplate = memberRedisTemplate;
@@ -35,8 +40,8 @@ public class WorkSpaceRedisService {
 
         // key가 없을 경우 → 멤버 정보 처음 등록
         if (!hasKey) {
-            memberRedisTemplate.opsForHash().put(memberKey, "memberName", member.getName());
-            memberRedisTemplate.opsForHash().put(memberKey, "memberProfileUrl", member.getProfileImageUrl());
+            memberRedisTemplate.opsForHash().put(memberKey, MEBMER_NAME, member.getName());
+            memberRedisTemplate.opsForHash().put(memberKey, MEMBER_PROFILE_URL, member.getProfileImageUrl());
         }
     }
 
@@ -45,7 +50,7 @@ public class WorkSpaceRedisService {
         String memberKey = MEMBER_KEY_PREFIX + memberSeq;
 
         // workspaces 필드 가져오기
-        Object existing = memberRedisTemplate.opsForHash().get(memberKey, "workSpaceList");
+        Object existing = memberRedisTemplate.opsForHash().get(memberKey, WORKSPACE_LIST);
         List<Long> workSpaces = new ArrayList<>();
 
         if (existing != null) {
@@ -53,7 +58,7 @@ public class WorkSpaceRedisService {
                 workSpaces = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
-                throw new SerializationException("직렬화에 실패하였습니다.");
+                throw new SerializationException(SERIALIZATION_EXCEPTION);
             }
         }
 
@@ -64,9 +69,9 @@ public class WorkSpaceRedisService {
 
         try {
             String json = new ObjectMapper().writeValueAsString(workSpaces);
-            memberRedisTemplate.opsForHash().put(memberKey, "workSpaceList", json);
+            memberRedisTemplate.opsForHash().put(memberKey, WORKSPACE_LIST, json);
         } catch (Exception e) {
-            throw new SerializationException("직렬화에 실패하였습니다.");
+            throw new SerializationException(SERIALIZATION_EXCEPTION);
         }
     }
 
@@ -75,7 +80,7 @@ public class WorkSpaceRedisService {
         String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpace.getWorkSpaceSeq();
 
         // memberList 필드 가져오기
-        Object existing = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, "memberList");
+        Object existing = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, MEMBER_LIST);
         List<Long> memberList = new ArrayList<>();
 
         if (existing != null) {
@@ -83,7 +88,7 @@ public class WorkSpaceRedisService {
                 memberList = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
-                throw new SerializationException("직렬화에 실패하였습니다.");
+                throw new SerializationException(SERIALIZATION_EXCEPTION);
             }
         }
 
@@ -94,9 +99,9 @@ public class WorkSpaceRedisService {
 
         try {
             String json = new ObjectMapper().writeValueAsString(memberList);
-            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "memberList", json);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, MEMBER_LIST, json);
         } catch (Exception e) {
-            throw new SerializationException("직렬화에 실패하였습니다.");
+            throw new SerializationException(SERIALIZATION_EXCEPTION);
         }
     }
 }
