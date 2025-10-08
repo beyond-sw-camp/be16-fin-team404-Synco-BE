@@ -19,12 +19,12 @@ public class IndividualWorkSpaceCreateReqDto {
     private String workSpaceThumbnailImage;
     private List<Long> memberList;
 
-    public WorkSpace toEntity(Member member, WorkSpaceType workSpaceType){
+    public WorkSpace toEntity(Member member){
         return WorkSpace.builder()
                 .member(member)
                 .workSpaceName(this.workSpaceName)
                 .workSpaceThumbnailImageUrl(this.workSpaceThumbnailImage)
-                .workSpaceType(workSpaceType)
+                .workSpaceType(WorkSpaceType.INDIVIDUAL)
                 .build();
     }
 }

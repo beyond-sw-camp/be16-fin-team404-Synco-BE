@@ -1,10 +1,11 @@
 package com.team404.synco.workspace.dto;
 
-import com.team404.synco.common.constant.Authority;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,6 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TaskChannelMemberCreateReqDto {
     private Long memberSeq;
-    private Authority authority;
     private Long workSpaceReq;
+    private List<Long> memberList;
 }

@@ -13,14 +13,14 @@ import java.util.List;
 @Getter
 @Builder
 public class ChannelCreateReqDto {
-    private String ChannelName;
+    private String channelName;
     private Long workSpaceSeq;
     private List<Long> memberList;
     private Long memberSeq;
 
     public ChatChannel toEntity(){
         return ChatChannel.builder()
-                .chatChannelName("일반")
+                .chatChannelName(this.channelName)
                 .workSpaceSeq(this.workSpaceSeq)
                 .build();
     }

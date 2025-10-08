@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
-public class DriveService {
+public class TeamDriveService {
     private final DriveChannelRepository driveChannelRepository;
 
-    public DriveService(DriveChannelRepository driveChannelRepository) {
+    public TeamDriveService(DriveChannelRepository driveChannelRepository) {
         this.driveChannelRepository = driveChannelRepository;
     }
 

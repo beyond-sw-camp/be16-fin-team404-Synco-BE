@@ -1,7 +1,6 @@
 package com.team404.synco.virtualmeeting.dto;
 
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
-import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +20,7 @@ public class ChannelCreateReqDto {
 
     public VirtualMeetingChannel toEntity(){
         return VirtualMeetingChannel.builder()
-                .virtualMeetingChannelName("일반")
+                .virtualMeetingChannelName(this.channelName)
                 .workSpaceSeq(this.workSpaceSeq)
                 .build();
     }

@@ -7,6 +7,7 @@ import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,9 +19,9 @@ public class WorkSpaceController {
 
     // 팀 워크스페이스 생성
     @PostMapping("/create")
-    public ResponseDto<?> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
+    public ResponseEntity<ResponseDto<?>> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
-        return ResponseDto.ok(workSpaceResDto, HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
     }
     // 워크스페이스 수정
     // 워크스페이스 삭제

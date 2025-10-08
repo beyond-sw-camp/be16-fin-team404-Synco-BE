@@ -18,15 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class VirtualMeetingController {
     private final VirtualMeetingService virtualMeetingService;
     @PostMapping("/createChannel")
-    public ResponseEntity<?> createVirtualMeetChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
+    public ResponseEntity<ResponseDto<?>> createVirtualMeetChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = virtualMeetingService.createChannel(channelCreateReqDto);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.CREATED));
     };
 
     // 채널에 멤버 추가
     @PostMapping("/addMember")
-    public ResponseEntity<?> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
+    public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = virtualMeetingService.addMemberToChannel(channelInviteReqDto);
-        return new ResponseEntity<>(ResponseDto.ok(id, HttpStatus.OK), HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
     }
 }

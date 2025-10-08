@@ -3,6 +3,7 @@ package com.team404.synco.task.controller;
 import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.service.TaskService;
+import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskController {
     private final TaskService taskService;
     @PostMapping("/create")
-    public ResponseDto createTask(@RequestBody TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto){
-        Long id = taskService.createTaskChannel(taskChannelMemberCreateReqDto);
-        return ResponseDto.ok(id, HttpStatus.OK);
+    public ResponseEntity<ResponseDto<?>> createTask(@RequestBody TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto){
+        taskService.createTaskChannel(taskChannelMemberCreateReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("task 채널 생성되었습니다.", HttpStatus.CREATED));
     };
+
+    // 채널에 멤버 추가
+    @PostMapping("/addMember")
+    public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
+        Long id = taskService.addMemberToChannel(channelInviteReqDto);
+        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
+    }
 }

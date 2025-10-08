@@ -15,17 +15,17 @@ import java.util.List;
 @Setter
 @Builder
 public class TeamWorkSpaceCreateReqDto {
-    @NotEmpty
+    @NotEmpty(message = "워크스페이스 이름을 입력해주세요.")
     private String workSpaceName;
     private MultipartFile workSpaceThumbnailImage;
     private List<Long> memberList;
 
-    public WorkSpace toEntity(Member member, WorkSpaceType workSpaceType, String workSpaceThumbnailImageUrl){
+    public WorkSpace toEntity(Member member, String workSpaceThumbnailImageUrl){
         return WorkSpace.builder()
                 .member(member)
                 .workSpaceName(this.workSpaceName)
                 .workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
-                .workSpaceType(workSpaceType)
+                .workSpaceType(WorkSpaceType.TEAM)
                 .build();
     }
 }

@@ -20,15 +20,15 @@ public class ChatController {
 
     // 채널 생성
     @PostMapping("/createChannel")
-    public ResponseDto createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
+    public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = chatService.createChannel(channelCreateReqDto);
-        return ResponseDto.ok(id, HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 
     // 채널에 멤버 추가
     @PostMapping("/addMember")
-    public ResponseDto addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
+    public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = chatService.addMemberToChannel(channelInviteReqDto);
-        return ResponseDto.ok(id, HttpStatus.OK);
+        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
     }
 }
