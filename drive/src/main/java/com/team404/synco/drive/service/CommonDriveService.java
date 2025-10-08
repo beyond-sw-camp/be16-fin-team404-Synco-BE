@@ -170,10 +170,19 @@ public class CommonDriveService {
     public void moveItem(String itemType, Long itemId, Long newParentId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+            if(folderRepository.findByFolderNameAndFolderSeqNot(folder.getFolderName(), itemId).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+            }
+
             folder.updateParentFolderSeq(newParentId);
 
         } else {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            if(documentRepository.findByDocumentNameAndFolderFolderSeqNot(document.getDocumentName(), document.getFolder().getFolderSeq()).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+            }
+
             Folder newFolder = newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null;
             document.updateFolder(newFolder);
         }
@@ -194,6 +203,11 @@ public class CommonDriveService {
     // 폴더 이름 변경
     public DriveItemDto renameFolder(Long folderId, String newFolderName) {
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+        if(folderRepository.findByFolderNameAndFolderSeqNot(newFolderName, folderId).isPresent()) {
+            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+        }
+
         folder.updateFolderName(newFolderName);
 
         return DriveItemDto.fromFolder(folder);

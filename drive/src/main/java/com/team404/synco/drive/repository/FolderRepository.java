@@ -19,5 +19,5 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     @Query("SELECT MAX(f.orders) FROM Folder f WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq")
     Optional<Long> findMaxOrdersByParentFolderSeqAndDriveChannelSeq(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq);
 
-    Page<Folder> findByDriveChannelDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq, Pageable pageable);
+    Optional<Folder> findByFolderNameAndFolderSeqNot(String folderName, Long folderSeq);
 }

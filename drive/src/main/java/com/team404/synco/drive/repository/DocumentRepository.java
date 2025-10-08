@@ -8,10 +8,11 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
     List<Document> findByFolderFolderSeq(Long folderSeq);
 
-    Page<Document> findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq, Pageable pageable);
+    Optional<Document> findByDocumentNameAndFolderFolderSeqNot(String documentName, Long folderFolderSeq);
 }
