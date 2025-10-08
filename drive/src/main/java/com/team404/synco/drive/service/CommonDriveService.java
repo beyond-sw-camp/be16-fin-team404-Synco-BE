@@ -16,9 +16,7 @@ import com.team404.synco.common.constant.DriveItemType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
@@ -44,30 +42,17 @@ public class CommonDriveService {
         return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
     }
 
-    // 드라이브 아이템 목록 조회
+    // 드라이브 아이템 목록 조회 (정렬 포함)
     public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
                                             Long parentFolderSeq,
                                             Pageable pageable,
-                                            String nameFilter,
-                                            String modifiedDateFilter,
-                                            String byteSizeFilter) {
+                                            String sortBy,
+                                            String sortOrder) {
         
-        Map<String, Object> filterKey = new HashMap<>();
-        filterKey.put("driveChannelSeq", driveChannel.getDriveChannelSeq());
-        filterKey.put("parentFolderSeq", parentFolderSeq);
+        Pageable sortedPageable = createSortedPageable(pageable, sortBy, sortOrder);
         
-        if (nameFilter != null && !nameFilter.trim().isEmpty()) {
-            filterKey.put("nameFilter", nameFilter);
-        }
-        if (modifiedDateFilter != null && !modifiedDateFilter.trim().isEmpty()) {
-            filterKey.put("dateFilter", modifiedDateFilter);
-        }
-        if (byteSizeFilter != null && !byteSizeFilter.trim().isEmpty()) {
-            filterKey.put("sizeFilter", parseSizeToBytes(byteSizeFilter));
-        }
-        
-        Page<Folder> folders = folderRepository.findAll(DriveItemSpecification.filterFolder(filterKey), pageable);
-        Page<Document> documents = documentRepository.findAll(DriveItemSpecification.filterDocument(filterKey), pageable);
+        Page<Folder> folders = folderRepository.findAll(DriveItemSpecification.folderByDriveChannelAndParent(driveChannel.getDriveChannelSeq(), parentFolderSeq), sortedPageable);
+        Page<Document> documents = documentRepository.findAll(DriveItemSpecification.documentByDriveChannelAndParent(driveChannel.getDriveChannelSeq(), parentFolderSeq), sortedPageable);
         
         List<DriveItemDto> allItems = new ArrayList<>();
         allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).collect(Collectors.toList()));
@@ -78,24 +63,39 @@ public class CommonDriveService {
         return new PageImpl<>(allItems, pageable, totalElements);
     }
     
-    // 크기 문자열을 바이트로 변환
-    private Long parseSizeToBytes(String sizeFilter) {
-        try {
-            if (sizeFilter.endsWith("MB")) {
-                long sizeInMB = Long.parseLong(sizeFilter.replace("MB", ""));
-                return sizeInMB * 1024 * 1024L;
-            } else if (sizeFilter.endsWith("KB")) {
-                long sizeInKB = Long.parseLong(sizeFilter.replace("KB", ""));
-                return sizeInKB * 1024L;
-            } else {
-                return Long.parseLong(sizeFilter);
-            }
-        } catch (Exception e) {
-            return 0L;
+    private Pageable createSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            return pageable;
         }
+        
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        
+        List<Sort.Order> orders = new ArrayList<>();
+        
+        switch (sortBy.toLowerCase()) {
+            case "name":
+                orders.add(Sort.Order.by("folderName").with(direction));
+                orders.add(Sort.Order.by("documentName").with(direction));
+                orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
+                break;
+                
+            case "date":
+                orders.add(Sort.Order.by("updatedAt").with(direction));
+                orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+                orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
+                break;
+                
+            default:
+                return pageable;
+        }
+        
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(orders)
+        );
     }
-
-
+    
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
         long parentFolderSeq = parentFolderId != null ? parentFolderId : 0L;

@@ -9,9 +9,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class FileTypeClassifier {
 
-    /**
-     * 폴더 타입 정보
-     */
+
     public static class FolderTypeInfo {
         public final String type = "folder";
         public final String size = "-";
@@ -22,9 +20,7 @@ public class FileTypeClassifier {
         }
     }
 
-    /**
-     * 문서 타입 정보
-     */
+
     public static class DocumentTypeInfo {
         public final String type;
         public final String size;

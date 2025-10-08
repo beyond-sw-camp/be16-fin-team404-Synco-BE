@@ -28,11 +28,10 @@ public class PersonalDriveController {
     public CommonDto<?> getPersonalDriveItems(
             @PathVariable Long driveChannelSeq,
             @RequestParam(required = false) Long parentFolderId,
-            @RequestParam(required = false) String nameFilter,
-            @RequestParam(required = false) String modifiedDateFilter,
-            @RequestParam(required = false) String byteSizeFilter,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
+        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable, sortBy, sortOrder);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 
@@ -84,11 +83,8 @@ public class PersonalDriveController {
 
     // 개인 드라이브 파일 다운로드
     @GetMapping("/download/{documentSeq}")
-    public ResponseEntity<byte[]> downloadPersonalFile(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @PathVariable Long documentSeq) {
-        
-        return personalDriveService.downloadPersonalFile(userId, documentSeq);
+    public ResponseEntity<byte[]> downloadPersonalFile(@PathVariable Long documentSeq) {
+        return personalDriveService.downloadPersonalFile(documentSeq);
     }
 
     // 폴더 이름 변경

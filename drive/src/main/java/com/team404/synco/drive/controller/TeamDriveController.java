@@ -28,12 +28,11 @@ public class TeamDriveController {
     public CommonDto<?> getTeamDriveItems(
             @PathVariable Long driveChannelSeq,
             @RequestParam(required = false) Long parentFolderId,
-            @RequestParam(required = false) String nameFilter,
-            @RequestParam(required = false) String modifiedDateFilter,
-            @RequestParam(required = false) String byteSizeFilter,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<DriveItemDto> items = teamDriveService.getTeamDriveItems(driveChannelSeq, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
+        Page<DriveItemDto> items = teamDriveService.getTeamDriveItems(driveChannelSeq, parentFolderId, pageable, sortBy, sortOrder);
         return CommonDto.ok(items, HttpStatus.OK);
     }
 
@@ -94,11 +93,10 @@ public class TeamDriveController {
     // 팀 드라이브 폴더 이름 변경
     @PatchMapping("/folders/{folderId}/rename")
     public CommonDto<?> renameTeamFolder(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @PathVariable Long folderId,
             @RequestBody RenameFolderReqDto request) {
         
-        DriveItemDto renamedFolder = teamDriveService.renameTeamFolder(userId, folderId, request);
+        DriveItemDto renamedFolder = teamDriveService.renameTeamFolder(folderId, request);
         return CommonDto.ok(renamedFolder, HttpStatus.OK);
     }
 

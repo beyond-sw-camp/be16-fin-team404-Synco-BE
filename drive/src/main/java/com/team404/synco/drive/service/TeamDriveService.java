@@ -31,9 +31,9 @@ public class TeamDriveService {
     private final DocumentRepository documentRepository;
 
     // 팀 드라이브 아이템 목록 조회
-    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String nameFilter, String modifiedDateFilter, String byteSizeFilter) {
+    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
         DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
+        return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable, sortBy, sortOrder);
     }
 
     // 팀 드라이브 폴더 생성
@@ -87,9 +87,7 @@ public class TeamDriveService {
     }
 
     // 팀 드라이브 폴더 이름 변경
-    public DriveItemDto renameTeamFolder(Long userId, Long folderId, RenameFolderReqDto request) {
-        // TODO: 팀 멤버 권한 확인 로직 추가 필요
-        
+    public DriveItemDto renameTeamFolder(Long folderId, RenameFolderReqDto request) {
         return commonDriveService.renameFolder(folderId, request.getNewFolderName());
     }
 

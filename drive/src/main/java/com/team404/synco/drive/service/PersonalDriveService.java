@@ -30,9 +30,9 @@ public class PersonalDriveService {
     private final DocumentRepository documentRepository;
 
     // 개인 드라이브 아이템 목록 조회
-    public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String nameFilter, String modifiedDateFilter, String byteSizeFilter) {
+    public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
         DriveChannel personalDrive = commonDriveService.getDriveChannel(driveChannelSeq);
-        return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable, nameFilter, modifiedDateFilter, byteSizeFilter);
+        return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable, sortBy, sortOrder);
     }
 
     // 개인 드라이브 폴더 생성
@@ -65,10 +65,9 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 파일 다운로드
-    public ResponseEntity<byte[]> downloadPersonalFile(Long userId, Long documentSeq) {
+    public ResponseEntity<byte[]> downloadPersonalFile(Long documentSeq) {
 
-        Document document = documentRepository.findById(documentSeq)
-            .orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
+        Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
         
         try {
             Path filePath = Paths.get(document.getDocumentUrl());

@@ -5,72 +5,24 @@ import com.team404.synco.drive.entity.Folder;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 public class DriveItemSpecification {
 
-    // 폴더 필터링
-    public static Specification<Folder> filterFolder(Map<String, Object> filterKey) {
+    // 폴더 기본 조건 (드라이브 채널, 부모 폴더)
+    public static Specification<Folder> folderByDriveChannelAndParent(Long driveChannelSeq, Long parentFolderSeq) {
         return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            for (String key : filterKey.keySet()) {
-                Object value = filterKey.get(key);
-                if (value != null) {
-                    if (key.equals("driveChannelSeq")) {
-                        predicates.add(criteriaBuilder.equal(root.get("driveChannel").get("driveChannelSeq"), value));
-                    } else if (key.equals("parentFolderSeq")) {
-                        predicates.add(criteriaBuilder.equal(root.get("parentFolderSeq"), value));
-                    } else if (key.equals("nameFilter")) {
-                        predicates.add(criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get("folderName")), 
-                            "%" + value.toString().toLowerCase() + "%"
-                        ));
-                    } else if (key.equals("dateFilter")) {
-                        // 날짜 필터링 로직
-                        predicates.add(criteriaBuilder.equal(root.get("createdAt"), value));
-                    }
-                }
-            }
-            
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            Predicate driveChannelPredicate = criteriaBuilder.equal(root.get("driveChannel").get("driveChannelSeq"), driveChannelSeq);
+            Predicate parentFolderPredicate = criteriaBuilder.equal(root.get("parentFolderSeq"), parentFolderSeq);
+            return criteriaBuilder.and(driveChannelPredicate, parentFolderPredicate);
         };
     }
 
-    // 문서 필터링
-    public static Specification<Document> filterDocument(Map<String, Object> filterKey) {
+    // 문서 기본 조건 (드라이브 채널, 부모 폴더)
+    public static Specification<Document> documentByDriveChannelAndParent(Long driveChannelSeq, Long parentFolderSeq) {
         return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            for (String key : filterKey.keySet()) {
-                Object value = filterKey.get(key);
-                if (value != null) {
-                    if (key.equals("driveChannelSeq")) {
-                        Join<Document, Folder> folderJoin = root.join("folder", JoinType.INNER);
-                        predicates.add(criteriaBuilder.equal(folderJoin.get("driveChannel").get("driveChannelSeq"), value));
-                    } else if (key.equals("parentFolderSeq")) {
-                        Join<Document, Folder> folderJoin = root.join("folder", JoinType.INNER);
-                        predicates.add(criteriaBuilder.equal(folderJoin.get("parentFolderSeq"), value));
-                    } else if (key.equals("nameFilter")) {
-                        predicates.add(criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get("documentName")), 
-                            "%" + value.toString().toLowerCase() + "%"
-                        ));
-                    } else if (key.equals("dateFilter")) {
-                        predicates.add(criteriaBuilder.equal(root.get("createdAt"), value));
-                    } else if (key.equals("sizeFilter")) {
-                        // 크기 필터링 로직 (Integer로 변환)
-                        predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                            criteriaBuilder.length(root.get("documentUrl")), 
-                            ((Long) value).intValue()
-                        ));
-                    }
-                }
-            }
-            
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            Join<Document, Folder> folderJoin = root.join("folder", JoinType.INNER);
+            Predicate driveChannelPredicate = criteriaBuilder.equal(folderJoin.get("driveChannel").get("driveChannelSeq"), driveChannelSeq);
+            Predicate parentFolderPredicate = criteriaBuilder.equal(folderJoin.get("parentFolderSeq"), parentFolderSeq);
+            return criteriaBuilder.and(driveChannelPredicate, parentFolderPredicate);
         };
     }
 }

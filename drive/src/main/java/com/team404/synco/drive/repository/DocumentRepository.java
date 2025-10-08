@@ -12,9 +12,6 @@ import java.util.List;
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
     List<Document> findByFolderFolderSeq(Long folderSeq);
-    List<Document> findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq);
-    
-    // 페이지네이션을 위한 메서드들
-    Page<Document> findByFolderFolderSeq(Long folderSeq, Pageable pageable);
+
     Page<Document> findByFolderDriveChannelDriveChannelSeqAndFolderParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq, Pageable pageable);
 }

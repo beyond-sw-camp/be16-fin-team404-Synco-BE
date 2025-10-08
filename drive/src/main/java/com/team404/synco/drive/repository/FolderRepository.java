@@ -15,12 +15,9 @@ import java.util.Optional;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecificationExecutor<Folder> {
     List<Folder> findByParentFolderSeq(Long parentFolderSeq);
-    List<Folder> findByDriveChannelDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq);
-    
-    // 페이지네이션을 위한 메서드들
-    Page<Folder> findByDriveChannelDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq, Pageable pageable);
-    Page<Folder> findByParentFolderSeq(Long parentFolderSeq, Pageable pageable);
-    
+
     @Query("SELECT MAX(f.orders) FROM Folder f WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq")
     Optional<Long> findMaxOrdersByParentFolderSeqAndDriveChannelSeq(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq);
+
+    Page<Folder> findByDriveChannelDriveChannelSeqAndParentFolderSeq(Long driveChannelSeq, Long parentFolderSeq, Pageable pageable);
 }

@@ -30,12 +30,11 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DocumentLineRepository documentLineRepository;
-    private final CommonDriveService commonDriveService;
 
     // 공유문서 상세 조회
     public DriveItemDto getDocument(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-        return commonDriveService.convertDocumentToDto(document);
+        return DriveItemDto.fromDocument(document);
     }
 
     // 문서 내용 업데이트
@@ -47,7 +46,7 @@ public class DocumentService {
             updateDocumentContent(document, request.getContent());
         }
         
-        return commonDriveService.convertDocumentToDto(document);
+        return DriveItemDto.fromDocument(document);
     }
 
     // 문서 잠금/해제 토글
@@ -58,7 +57,7 @@ public class DocumentService {
         String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
         document.updateLockStatus(newLockStatus);
         
-        return commonDriveService.convertDocumentToDto(document);
+        return DriveItemDto.fromDocument(document);
     }
 
     // 문서 다운로드
@@ -108,7 +107,7 @@ public class DocumentService {
             
         } catch (Exception e) {
             log.error("문서 내용 업데이트 실패", e);
-            throw new MultipartException("문서 내용 업데이트에 실패했습니다.", e);
+            throw new IllegalStateException("문서 내용 업데이트에 실패했습니다.", e);
         }
     }
 
