@@ -26,8 +26,6 @@ public class WorkSpaceService {
     private final DriveFeign driveFeign;
     private final TaskFeign taskFeign;
     private static final String WORKSPACE_THUMBNAIL_DIRECTORY = "workspaceThumbnail";
-    private static final String MEMBER_NOT_FOUND_EXCEPTION = "없는 회원입니다.";
-    private static final String BASIC_CHANNEL_NAME = "일반";
 
     public WorkSpaceService(WorkSpaceRepository workSpaceRepository, MemberRepository memberRepository, WorkSpaceRedisService workSpaceRedisService, S3Uploader s3Uploader, ChatFeign chatFeign, DriveFeign driveFeign, TaskFeign taskFeign) {
         this.workSpaceRepository = workSpaceRepository;
@@ -42,7 +40,7 @@ public class WorkSpaceService {
     // 개인 워크스페이스 생성
     public WorkSpaceResDto createIndividualWorkSpace(Long memberSeq) {
         // 멤버 불러오기
-        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException(MEMBER_NOT_FOUND_EXCEPTION));
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
 
         // 워크스페이스 생성
         WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder()
@@ -75,7 +73,7 @@ public class WorkSpaceService {
     // 팀 워크스페이스 생성
     public WorkSpaceResDto createTeamWorkSpace(TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, Long memberSeq) {
         // 워크스페이스 생성한 멤버 정보 불러오기
-        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException(MEMBER_NOT_FOUND_EXCEPTION));
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
         // 워크스페이스 썸네일 이미지 업로드
         String workSpaceThumbnailImageUrl = null;
         if (teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage() != null && !teamWorkSpaceCreateReqDto.getWorkSpaceThumbnailImage().isEmpty()) {
@@ -97,7 +95,7 @@ public class WorkSpaceService {
         // 워크스페이스에 초대된 member정보 redis에 저장
         List<Long> inviteMemberList = teamWorkSpaceCreateReqDto.getMemberList();
         for(Long inviteMemberSeq : inviteMemberList){
-            Member inviteMember = memberRepository.findById(inviteMemberSeq).orElseThrow(() -> new EntityNotFoundException(MEMBER_NOT_FOUND_EXCEPTION));
+            Member inviteMember = memberRepository.findById(inviteMemberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
             workSpaceRedisService.addMemberInfo(inviteMember);
             workSpaceRedisService.addWorkSpace(workSpace, inviteMemberSeq);
             workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMemberSeq);
@@ -107,7 +105,7 @@ public class WorkSpaceService {
         // 기본 채팅 채널 생성
         chatFeign.createChatChannel(
                 ChannelCreateReqDto.builder()
-                        .ChannelName(BASIC_CHANNEL_NAME)
+                        .ChannelName("일반")
                         .workSpaceSeq(workSpace.getWorkSpaceSeq())
                         .memberSeq(workSpace.getMember().getMemberSeq())
                         .memberList(teamWorkSpaceCreateReqDto.getMemberList())
@@ -126,7 +124,7 @@ public class WorkSpaceService {
         // 기본 화상회의 채널 생성
         taskFeign.createVirtualMeetChannel(
                 ChannelCreateReqDto.builder()
-                        .ChannelName(BASIC_CHANNEL_NAME)
+                        .ChannelName("일반")
                         .workSpaceSeq(workSpace.getWorkSpaceSeq())
                         .memberSeq(workSpace.getMember().getMemberSeq())
                         .memberList(teamWorkSpaceCreateReqDto.getMemberList())

@@ -22,7 +22,6 @@ public class WorkSpaceRedisService {
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
     private static final String WORKSPACE_LIST = "workSpaceList";
     private static final String MEMBER_LIST = "memberList";
-    private static final String SERIALIZATION_EXCEPTION = "직렬화에 실패하였습니다.";
     private static final String MEBMER_NAME = "memberName";
     private static final String MEMBER_PROFILE_URL = "memberProfileUrl";
 
@@ -58,7 +57,7 @@ public class WorkSpaceRedisService {
                 workSpaces = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
-                throw new SerializationException(SERIALIZATION_EXCEPTION);
+                throw new SerializationException("직렬화에 실패하였습니다.");
             }
         }
 
@@ -71,7 +70,7 @@ public class WorkSpaceRedisService {
             String json = new ObjectMapper().writeValueAsString(workSpaces);
             memberRedisTemplate.opsForHash().put(memberKey, WORKSPACE_LIST, json);
         } catch (Exception e) {
-            throw new SerializationException(SERIALIZATION_EXCEPTION);
+            throw new SerializationException("직렬화에 실패하였습니다.");
         }
     }
 
@@ -88,7 +87,7 @@ public class WorkSpaceRedisService {
                 memberList = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
-                throw new SerializationException(SERIALIZATION_EXCEPTION);
+                throw new SerializationException("직렬화에 실패하였습니다.");
             }
         }
 
@@ -101,7 +100,7 @@ public class WorkSpaceRedisService {
             String json = new ObjectMapper().writeValueAsString(memberList);
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, MEMBER_LIST, json);
         } catch (Exception e) {
-            throw new SerializationException(SERIALIZATION_EXCEPTION);
+            throw new SerializationException("직렬화에 실패하였습니다.");
         }
     }
 }
