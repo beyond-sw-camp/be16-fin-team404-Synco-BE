@@ -1,6 +1,7 @@
 package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.DocumentType;
+import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
@@ -11,19 +12,18 @@ import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
 import com.team404.synco.drive.specification.DriveItemSpecification;
-import com.team404.synco.drive.util.FileTypeClassifier;
-import com.team404.synco.common.constant.DriveItemType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j

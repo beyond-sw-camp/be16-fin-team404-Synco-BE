@@ -4,7 +4,10 @@ import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.Folder;
 import com.team404.synco.drive.util.FileTypeClassifier;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

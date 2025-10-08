@@ -2,7 +2,9 @@ package com.team404.synco.drive.specification;
 
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.Folder;
-import jakarta.persistence.criteria.*;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 public class DriveItemSpecification {
