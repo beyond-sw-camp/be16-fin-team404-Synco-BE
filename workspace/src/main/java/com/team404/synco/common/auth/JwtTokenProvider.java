@@ -55,7 +55,6 @@ public class JwtTokenProvider {
 
     public String createAtToken(Member member) {
         Long memberSeq = member.getMemberSeq();
-        init();
 
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
@@ -72,7 +71,6 @@ public class JwtTokenProvider {
 
     public String createRtToken(Member member) {
         Long memberSeq = member.getMemberSeq();
-        init();
 
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
