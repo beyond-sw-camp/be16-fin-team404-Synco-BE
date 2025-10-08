@@ -18,6 +18,8 @@ import java.util.List;
 public class WorkSpaceRedisService {
     private final RedisTemplate<String, Object> memberRedisTemplate;
     private final RedisTemplate<String, Object> workSpaceRedisTemplate;
+    private static final String MEMBER_KEY_PREFIX = "memberSeq:";
+    private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq";
 
     public WorkSpaceRedisService(@Qualifier("memberInventory") RedisTemplate<String, Object> memberRedisTemplate, @Qualifier("workSpaceInventory")RedisTemplate<String, Object> workSpaceRedisTemplate) {
         this.memberRedisTemplate = memberRedisTemplate;
@@ -26,8 +28,7 @@ public class WorkSpaceRedisService {
 
     // 멤버 정보 redis에 추가
     public void addMemberInfo(Member member) {
-        String keyPrefix = "memberSeq:";
-        String memberKey = keyPrefix + member.getMemberSeq();
+        String memberKey = MEMBER_KEY_PREFIX + member.getMemberSeq();
 
         // 기존 member key 존재 여부 확인
         Boolean hasKey = memberRedisTemplate.hasKey(memberKey);
@@ -41,8 +42,7 @@ public class WorkSpaceRedisService {
 
     // 워크스페이스 정보 redis에 추가
     public void addWorkSpace(WorkSpace workSpace, Long memberSeq) {
-        String keyPrefix = "memberSeq:";
-        String memberKey = keyPrefix + memberSeq;
+        String memberKey = MEMBER_KEY_PREFIX + memberSeq;
 
         // workspaces 필드 가져오기
         Object existing = memberRedisTemplate.opsForHash().get(memberKey, "workSpaceList");
@@ -72,8 +72,7 @@ public class WorkSpaceRedisService {
 
     // 워크스페이스에 초대된 멤버 redis에 추가
     public void addMemberToWorkSpace(WorkSpace workSpace, Long memberSeq) {
-        String keyPrefix = "workSpaceSeq:";
-        String workSpaceKey = keyPrefix + workSpace.getWorkSpaceSeq();
+        String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpace.getWorkSpaceSeq();
 
         // memberList 필드 가져오기
         Object existing = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, "memberList");
