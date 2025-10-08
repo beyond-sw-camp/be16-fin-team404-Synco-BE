@@ -18,7 +18,7 @@ public class JwtAuthFilter implements GlobalFilter {
 
     @Value("${jwt.secretKey}")
     private String secretKey;
-
+    // TODO: oauth 로그인 url 추가 에정
     private static final List<String> ALLOWED_PATHS = List.of(
             "/member/create",
             "/member/doLogin",
@@ -39,7 +39,7 @@ public class JwtAuthFilter implements GlobalFilter {
 
         try {
             if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
-                throw new IllegalArgumentException("token 관련 예외 발생");
+                throw new SecurityException("Authorization 헤더가 없거나 형식이 잘못되었습니다.");
             }
             String token = bearerToken.substring(7);
 
@@ -58,9 +58,12 @@ public class JwtAuthFilter implements GlobalFilter {
                     .build();
 
             return chain.filter(modifiedExchange);
-        } catch (IllegalArgumentException | MalformedJwtException | ExpiredJwtException | SignatureException |
-                 UnsupportedJwtException e) {
-            e.printStackTrace();
+        } catch (SecurityException e) {
+            log.warn("인증 헤더 오류 ({}): {}", exchange.getRequest().getRemoteAddress(), e.getMessage());
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+            return exchange.getResponse().setComplete();
+        } catch (JwtException e) {
+            log.warn("JWT 토큰 오류 ({}): {}", exchange.getRequest().getRemoteAddress(), e.getMessage());
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
