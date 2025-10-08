@@ -117,7 +117,7 @@ public class CommonDriveService {
 
     // 공유문서 생성
     public DriveItemDto createSharedDoc(Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
-        // 폴더 조회
+
         Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         Document document = Document.builder()
@@ -236,7 +236,7 @@ public class CommonDriveService {
         return DriveItemDto.fromFolder(folder);
     }
 
-    // 아이템 삭제 (권한 체크 포함)
+    // 아이템 삭제
     public void deleteItem(Long userId, String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             // 폴더 삭제 전 권한 체크 (재귀적으로 내부 모든 문서가 내가 올린 것인지 확인)
