@@ -68,11 +68,11 @@ public class Member extends BaseEntity {
         this.birthDate = memberUpdateDto.getBirthDate();
     }
 
-    public void updateImageUrl(String imgUrl){
+    public void updateImageUrl(String imgUrl) {
         this.profileImageUrl = imgUrl;
     }
 
-    public void deleteMember(){
+    public void deleteMember() {
         this.ynDel = YnColumn.IS_TRUE;
     }
 }

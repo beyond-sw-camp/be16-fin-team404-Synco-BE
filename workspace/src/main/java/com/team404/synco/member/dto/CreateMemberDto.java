@@ -25,8 +25,8 @@ public class CreateMemberDto {
     @NotEmpty(message = "이메일을 입력해 주세요.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
     private String email;
-//    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{11,}$",
-//            message = "비밀번호는 11자 이상이며, 영문, 숫자, 특수문자를 포함해야 합니다.")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{11,}$",
+            message = "비밀번호는 11자 이상이며, 영문, 숫자, 특수문자를 포함해야 합니다.")
     @NotEmpty(message = "비밀번호를 입력해 주세요.")
     private String password;
     @Pattern(regexp = "^010-\\d{4}-\\d{4}$", message = "전화번호는 010-0000-0000 형식으로 입력해야 합니다.")

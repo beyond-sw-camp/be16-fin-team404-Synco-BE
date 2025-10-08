@@ -60,7 +60,7 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
-        String token =Jwts.builder()
+        String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationAt * 1000L))
@@ -77,7 +77,7 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
-        String refreshToken =Jwts.builder()
+        String refreshToken = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationRt * 90 * 1000L))

@@ -1,9 +1,7 @@
 package com.team404.synco.member.controller;
 
-import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.member.dto.*;
-import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,10 +15,9 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseDto<?>> memberCreate(@ModelAttribute @Validated CreateMemberDto createMemberDto) {
+    public ResponseEntity<ResponseDto<?>> createMember(@ModelAttribute @Validated CreateMemberDto createMemberDto) {
         Long memberSeq = memberService.createMemberWithValidation(createMemberDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(memberSeq, HttpStatus.CREATED));
     }
@@ -32,20 +29,20 @@ public class MemberController {
     }
 
     @GetMapping("/myPage")
-    public ResponseEntity<ResponseDto<?>> myPage(@RequestHeader("X-Member-Seq") Long memberSeq) {
+    public ResponseEntity<ResponseDto<?>> getMyPage(@RequestHeader("X-Member-Seq") Long memberSeq) {
         return ResponseEntity.ok(ResponseDto.ok(memberService.myInfo(memberSeq), HttpStatus.OK));
     }
 
     @PatchMapping("/update")
-    public ResponseEntity<ResponseDto<?>> updateMyPage(@RequestHeader("X-Member-Seq") Long memberSeq,
-                                          @ModelAttribute @Validated MemberUpdateDto dto) {
+    public ResponseEntity<ResponseDto<?>> updateMember(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                       @ModelAttribute @Validated MemberUpdateDto dto) {
         MemberResDto memberResDto = memberService.updateMember(memberSeq, dto);
         return ResponseEntity.ok(ResponseDto.ok(memberResDto, HttpStatus.OK));
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<ResponseDto<?>> memberDelete(@RequestHeader("X-Member-Seq") Long memberSeq){
-        memberService.memberDeleteYn(memberSeq);
+    public ResponseEntity<ResponseDto<?>> deleteMember(@RequestHeader("X-Member-Seq") Long memberSeq) {
+        memberService.deleteMemberYn(memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
     }
 

@@ -1,11 +1,9 @@
 package com.team404.synco.common.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@AllArgsConstructor
 @Getter
 @Builder
 public class ResponseDto<T> {
