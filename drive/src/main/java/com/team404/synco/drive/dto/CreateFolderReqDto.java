@@ -6,7 +6,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateFolderRequest {
+public class CreateFolderReqDto {
     private String folderName;
     private Long parentFolderSeq;
     private Long driveChannelSeq;

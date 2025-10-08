@@ -2,7 +2,7 @@ package com.team404.synco.drive.controller;
 
 import com.team404.synco.common.dto.CommonDto;
 import com.team404.synco.drive.dto.DriveItemDto;
-import com.team404.synco.drive.dto.UpdateDocumentRequest;
+import com.team404.synco.drive.dto.UpdateDocumentReqDto;
 import com.team404.synco.drive.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class DocumentController {
 
     // 문서 내용 업데이트
     @PutMapping("/{documentSeq}/content")
-    public CommonDto<?> updateDocumentContent(@PathVariable Long documentSeq, @RequestBody UpdateDocumentRequest request) {
+    public CommonDto<?> updateDocumentContent(@PathVariable Long documentSeq, @RequestBody UpdateDocumentReqDto request) {
 
         DriveItemDto document = documentService.updateDocumentContent(documentSeq, request);
         return CommonDto.ok(document, HttpStatus.OK);

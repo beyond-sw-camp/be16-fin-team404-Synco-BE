@@ -6,8 +6,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReorderItemRequest {
+public class MoveItemReqDto {
     private Long itemId;
     private String itemType; // 'folder' or 'document'
-    private Long newOrder; // 새로운 순서
+    private Long newParentSeq;
 }

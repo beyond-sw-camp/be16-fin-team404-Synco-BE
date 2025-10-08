@@ -6,7 +6,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateSharedDocRequest {
+public class CreateSharedDocReqDto {
     private String documentName;
     private Long parentFolderSeq;
     private Long driveChannelSeq;

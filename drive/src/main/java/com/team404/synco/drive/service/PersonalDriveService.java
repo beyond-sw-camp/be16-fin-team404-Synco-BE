@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,31 +36,31 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 폴더 생성
-    public DriveItemDto createPersonalFolder(CreateFolderRequest request) {
+    public DriveItemDto createPersonalFolder(CreateFolderReqDto request) {
         DriveChannel personalDrive = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 공유문서 생성
-    public DriveItemDto createPersonalSharedDoc(Long userId,CreateSharedDocRequest request) {
+    public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocReqDto request) {
         commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createSharedDoc(userId, request.getDocumentName(),
                 request.getParentFolderSeq(), true);
     }
 
     // 개인 드라이브 파일 업로드
-    public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadRequest request) {
+    public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadReqDto request) {
         DriveChannel personalDrive = commonDriveService.getDriveChannel(userId);
         return commonDriveService.uploadFiles(personalDrive, userId, request.getFiles(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 아이템 이동
-    public void movePersonalItem(MoveItemRequest request) {
+    public void movePersonalItem(MoveItemReqDto request) {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
     // 개인 드라이브 아이템 순서 변경
-    public void reorderPersonalItem(ReorderItemRequest request) {
+    public void reorderPersonalItem(ReorderItemReqDto request) {
         commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
     }
 
@@ -90,7 +89,7 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 폴더 이름 변경
-    public DriveItemDto renamePersonalFolder(Long folderId, RenameFolderRequest request) {
+    public DriveItemDto renamePersonalFolder(Long folderId, RenameFolderReqDto request) {
         return commonDriveService.renameFolder(folderId, request.getNewFolderName());
     }
 

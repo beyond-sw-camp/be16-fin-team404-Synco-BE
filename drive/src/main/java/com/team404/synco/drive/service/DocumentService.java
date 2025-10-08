@@ -2,7 +2,7 @@ package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.drive.dto.DriveItemDto;
-import com.team404.synco.drive.dto.UpdateDocumentRequest;
+import com.team404.synco.drive.dto.UpdateDocumentReqDto;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.repository.DocumentLineRepository;
@@ -40,7 +40,7 @@ public class DocumentService {
 
     // 문서 내용 업데이트
     // TODO: 실시간 문서편집 기능 추가시 수정 필요. 현재는 기존 라인 전체 삭제 후 새로 저장.
-    public DriveItemDto updateDocumentContent(Long documentSeq, UpdateDocumentRequest request) {
+    public DriveItemDto updateDocumentContent(Long documentSeq, UpdateDocumentReqDto request) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
 
         if (request.getContent() != null) {

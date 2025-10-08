@@ -39,7 +39,7 @@ public class TeamDriveController {
 
     // 팀 드라이브 폴더 생성
     @PostMapping("/folders")
-    public CommonDto<?> createTeamFolder(@RequestBody CreateFolderRequest request) {
+    public CommonDto<?> createTeamFolder(@RequestBody CreateFolderReqDto request) {
         
         DriveItemDto folder = teamDriveService.createTeamFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
@@ -49,7 +49,7 @@ public class TeamDriveController {
     @PostMapping("/shared-docs")
     public CommonDto<?> createTeamSharedDoc(
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestBody CreateSharedDocRequest request) {
+            @RequestBody CreateSharedDocReqDto request) {
         
         DriveItemDto sharedDoc = teamDriveService.createTeamSharedDoc(userId, request);
         return CommonDto.ok(sharedDoc, HttpStatus.CREATED);
@@ -59,7 +59,7 @@ public class TeamDriveController {
     @PostMapping("/upload")
     public CommonDto<?> uploadTeamFiles(
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @ModelAttribute FileUploadRequest request) {
+            @ModelAttribute FileUploadReqDto request) {
 
         List<DriveItemDto> uploadedFiles = teamDriveService.uploadTeamFiles(userId, request.getFiles(), request.getDriveChannelSeq(), request.getParentFolderSeq());
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
@@ -68,7 +68,7 @@ public class TeamDriveController {
     // 팀 드라이브 아이템 이동
     @PatchMapping("/move")
     public CommonDto<?> moveTeamItem(
-            @RequestBody MoveItemRequest request) {
+            @RequestBody MoveItemReqDto request) {
         
         teamDriveService.moveTeamItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -77,7 +77,7 @@ public class TeamDriveController {
     // 팀 드라이브 아이템 순서 변경
     @PatchMapping("/reorder")
     public CommonDto<?> reorderTeamItem(
-            @RequestBody ReorderItemRequest request) {
+            @RequestBody ReorderItemReqDto request) {
         
         teamDriveService.reorderTeamItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -96,7 +96,7 @@ public class TeamDriveController {
     public CommonDto<?> renameTeamFolder(
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @PathVariable Long folderId,
-            @RequestBody RenameFolderRequest request) {
+            @RequestBody RenameFolderReqDto request) {
         
         DriveItemDto renamedFolder = teamDriveService.renameTeamFolder(userId, folderId, request);
         return CommonDto.ok(renamedFolder, HttpStatus.OK);

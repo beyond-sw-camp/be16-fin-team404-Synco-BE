@@ -9,7 +9,7 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Builder
-public class FileUploadRequest {
+public class FileUploadReqDto {
     private List<MultipartFile> files;
     private Long parentFolderSeq;
     private Long driveChannelSeq; // 팀 드라이브용

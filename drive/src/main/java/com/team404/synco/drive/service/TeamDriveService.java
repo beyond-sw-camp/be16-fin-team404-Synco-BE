@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,13 +37,13 @@ public class TeamDriveService {
     }
 
     // 팀 드라이브 폴더 생성
-    public DriveItemDto createTeamFolder(CreateFolderRequest request) {
+    public DriveItemDto createTeamFolder(CreateFolderReqDto request) {
         DriveChannel driveChannel = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 팀 드라이브 공유문서 생성
-    public DriveItemDto createTeamSharedDoc(Long userId, CreateSharedDocRequest request) {
+    public DriveItemDto createTeamSharedDoc(Long userId, CreateSharedDocReqDto request) {
         commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createSharedDoc(userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
     }
@@ -56,12 +55,12 @@ public class TeamDriveService {
     }
 
     // 팀 드라이브 아이템 이동
-    public void moveTeamItem(MoveItemRequest request) {
+    public void moveTeamItem(MoveItemReqDto request) {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
     // 팀 드라이브 아이템 순서 변경
-    public void reorderTeamItem(ReorderItemRequest request) {
+    public void reorderTeamItem(ReorderItemReqDto request) {
         commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
     }
 
@@ -88,7 +87,7 @@ public class TeamDriveService {
     }
 
     // 팀 드라이브 폴더 이름 변경
-    public DriveItemDto renameTeamFolder(Long userId, Long folderId, RenameFolderRequest request) {
+    public DriveItemDto renameTeamFolder(Long userId, Long folderId, RenameFolderReqDto request) {
         // TODO: 팀 멤버 권한 확인 로직 추가 필요
         
         return commonDriveService.renameFolder(folderId, request.getNewFolderName());

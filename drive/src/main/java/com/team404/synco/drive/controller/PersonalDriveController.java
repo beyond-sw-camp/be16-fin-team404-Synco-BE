@@ -39,7 +39,7 @@ public class PersonalDriveController {
     // 개인 드라이브 폴더 생성
     @PostMapping("/folders")
     public CommonDto<?> createPersonalFolder(
-            @RequestBody CreateFolderRequest request) {
+            @RequestBody CreateFolderReqDto request) {
         DriveItemDto folder = personalDriveService.createPersonalFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
@@ -48,7 +48,7 @@ public class PersonalDriveController {
     @PostMapping("/shared-docs")
     public CommonDto<?> createPersonalSharedDoc(
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestBody CreateSharedDocRequest request) {
+            @RequestBody CreateSharedDocReqDto request) {
         
         DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, request);
         return CommonDto.ok(sharedDoc, HttpStatus.CREATED);
@@ -58,7 +58,7 @@ public class PersonalDriveController {
     @PostMapping("/upload")
     public CommonDto<?> uploadPersonalFiles(
             @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @ModelAttribute FileUploadRequest request) {
+            @ModelAttribute FileUploadReqDto request) {
 
         List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request);
         return CommonDto.ok(uploadedFiles, HttpStatus.CREATED);
@@ -67,7 +67,7 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 이동
     @PatchMapping("/move")
     public CommonDto<?> movePersonalItem(
-            @RequestBody MoveItemRequest request) {
+            @RequestBody MoveItemReqDto request) {
         
         personalDriveService.movePersonalItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -76,7 +76,7 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 순서 변경
     @PatchMapping("/reorder")
     public CommonDto<?> reorderPersonalItem(
-            @RequestBody ReorderItemRequest request) {
+            @RequestBody ReorderItemReqDto request) {
         
         personalDriveService.reorderPersonalItem(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
@@ -95,7 +95,7 @@ public class PersonalDriveController {
     @PatchMapping("/folders/{folderId}/rename")
     public CommonDto<?> renamePersonalFolder(
             @PathVariable Long folderId,
-            @RequestBody RenameFolderRequest request) {
+            @RequestBody RenameFolderReqDto request) {
         DriveItemDto renamedFolder = personalDriveService.renamePersonalFolder(folderId, request);
         return CommonDto.ok(renamedFolder, HttpStatus.OK);
     }

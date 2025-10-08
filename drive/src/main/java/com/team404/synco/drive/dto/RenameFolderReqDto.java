@@ -6,6 +6,6 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateDocumentRequest {
-    private String content;
+public class RenameFolderReqDto {
+    private String newFolderName;
 }

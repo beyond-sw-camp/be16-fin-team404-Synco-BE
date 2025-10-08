@@ -6,7 +6,6 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateDriveChannelRequest {
-    private String driveChannelName;
-    private Long workspaceSeq;
+public class UpdateDocumentReqDto {
+    private String content;
 }
