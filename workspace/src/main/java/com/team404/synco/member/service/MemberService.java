@@ -23,7 +23,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberService {
 
     private static final String PROFILE_IMAGE_DIRECTORY = "profile";
-
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3Uploader;
