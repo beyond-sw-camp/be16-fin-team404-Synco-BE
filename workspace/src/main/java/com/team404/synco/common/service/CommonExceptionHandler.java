@@ -8,6 +8,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MultipartException;
+
+import java.nio.file.AccessDeniedException;
 
 @RestControllerAdvice
 public class CommonExceptionHandler {
@@ -36,5 +39,23 @@ public class CommonExceptionHandler {
     public ResponseEntity<ResponseDto<?>> handleGeneralException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."));
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ResponseDto<?>> handleSecurityException(SecurityException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ResponseDto.fail(HttpStatus.UNAUTHORIZED, e.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ResponseDto<?>> handleAccessDeniedException(AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ResponseDto.fail(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ResponseDto<?>> handleMultipartException(MultipartException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
     }
 }

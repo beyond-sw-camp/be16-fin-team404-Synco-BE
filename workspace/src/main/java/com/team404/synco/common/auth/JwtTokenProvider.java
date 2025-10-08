@@ -100,7 +100,7 @@ public class JwtTokenProvider {
 
         String redisRt = redisTemplate.opsForValue().get(String.valueOf(memberSeq));
         if (redisRt == null || !redisRt.equals(refreshToken)) {
-            throw new IllegalArgumentException("잘못된 토큰 입니다.");
+            throw new SecurityException("유효하지 않거나 만료된 리프레시 토큰입니다.");
         }
 
         return member;

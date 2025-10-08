@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -13,6 +14,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -44,7 +46,7 @@ public class S3Uploader {
         try (InputStream in = file.getInputStream()) {
             s3Client.putObject(request, RequestBody.fromInputStream(in, file.getSize()));
         } catch (IOException e) {
-            throw new IllegalArgumentException("S3 업로드 실패", e);
+            throw new MultipartException("파일 업로드 실패", e);
         }
 
         String url = s3Client.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
@@ -112,6 +114,6 @@ public class S3Uploader {
     private String extractKeyFromUrl(String fileUrl) {
         int index = fileUrl.indexOf(".amazonaws.com/");
         if (index == -1) throw new IllegalArgumentException("잘못된 S3 URL 형식");
-        return URLDecoder.decode(fileUrl.substring(index + ".amazonaws.com/".length()), java.nio.charset.StandardCharsets.UTF_8);
+        return URLDecoder.decode(fileUrl.substring(index + ".amazonaws.com/".length()), StandardCharsets.UTF_8);
     }
 }
