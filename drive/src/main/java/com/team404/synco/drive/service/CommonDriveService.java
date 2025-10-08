@@ -70,8 +70,8 @@ public class CommonDriveService {
         Page<Document> documents = documentRepository.findAll(DriveItemSpecification.filterDocument(filterKey), pageable);
         
         List<DriveItemDto> allItems = new ArrayList<>();
-        allItems.addAll(convertFoldersToDto(folders.getContent()));
-        allItems.addAll(convertDocumentsToDto(documents.getContent()));
+        allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).collect(Collectors.toList()));
+        allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).collect(Collectors.toList()));
         
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
         
@@ -111,7 +111,7 @@ public class CommonDriveService {
                 .build();
 
         Folder savedFolder = folderRepository.save(folder);
-        return convertFolderToDto(savedFolder);
+        return DriveItemDto.fromFolder(savedFolder);
     }
 
 
@@ -130,7 +130,7 @@ public class CommonDriveService {
                 .build();
 
         Document savedDocument = documentRepository.save(document);
-        return convertDocumentToDto(savedDocument);
+        return DriveItemDto.fromDocument(savedDocument);
     }
 
 
@@ -143,8 +143,7 @@ public class CommonDriveService {
                 String fileName = file.getOriginalFilename();
                 String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
 
-                Folder folder = parentFolderId != null ?
-                        folderRepository.findById(parentFolderId).orElse(null) : null;
+                Folder folder = parentFolderId != null ? folderRepository.findById(parentFolderId).orElse(null) : null;
 
                 Document document = Document.builder()
                         .documentType(DocumentType.LOCAL)
@@ -156,10 +155,9 @@ public class CommonDriveService {
                         .build();
 
                 Document savedDocument = documentRepository.save(document);
-                uploadedFiles.add(convertDocumentToDto(savedDocument));
+                uploadedFiles.add(DriveItemDto.fromDocument(savedDocument));
 
             } catch (Exception e) {
-                log.error("파일 업로드 실패: {}", file.getOriginalFilename(), e);
                 throw new MultipartException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + file.getOriginalFilename(), e);
             }
         }
@@ -174,14 +172,10 @@ public class CommonDriveService {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
             folder.updateParentFolderSeq(newParentId);
 
-            log.info("폴더 이동 완료: folderId={}, folderName={}, newParentId={}", itemId, folder.getFolderName(), newParentId);
-
         } else {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             Folder newFolder = newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null;
             document.updateFolder(newFolder);
-
-            log.info("문서 이동 완료: documentId={}, documentName={}, newParentId={}", itemId, document.getDocumentName(), newParentId);
         }
     }
 
@@ -190,8 +184,6 @@ public class CommonDriveService {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
             folder.updateOrder(newOrder);
-
-            log.info("폴더 순서 변경 완료: folderId={}, folderName={}, newOrder={}", itemId, folder.getFolderName(), newOrder);
 
         } else {
             throw new UnsupportedOperationException("문서의 순서 변경은 현재 지원하지 않습니다.");
@@ -204,17 +196,23 @@ public class CommonDriveService {
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         folder.updateFolderName(newFolderName);
 
-        log.info("폴더 이름 변경 완료: folderId={}, newName={}", folderId, newFolderName);
-
-        return convertFolderToDto(folder);
+        return DriveItemDto.fromFolder(folder);
     }
 
-    // 아이템 삭제
-    public void deleteItem(String itemType, Long itemId) {
+    // 아이템 삭제 (권한 체크 포함)
+    public void deleteItem(Long userId, String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
+            // 폴더 삭제 전 권한 체크 (재귀적으로 내부 모든 문서가 내가 올린 것인지 확인)
+            validateFolderDeletePermission(userId, itemId);
             deleteFolderRecursively(itemId);
         } else {
+            // 문서 삭제 권한 체크
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            
+            if (document.getMemberSeq() != userId) {
+                throw new SecurityException("자신이 생성한 문서만 삭제할 수 있습니다.");
+            }
+            
             if (document.getDocumentType() == DocumentType.LOCAL) {
                 s3Uploader.delete(document.getDocumentUrl());
             }
@@ -222,16 +220,33 @@ public class CommonDriveService {
             documentRepository.delete(document);
         }
     }
+    
+    // 폴더 삭제 권한 검증
+    private void validateFolderDeletePermission(Long userId, Long folderId) {
+        // 1. 현재 폴더의 모든 문서 확인
+        List<Document> documentsInFolder = documentRepository.findByFolderFolderSeq(folderId);
+        for (Document document : documentsInFolder) {
+            if(document.getMemberSeq() != userId) {
+                throw new SecurityException("자신이 생성한 문서가 아닌 폴더는 삭제할 수 없습니다.");
+            }
+        }
+
+        // 하위 폴더들 재귀적으로 확인
+        List<Folder> subFolders = folderRepository.findByParentFolderSeq(folderId);
+        for (Folder subFolder : subFolders) {
+            validateFolderDeletePermission(userId, subFolder.getFolderSeq());
+        }
+    }
 
     private void deleteFolderRecursively(Long folderId) {
         folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
-        // 1. 모든 하위 폴더 ID 수집
+        // 하위 폴더 ID 재귀적으로 수집
         List<Long> allFolderIds = new ArrayList<>();
         collectAllSubFolderIds(folderId, allFolderIds);
         allFolderIds.add(folderId);
 
-        // 2. S3 파일들 수집 및 삭제
+        // S3 파일들 수집 및 삭제
         List<String> s3UrlsToDelete = new ArrayList<>();
         for (Long folderIdToDelete : allFolderIds) {
             List<Document> documents = documentRepository.findByFolderFolderSeq(folderIdToDelete);
@@ -253,7 +268,7 @@ public class CommonDriveService {
             }
         }
 
-        // 4. 폴더 삭제 (CASCADE로 해당 폴더의 문서들과 DocumentLine들 자동 삭제)
+        // 폴더 삭제 (CASCADE로 해당 폴더의 문서들과 DocumentLine들 자동 삭제)
         Collections.reverse(allFolderIds);
         for (Long folderIdToDelete : allFolderIds) {
             folderRepository.deleteById(folderIdToDelete);
@@ -269,52 +284,4 @@ public class CommonDriveService {
         }
     }
 
-    public List<DriveItemDto> convertFoldersToDto(List<Folder> folders) {
-        return folders.stream()
-                .map(this::convertFolderToDto)
-                .collect(Collectors.toList());
-    }
-
-    public List<DriveItemDto> convertDocumentsToDto(List<Document> documents) {
-        return documents.stream()
-                .map(this::convertDocumentToDto)
-                .collect(Collectors.toList());
-    }
-
-    public DriveItemDto convertFolderToDto(Folder folder) {
-        FileTypeClassifier.FolderTypeInfo typeInfo = FileTypeClassifier.FolderTypeInfo.of(folder);
-
-        return DriveItemDto.builder()
-                .id(folder.getFolderSeq())
-                .name(folder.getFolderName())
-                .type(typeInfo.type)
-                .size(typeInfo.size)
-                .uploadDate(folder.getCreatedAt())
-                .modifiedDate(folder.getUpdatedAt())
-                .icon(typeInfo.icon)
-                .parentFolderSeq(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
-                .children(new ArrayList<>())
-                .build();
-    }
-
-    public DriveItemDto convertDocumentToDto(Document document) {
-        FileTypeClassifier.DocumentTypeInfo typeInfo = FileTypeClassifier.DocumentTypeInfo.of(document);
-
-        return DriveItemDto.builder()
-                .id(document.getDocumentSeq())
-                .name(document.getDocumentName())
-                .type(typeInfo.type)
-                .size(typeInfo.size)
-                .uploadDate(document.getCreatedAt())
-                .modifiedDate(document.getUpdatedAt())
-                .icon(typeInfo.icon)
-                .parentFolderSeq(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
-                .isShared(typeInfo.isShared)
-                .isLocked(typeInfo.isLocked)
-                .content("")
-                .documentUrl(document.getDocumentUrl())
-                .documentType(document.getDocumentType())
-                .memberSeq(document.getMemberSeq())
-                .build();
-    }
 }

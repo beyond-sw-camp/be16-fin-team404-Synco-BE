@@ -103,10 +103,11 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 삭제
     @DeleteMapping("/{itemType}/{itemId}")
     public CommonDto<?> deletePersonalItem(
+            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
             @PathVariable String itemType,
             @PathVariable Long itemId) {
         
-        personalDriveService.deletePersonalItem(itemType, itemId);
+        personalDriveService.deletePersonalItem(userId, itemType, itemId);
         return CommonDto.ok("성공적으로 삭제하였습니다.", HttpStatus.NO_CONTENT);
     }
 }

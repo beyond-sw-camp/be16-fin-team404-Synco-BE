@@ -1,9 +1,13 @@
 package com.team404.synco.drive.dto;
 
 import com.team404.synco.common.constant.DocumentType;
+import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.Folder;
+import com.team404.synco.drive.util.FileTypeClassifier;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -30,4 +34,41 @@ public class DriveItemDto {
     private String documentUrl;
     private DocumentType documentType;
     private Long memberSeq;
+    
+    public static DriveItemDto fromFolder(Folder folder) {
+        FileTypeClassifier.FolderTypeInfo typeInfo = FileTypeClassifier.FolderTypeInfo.of(folder);
+        
+        return DriveItemDto.builder()
+                .id(folder.getFolderSeq())
+                .name(folder.getFolderName())
+                .type(typeInfo.type)
+                .size(typeInfo.size)
+                .uploadDate(folder.getCreatedAt())
+                .modifiedDate(folder.getUpdatedAt())
+                .icon(typeInfo.icon)
+                .parentFolderSeq(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
+                .children(new ArrayList<>())
+                .build();
+    }
+    
+    public static DriveItemDto fromDocument(Document document) {
+        FileTypeClassifier.DocumentTypeInfo typeInfo = FileTypeClassifier.DocumentTypeInfo.of(document);
+        
+        return DriveItemDto.builder()
+                .id(document.getDocumentSeq())
+                .name(document.getDocumentName())
+                .type(typeInfo.type)
+                .size(typeInfo.size)
+                .uploadDate(document.getCreatedAt())
+                .modifiedDate(document.getUpdatedAt())
+                .icon(typeInfo.icon)
+                .parentFolderSeq(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
+                .isShared(typeInfo.isShared)
+                .isLocked(typeInfo.isLocked)
+                .content("")
+                .documentUrl(document.getDocumentUrl())
+                .documentType(document.getDocumentType())
+                .memberSeq(document.getMemberSeq())
+                .build();
+    }
 }

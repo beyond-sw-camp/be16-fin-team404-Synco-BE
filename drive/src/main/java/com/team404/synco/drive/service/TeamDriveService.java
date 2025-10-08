@@ -38,7 +38,7 @@ public class TeamDriveService {
     }
 
     // 팀 드라이브 폴더 생성
-    public DriveItemDto createTeamFolder(Long userId, CreateFolderRequest request) {
+    public DriveItemDto createTeamFolder(CreateFolderRequest request) {
         DriveChannel driveChannel = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
     }
@@ -96,9 +96,7 @@ public class TeamDriveService {
 
     // 팀 드라이브 아이템 삭제
     public void deleteTeamItem(Long userId, String itemType, Long itemId) {
-        // TODO: 팀 멤버 권한 확인 로직 추가 필요
-
-        commonDriveService.deleteItem(itemType, itemId);
+        commonDriveService.deleteItem(userId, itemType, itemId);
     }
 
 

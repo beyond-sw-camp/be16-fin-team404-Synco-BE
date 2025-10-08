@@ -39,11 +39,9 @@ public class TeamDriveController {
 
     // 팀 드라이브 폴더 생성
     @PostMapping("/folders")
-    public CommonDto<?> createTeamFolder(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-            @RequestBody CreateFolderRequest request) {
+    public CommonDto<?> createTeamFolder(@RequestBody CreateFolderRequest request) {
         
-        DriveItemDto folder = teamDriveService.createTeamFolder(userId, request);
+        DriveItemDto folder = teamDriveService.createTeamFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
 

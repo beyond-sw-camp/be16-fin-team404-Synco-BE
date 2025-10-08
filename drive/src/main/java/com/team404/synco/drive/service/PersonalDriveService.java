@@ -95,7 +95,7 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 아이템 삭제
-    public void deletePersonalItem(String itemType, Long itemId) {
-        commonDriveService.deleteItem(itemType, itemId);
+    public void deletePersonalItem(Long userId, String itemType, Long itemId) {
+        commonDriveService.deleteItem(userId, itemType, itemId);
     }
 }
