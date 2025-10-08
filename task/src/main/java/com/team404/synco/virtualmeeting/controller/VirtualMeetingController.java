@@ -20,7 +20,7 @@ public class VirtualMeetingController {
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createVirtualMeetChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = virtualMeetingService.createChannel(channelCreateReqDto);
-        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.CREATED));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     };
 
     // 채널에 멤버 추가

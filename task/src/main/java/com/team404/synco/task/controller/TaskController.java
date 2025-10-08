@@ -20,7 +20,7 @@ public class TaskController {
     @PostMapping("/create")
     public ResponseEntity<ResponseDto<?>> createTask(@RequestBody TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto){
         taskService.createTaskChannel(taskChannelMemberCreateReqDto);
-        return ResponseEntity.ok(ResponseDto.ok("task 채널 생성되었습니다.", HttpStatus.CREATED));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok("OK", HttpStatus.CREATED));
     };
 
     // 채널에 멤버 추가

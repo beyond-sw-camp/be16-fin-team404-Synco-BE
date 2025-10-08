@@ -21,7 +21,7 @@ public class WorkSpaceController {
     @PostMapping("/create")
     public ResponseEntity<ResponseDto<?>> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
     }
     // 워크스페이스 수정
     // 워크스페이스 삭제

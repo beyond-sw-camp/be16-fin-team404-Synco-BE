@@ -22,7 +22,7 @@ public class ChatController {
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = chatService.createChannel(channelCreateReqDto);
-        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.CREATED));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 
     // 채널에 멤버 추가

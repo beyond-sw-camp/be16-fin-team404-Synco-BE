@@ -20,6 +20,6 @@ public class TeamDriveController {
     @PostMapping("/create")
     public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
         Long id = teamDriveService.createChannel(driveCreateReqDto);
-        return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.CREATED));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 }
