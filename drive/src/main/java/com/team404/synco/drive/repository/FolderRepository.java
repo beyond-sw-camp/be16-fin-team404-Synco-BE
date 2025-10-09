@@ -24,14 +24,24 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     @Query("SELECT MAX(f.orders) FROM Folder f WHERE f.parentFolderSeq IS NULL AND f.driveChannel.driveChannelSeq = :driveChannelSeq")
     Optional<Long> findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(@Param("driveChannelSeq") Long driveChannelSeq);
 
+    // orders 조정 메서드
     @Query("UPDATE Folder f SET f.orders = f.orders + 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders >= :fromOrder")
     @Modifying
     void incrementOrdersFrom(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);
-    
+
+    // orders 조정 메서드
     @Query("UPDATE Folder f SET f.orders = f.orders - 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders > :fromOrder")
     @Modifying
     void decrementOrdersFrom(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);
+    
+    // 최상위 폴더들의 orders 조정 메서드 (parentFolderSeq가 null인 경우)
+    @Query("UPDATE Folder f SET f.orders = f.orders - 1 WHERE f.parentFolderSeq IS NULL AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders > :fromOrder")
+    @Modifying
+    void decrementOrdersFromTopLevel(@Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);
 
     // 폴더명 중복 체크
     Optional<Folder> findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(String folderName, Long folderSeq, DriveChannel driveChannel, Long parentFolderSeq);
+    
+    // 드라이브 채널과 폴더 ID로 폴더 검색
+    Optional<Folder> findByFolderSeqAndDriveChannelDriveChannelSeq(Long folderSeq, Long driveChannelSeq);
 }

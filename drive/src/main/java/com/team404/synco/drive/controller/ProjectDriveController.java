@@ -30,7 +30,7 @@ public class ProjectDriveController {
             @RequestParam(required = false) Long parentFolderId,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortOrder,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
 
         Page<DriveItemDto> items = projectDriveService.getProjectDriveItems(driveChannelSeq, parentFolderId, pageable, sortBy, sortOrder);
         return CommonDto.ok(items, HttpStatus.OK);
