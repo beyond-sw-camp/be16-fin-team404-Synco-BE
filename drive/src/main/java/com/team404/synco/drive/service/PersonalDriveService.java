@@ -4,6 +4,7 @@ import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.repository.DocumentRepository;
+import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Slf4j
@@ -28,6 +26,7 @@ public class PersonalDriveService {
 
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
+    private final S3Uploader s3Uploader;
 
     // 개인 드라이브 아이템 목록 조회
     public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
@@ -70,8 +69,7 @@ public class PersonalDriveService {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
 
         try {
-            Path filePath = Paths.get(document.getDocumentUrl());
-            byte[] fileContent = Files.readAllBytes(filePath);
+            byte[] fileContent = s3Uploader.download(document.getDocumentUrl());
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);

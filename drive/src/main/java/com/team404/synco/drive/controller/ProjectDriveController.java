@@ -98,14 +98,13 @@ public class ProjectDriveController {
     }
 
     // 프로젝트 드라이브 아이템 삭제
-    @DeleteMapping("/{itemType}/{itemId}")
+    @DeleteMapping("/delete")
     public CommonDto<?> deleteProjectItem(
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @PathVariable String itemType,
-            @PathVariable Long itemId) {
+            @RequestBody DeleteItemReqDto request) {
         
-        projectDriveService.deleteProjectItem(userId, itemType, itemId);
-        return CommonDto.ok(null, HttpStatus.NO_CONTENT);
+        projectDriveService.deleteProjectItem(userId, request.getItemType(), request.getItemId());
+        return CommonDto.ok("성공적으로 삭제하였습니다.", HttpStatus.NO_CONTENT);
     }
 
     // TODO: 프로젝트 스페이스 생성자가 진행할 예정.
