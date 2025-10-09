@@ -1,8 +1,7 @@
 package com.team404.synco.drive.repository;
 
+import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Folder;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -29,4 +28,8 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     @Query("UPDATE Folder f SET f.orders = f.orders - 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders > :fromOrder")
     @Modifying
     void decrementOrdersFrom(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);
+
+    Optional<Folder> findByFolderNameAndParentFolderSeqAndDriveChannel(String folderName, long parentFolderSeq, DriveChannel driveChannel);
+
+    Optional<Folder> findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(String folderName, Long folderSeq, DriveChannel driveChannel, Long parentFolderSeq);
 }

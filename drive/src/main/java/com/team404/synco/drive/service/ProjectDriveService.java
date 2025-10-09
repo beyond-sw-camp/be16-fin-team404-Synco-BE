@@ -44,8 +44,8 @@ public class ProjectDriveService {
 
     // 프로젝트 드라이브 공유문서 생성
     public DriveItemDto createProjectSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        commonDriveService.getProjectDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createSharedDoc(userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
+        DriveChannel projectDriveChannel = commonDriveService.getProjectDriveChannel(request.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(projectDriveChannel,userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
     }
 
     // 프로젝트 드라이브 파일 업로드

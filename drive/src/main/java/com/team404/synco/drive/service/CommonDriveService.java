@@ -40,11 +40,10 @@ public class CommonDriveService {
 
     // 개인 드라이브 채널 조회
     public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
-        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq)
-                .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
         
-        // 개인 드라이브 채널인지 확인 (INDIVIDUAL 워크스페이스 타입)
-        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        // 개인 드라이브 채널인지 확인
+        if (channel.getWorkspaceType().equals(WorkSpaceType.INDIVIDUAL)) {
             throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
         
@@ -53,11 +52,10 @@ public class CommonDriveService {
 
     // 프로젝트 드라이브 채널 조회
     public DriveChannel getProjectDriveChannel(Long driveChannelSeq) {
-        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq)
-                .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
         
-        // 프로젝트 드라이브 채널인지 확인 (PROJECT 워크스페이스 타입)
-        if (channel.getWorkspaceType() != WorkSpaceType.PROJECT) {
+        // 프로젝트 드라이브 채널인지 확인
+        if (channel.getWorkspaceType().equals(WorkSpaceType.PROJECT)) {
             throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
         
@@ -120,10 +118,14 @@ public class CommonDriveService {
     
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
+
+        if(folderRepository.findByFolderNameAndParentFolderSeqAndDriveChannel(folderName, parentFolderId != null ? parentFolderId : 0L, driveChannel).isPresent()) {
+            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+        }
+
         long parentFolderSeq = parentFolderId != null ? parentFolderId : 0L;
 
-        Long maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(
-                parentFolderSeq, driveChannel.getDriveChannelSeq()).orElse(0L);
+        Long maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderSeq, driveChannel.getDriveChannelSeq()).orElse(0L);
 
         Folder folder = Folder.builder()
                 .folderName(folderName)
@@ -138,7 +140,12 @@ public class CommonDriveService {
 
 
     // 공유문서 생성
-    public DriveItemDto createSharedDoc(Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
+    public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
+
+        // 같은 드라이브 채널 내에서 같은 폴더 하위에 같은 이름의 문서가 있는지 확인
+        if(documentRepository.findByDocumentNameAndFolderDriveChannelAndFolderFolderSeq(documentName, driveChannel, parentFolderId != null ? parentFolderId : 0L).isPresent()) {
+            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+        }
 
         Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
@@ -193,7 +200,8 @@ public class CommonDriveService {
         if (DriveItemType.FOLDER.equals(itemType)) {
             Folder folder = folderRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
-            if(folderRepository.findByFolderNameAndFolderSeqNot(folder.getFolderName(), itemId).isPresent()) {
+            // 같은 드라이브 채널 내에서 같은 부모 폴더 하위에 같은 이름의 폴더가 있는지 확인
+            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folder.getFolderName(), itemId, folder.getDriveChannel(), newParentId).isPresent()) {
                 throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
             }
 
@@ -201,7 +209,9 @@ public class CommonDriveService {
 
         } else {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-            if(documentRepository.findByDocumentNameAndFolderFolderSeqNot(document.getDocumentName(), document.getFolder().getFolderSeq()).isPresent()) {
+            
+            // 같은 드라이브 채널 내에서 같은 폴더 하위에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
+            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getFolder().getDriveChannel(), newParentId).isPresent()) {
                 throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
             }
 

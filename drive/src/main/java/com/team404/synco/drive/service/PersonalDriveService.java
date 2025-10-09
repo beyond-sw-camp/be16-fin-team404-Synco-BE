@@ -43,8 +43,8 @@ public class PersonalDriveService {
 
     // 개인 드라이브 공유문서 생성
     public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createSharedDoc(userId, request.getDocumentName(),
+        DriveChannel personalDriveChannel = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(personalDriveChannel, userId, request.getDocumentName(),
                 request.getParentFolderSeq(), true);
     }
 
@@ -68,19 +68,19 @@ public class PersonalDriveService {
     public ResponseEntity<byte[]> downloadPersonalFile(Long documentSeq) {
 
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
-        
+
         try {
             Path filePath = Paths.get(document.getDocumentUrl());
             byte[] fileContent = Files.readAllBytes(filePath);
-            
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", document.getDocumentName());
-            
+
             return ResponseEntity.ok()
-                .headers(headers)
-                .body(fileContent);
-                
+                    .headers(headers)
+                    .body(fileContent);
+
         } catch (Exception e) {
             log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
             throw new IllegalStateException("파일 다운로드에 실패했습니다: " + document.getDocumentName(), e);
