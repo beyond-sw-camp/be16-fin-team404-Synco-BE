@@ -1,7 +1,10 @@
-package com.team404.synco.workspace.entity;
+package com.team404.synco.alarm.entity;
 
 import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.member.entity.Member;
+import com.team404.synco.common.entity.BaseEntity;
+import com.team404.synco.workspace.entity.WorkSpace;
 import jakarta.persistence.*;
 import lombok.*;
 

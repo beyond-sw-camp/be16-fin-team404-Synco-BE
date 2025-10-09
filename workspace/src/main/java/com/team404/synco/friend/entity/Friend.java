@@ -1,6 +1,8 @@
-package com.team404.synco.workspace.entity;
+package com.team404.synco.friend.entity;
 
 import com.team404.synco.common.constant.FriendStatus;
+import com.team404.synco.member.entity.Member;
+import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,10 +1,15 @@
-package com.team404.synco.workspace.entity;
+package com.team404.synco.member.entity;
 
 import com.team404.synco.common.constant.ActiveStatus;
-import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.alarm.entity.Alarm;
+import com.team404.synco.common.entity.BaseEntity;
+import com.team404.synco.friend.entity.Friend;
+import com.team404.synco.member.dto.MemberUpdateDto;
+import com.team404.synco.workspace.entity.WorkSpace;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -23,7 +28,7 @@ public class Member extends BaseEntity {
     private Long memberSeq;
     @Column(nullable = false)
     private String email;
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String memberId;
     @Column(nullable = false)
     private String password;
@@ -31,12 +36,14 @@ public class Member extends BaseEntity {
     private String name;
     @Column(nullable = false)
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private ActiveStatus activeStatus = ActiveStatus.LOGOUT;
     private String statusMessage;
     private String profileImageUrl;
     @Column(columnDefinition = "CHAR(13)")
     private String telNo;
     private LocalDate birthDate;
+    @Enumerated(EnumType.STRING)
     private SocialType socialType;
     private String socialId;
     @Column(nullable = false)
@@ -51,4 +58,21 @@ public class Member extends BaseEntity {
     private List<Friend> friendList = new ArrayList<>();
     @OneToMany(mappedBy = "member")
     private List<WorkSpace> workSpaceList = new ArrayList<>();
+
+    public void updateMember(MemberUpdateDto memberUpdateDto) {
+        this.memberId = memberUpdateDto.getId();
+        this.name = memberUpdateDto.getName();
+        this.email = memberUpdateDto.getEmail();
+        this.statusMessage = memberUpdateDto.getStatusMessage();
+        this.telNo = memberUpdateDto.getTelNo();
+        this.birthDate = memberUpdateDto.getBirthDate();
+    }
+
+    public void updateImageUrl(String imgUrl) {
+        this.profileImageUrl = imgUrl;
+    }
+
+    public void deleteMember() {
+        this.ynDel = YnColumn.IS_TRUE;
+    }
 }
