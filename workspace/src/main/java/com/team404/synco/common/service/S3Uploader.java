@@ -95,7 +95,7 @@ public class S3Uploader {
         String originalFileName = original;
         String dateStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String randomId = UUID.randomUUID().toString().substring(0, 8);
-        return dateStamp + "_" + randomId + "_" +originalFileName;
+        return dateStamp + "_" + randomId + "_" + originalFileName;
     }
 
     /**

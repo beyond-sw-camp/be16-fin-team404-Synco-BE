@@ -55,12 +55,11 @@ public class JwtTokenProvider {
 
     public String createAtToken(Member member) {
         Long memberSeq = member.getMemberSeq();
-        init();
 
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
-        String token =Jwts.builder()
+        String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationAt * 1000L))
@@ -72,12 +71,11 @@ public class JwtTokenProvider {
 
     public String createRtToken(Member member) {
         Long memberSeq = member.getMemberSeq();
-        init();
 
         Claims claims = Jwts.claims().setSubject(String.valueOf(memberSeq));
 
         Date now = new Date();
-        String refreshToken =Jwts.builder()
+        String refreshToken = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationRt * 90 * 1000L))

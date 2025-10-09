@@ -102,7 +102,7 @@ public class MemberService {
         return MemberResDto.fromEntity(member);
     }
 
-    public void memberDeleteYn(Long memberSeq) {
+    public void deleteMemberYn(Long memberSeq) {
         Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
         member.deleteMember();
     }
