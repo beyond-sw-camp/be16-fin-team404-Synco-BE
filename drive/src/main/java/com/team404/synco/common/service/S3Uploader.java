@@ -82,7 +82,7 @@ public class S3Uploader {
         }
 
         String ext = getExtension(file.getOriginalFilename());
-        if (!ext.matches("\\.(jpg|jpeg|png|gif|webp|pdf|mp4|mov|avi)")) {
+        if (!ext.matches("\\.(jpg|jpeg|svg|png|gif|webp|pdf|mp4|mov|avi|mkv|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$")) {
             throw new IllegalArgumentException("지원하지 않는 파일 형식입니다.");
         }
     }

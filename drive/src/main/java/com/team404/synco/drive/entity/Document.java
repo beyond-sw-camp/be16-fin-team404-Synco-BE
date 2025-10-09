@@ -23,7 +23,7 @@ public class Document extends BaseEntity {
     private DocumentType documentType;
     @Column(nullable = false)
     private String documentName;
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     private String documentUrl;
     @Column(nullable = false)
     private long memberSeq;
