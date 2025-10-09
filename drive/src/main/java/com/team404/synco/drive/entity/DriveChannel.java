@@ -24,7 +24,7 @@ public class DriveChannel extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private WorkSpaceType workspaceType = WorkSpaceType.TEAM;
+    private WorkSpaceType workspaceType = WorkSpaceType.PROJECT;
     @Builder.Default
     @OneToMany(mappedBy = "driveChannel")
     private List<Folder> FolderList = new ArrayList<>();

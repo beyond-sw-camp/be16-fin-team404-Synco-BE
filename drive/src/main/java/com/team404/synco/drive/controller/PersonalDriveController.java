@@ -36,16 +36,16 @@ public class PersonalDriveController {
     }
 
     // 개인 드라이브 폴더 생성
-    @PostMapping("/folders")
+    @PostMapping("/folder")
     public CommonDto<?> createPersonalFolder(@RequestBody CreateFolderReqDto request) {
         DriveItemDto folder = personalDriveService.createPersonalFolder(request);
         return CommonDto.ok(folder, HttpStatus.CREATED);
     }
 
     // 개인 드라이브 공유문서 생성
-    @PostMapping("/shared-docs")
+    @PostMapping("/create/shared-docs")
     public CommonDto<?> createPersonalSharedDoc(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+            @RequestHeader(value = "X-Member-Seq") Long userId,
             @RequestBody CreateSharedDocReqDto request) {
         
         DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, request);
@@ -55,7 +55,7 @@ public class PersonalDriveController {
     // 개인 드라이브 파일 업로드
     @PostMapping("/upload")
     public CommonDto<?> uploadPersonalFiles(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+            @RequestHeader(value = "X-Member-Seq") Long userId,
             @ModelAttribute FileUploadReqDto request) {
 
         List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request);
@@ -86,7 +86,7 @@ public class PersonalDriveController {
     }
 
     // 폴더 이름 변경
-    @PatchMapping("/folders/{folderId}/rename")
+    @PatchMapping("/folder/{folderId}/rename")
     public CommonDto<?> renamePersonalFolder(
             @PathVariable Long folderId,
             @RequestBody RenameFolderReqDto request) {
@@ -97,7 +97,7 @@ public class PersonalDriveController {
     // 개인 드라이브 아이템 삭제
     @DeleteMapping("/{itemType}/{itemId}")
     public CommonDto<?> deletePersonalItem(
-            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
+            @RequestHeader(value = "X-Member-Seq") Long userId,
             @PathVariable String itemType,
             @PathVariable Long itemId) {
         

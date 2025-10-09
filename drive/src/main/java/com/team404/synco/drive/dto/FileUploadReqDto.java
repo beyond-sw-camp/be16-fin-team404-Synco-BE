@@ -15,5 +15,5 @@ import java.util.List;
 public class FileUploadReqDto {
     private List<MultipartFile> files;
     private Long parentFolderSeq;
-    private Long driveChannelSeq; // 팀 드라이브용
+    private Long driveChannelSeq;
 }

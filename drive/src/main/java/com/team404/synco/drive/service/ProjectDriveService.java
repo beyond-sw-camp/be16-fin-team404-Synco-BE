@@ -25,47 +25,47 @@ import java.util.List;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class TeamDriveService {
+public class ProjectDriveService {
 
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
 
-    // 팀 드라이브 아이템 목록 조회
-    public Page<DriveItemDto> getTeamDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
-        DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
+    // 프로젝트 드라이브 아이템 목록 조회
+    public Page<DriveItemDto> getProjectDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
+        DriveChannel driveChannel = commonDriveService.getProjectDriveChannel(driveChannelSeq);
         return commonDriveService.getDriveItems(driveChannel, parentFolderId, pageable, sortBy, sortOrder);
     }
 
-    // 팀 드라이브 폴더 생성
-    public DriveItemDto createTeamFolder(CreateFolderReqDto request) {
-        DriveChannel driveChannel = commonDriveService.getDriveChannel(request.getDriveChannelSeq());
+    // 프로젝트 드라이브 폴더 생성
+    public DriveItemDto createProjectFolder(CreateFolderReqDto request) {
+        DriveChannel driveChannel = commonDriveService.getProjectDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
     }
 
-    // 팀 드라이브 공유문서 생성
-    public DriveItemDto createTeamSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        commonDriveService.getDriveChannel(request.getDriveChannelSeq());
+    // 프로젝트 드라이브 공유문서 생성
+    public DriveItemDto createProjectSharedDoc(Long userId, CreateSharedDocReqDto request) {
+        commonDriveService.getProjectDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createSharedDoc(userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
     }
 
-    // 팀 드라이브 파일 업로드
-    public List<DriveItemDto> uploadTeamFiles(Long userId, List<MultipartFile> files, Long driveChannelSeq, Long parentFolderId) {
-        DriveChannel driveChannel = commonDriveService.getDriveChannel(driveChannelSeq);
+    // 프로젝트 드라이브 파일 업로드
+    public List<DriveItemDto> uploadProjectFiles(Long userId, List<MultipartFile> files, Long driveChannelSeq, Long parentFolderId) {
+        DriveChannel driveChannel = commonDriveService.getProjectDriveChannel(driveChannelSeq);
         return commonDriveService.uploadFiles(driveChannel, userId, files, parentFolderId);
     }
 
-    // 팀 드라이브 아이템 이동
-    public void moveTeamItem(MoveItemReqDto request) {
+    // 프로젝트 드라이브 아이템 이동
+    public void moveProjectItem(MoveItemReqDto request) {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
-    // 팀 드라이브 아이템 순서 변경
-    public void reorderTeamItem(ReorderItemReqDto request) {
+    // 프로젝트 드라이브 아이템 순서 변경
+    public void reorderProjectItem(ReorderItemReqDto request) {
         commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
     }
 
-    // 팀 드라이브 파일 다운로드
-    public ResponseEntity<byte[]> downloadTeamFile(Long documentSeq) {
+    // 프로젝트 드라이브 파일 다운로드
+    public ResponseEntity<byte[]> downloadProjectFile(Long documentSeq) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
 
         try {
@@ -86,24 +86,24 @@ public class TeamDriveService {
         }
     }
 
-    // 팀 드라이브 폴더 이름 변경
-    public DriveItemDto renameTeamFolder(Long folderId, RenameFolderReqDto request) {
+    // 프로젝트 드라이브 폴더 이름 변경
+    public DriveItemDto renameProjectFolder(Long folderId, RenameFolderReqDto request) {
         return commonDriveService.renameFolder(folderId, request.getNewFolderName());
     }
 
-    // 팀 드라이브 아이템 삭제
-    public void deleteTeamItem(Long userId, String itemType, Long itemId) {
+    // 프로젝트 드라이브 아이템 삭제
+    public void deleteProjectItem(Long userId, String itemType, Long itemId) {
         commonDriveService.deleteItem(userId, itemType, itemId);
     }
 
 
-    // TODO: 팀 스페이스 생성자가 진행할 예정.
-    // 팀 드라이브 채널 생성
-//    public DriveItemDto createTeamDriveChannel(Long userId, CreateDriveChannelRequest request) {
+    // TODO: 프로젝트 스페이스 생성자가 진행할 예정.
+    // 프로젝트 드라이브 채널 생성
+//    public DriveItemDto createProjectDriveChannel(Long userId, CreateDriveChannelRequest request) {
 //        DriveChannel channel = DriveChannel.builder()
 //                .driveChannelName(request.getDriveChannelName())
 //                .workspaceSeq(request.getWorkspaceSeq())
-//                .workspaceType(WorkSpaceType.TEAM)
+//                .workspaceType(WorkSpaceType.PROJECT)
 //                .build();
 //
 //        return null;

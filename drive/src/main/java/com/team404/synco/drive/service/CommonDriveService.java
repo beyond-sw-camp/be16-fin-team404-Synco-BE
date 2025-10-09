@@ -2,6 +2,7 @@ package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.DriveItemType;
+import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
@@ -37,9 +38,30 @@ public class CommonDriveService {
     private final S3Uploader s3Uploader;
     private final String folderNamePrefix = "drive/";
 
-    // 드라이브 채널 조회
-    public DriveChannel getDriveChannel(Long driveChannelSeq) {
-        return driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+    // 개인 드라이브 채널 조회
+    public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
+        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        
+        // 개인 드라이브 채널인지 확인 (INDIVIDUAL 워크스페이스 타입)
+        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
+        }
+        
+        return channel;
+    }
+
+    // 프로젝트 드라이브 채널 조회
+    public DriveChannel getProjectDriveChannel(Long driveChannelSeq) {
+        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        
+        // 프로젝트 드라이브 채널인지 확인 (PROJECT 워크스페이스 타입)
+        if (channel.getWorkspaceType() != WorkSpaceType.PROJECT) {
+            throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
+        }
+        
+        return channel;
     }
 
     // 드라이브 아이템 목록 조회
