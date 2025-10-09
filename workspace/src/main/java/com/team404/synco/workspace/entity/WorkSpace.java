@@ -1,6 +1,8 @@
 package com.team404.synco.workspace.entity;
 
 import com.team404.synco.common.constant.WorkSpaceType;
+import com.team404.synco.common.entity.BaseEntity;
+import com.team404.synco.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
