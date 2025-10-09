@@ -320,7 +320,7 @@ public class CommonDriveService {
             folderRepository.decrementOrdersFromTopLevel(driveChannelSeq, currentOrder + 1);
         }
 
-        // 2. 새 위치에서 최대 순서 조회 및 설정
+        //  새 위치에서 최대 순서 조회 및 설정
         long maxOrder;
         if(newParentId != null) {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(newParentId, driveChannelSeq).orElse(0L);
@@ -328,9 +328,31 @@ public class CommonDriveService {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq).orElse(0L);
         }
 
-        // 3. 폴더의 부모와 순서 업데이트
+        // 폴더의 부모와 순서 업데이트
         folder.updateParentFolderSeq(newParentId);
         folder.updateOrder(maxOrder + 1L);
+        
+        // 이동하기 전 위치의 모든 폴더 순서를 연속적으로 재정렬
+        reorderFoldersSequentially(currentParentId, driveChannelSeq);
+    }
+    
+    // 폴더 순서를 연속적으로 재정렬
+    private void reorderFoldersSequentially(Long parentFolderId, Long driveChannelSeq) {
+        List<Folder> folders;
+        
+        if (parentFolderId != null) {
+            // 하위 폴더들 조회
+            folders = folderRepository.findByParentFolderSeqAndDriveChannelDriveChannelSeqOrderByOrders(parentFolderId, driveChannelSeq);
+        } else {
+            // 최상위 폴더들 조회
+            folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+        }
+        
+        // 순서를 1부터 연속적으로 재설정
+        for (int i = 0; i < folders.size(); i++) {
+            Folder folder = folders.get(i);
+            folder.updateOrder((long) (i + 1));
+        }
     }
 
     // 아이템 순서 변경
@@ -435,7 +457,9 @@ public class CommonDriveService {
     }
 
     private void deleteFolderRecursively(Long folderId) {
-        folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        Folder folderToDelete = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        Long parentFolderId = folderToDelete.getParentFolderSeq();
+        Long driveChannelSeq = folderToDelete.getDriveChannel().getDriveChannelSeq();
 
         // 하위 폴더 ID 재귀적으로 수집
         List<Long> allFolderIds = new ArrayList<>();
@@ -470,6 +494,9 @@ public class CommonDriveService {
             folderRepository.deleteById(folderIdToDelete);
         }
         log.info("폴더 CASCADE 삭제 완료: {} 개 폴더", allFolderIds.size());
+        
+        // 삭제 후 부모 폴더의 순서를 연속적으로 재정렬
+        reorderFoldersSequentially(parentFolderId, driveChannelSeq);
     }
 
     private void collectAllSubFolderIds(Long parentFolderId, List<Long> allFolderIds) {

@@ -44,4 +44,10 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     
     // 드라이브 채널과 폴더 ID로 폴더 검색
     Optional<Folder> findByFolderSeqAndDriveChannelDriveChannelSeq(Long folderSeq, Long driveChannelSeq);
+    
+    // 특정 부모 폴더 하위의 모든 폴더 조회 (순서대로)
+    List<Folder> findByParentFolderSeqAndDriveChannelDriveChannelSeqOrderByOrders(Long parentFolderSeq, Long driveChannelSeq);
+    
+    // 최상위 폴더들 조회 (순서대로)
+    List<Folder> findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(Long driveChannelSeq);
 }
