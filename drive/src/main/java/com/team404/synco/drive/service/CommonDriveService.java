@@ -43,7 +43,7 @@ public class CommonDriveService {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
         
         // 개인 드라이브 채널인지 확인
-        if (channel.getWorkspaceType().equals(WorkSpaceType.INDIVIDUAL)) {
+        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
         
@@ -55,7 +55,7 @@ public class CommonDriveService {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (channel.getWorkspaceType().equals(WorkSpaceType.PROJECT)) {
+        if (channel.getWorkspaceType()!= WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
         
@@ -119,17 +119,39 @@ public class CommonDriveService {
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
 
-        if(folderRepository.findByFolderNameAndParentFolderSeqAndDriveChannel(folderName, parentFolderId != null ? parentFolderId : 0L, driveChannel).isPresent()) {
-            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+        // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 폴더가 있는지 확인
+        if(parentFolderId != null) {
+            // 하위 폴더 중복 검증
+            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, parentFolderId).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+            }
+        } else {
+            // 최상위 폴더 중복 검증
+            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, null).isPresent()) {
+                throw new IllegalArgumentException("최상위에 같은 이름의 폴더가 이미 존재합니다.");
+            }
         }
 
-        long parentFolderSeq = parentFolderId != null ? parentFolderId : 0L;
+        // 부모폴더가 있는 경우에만 존재 여부 확인
+        if(parentFolderId != null){
+            Folder parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다."));
 
-        Long maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderSeq, driveChannel.getDriveChannelSeq()).orElse(0L);
+            if(!parentFolder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                throw new IllegalArgumentException("부모 폴더가 해당 드라이브 채널에 속하지 않습니다.");
+            }
+        }
+
+        // 최대 orders 조회
+        long maxOrder;
+        if(parentFolderId != null) {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq()).orElse(0L);
+        } else {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannel.getDriveChannelSeq()).orElse(0L);
+        }
 
         Folder folder = Folder.builder()
                 .folderName(folderName)
-                .parentFolderSeq(parentFolderSeq)
+                .parentFolderSeq(parentFolderId)  // null이면 최상위 폴더
                 .orders(maxOrder + 1L)
                 .driveChannel(driveChannel)
                 .build();
@@ -142,12 +164,34 @@ public class CommonDriveService {
     // 공유문서 생성
     public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
 
-        // 같은 드라이브 채널 내에서 같은 폴더 하위에 같은 이름의 문서가 있는지 확인
-        if(documentRepository.findByDocumentNameAndFolderDriveChannelAndFolderFolderSeq(documentName, driveChannel, parentFolderId != null ? parentFolderId : 0L).isPresent()) {
-            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+        // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인
+        if(parentFolderId != null) {
+            // 폴더 내 문서 중복 검증
+            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+            }
+        } else {
+            // 최상위 문서 중복 검증
+            List<Document> existingDocs = documentRepository.findAll().stream()
+                .filter(doc -> doc.getDocumentName().equals(documentName))
+                .filter(doc -> doc.getFolder() == null)
+                .filter(doc -> doc.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq()))
+                .toList();
+            
+            if (!existingDocs.isEmpty()) {
+                throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
+            }
         }
 
-        Folder folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        // 부모폴더가 있는 경우에만 폴더 설정
+        Folder folder = null;
+        if(parentFolderId != null){
+            folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+            // 부모 폴더가 같은 드라이브 채널에 속하는지 확인
+            if(!folder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                throw new IllegalArgumentException("부모 폴더가 해당 드라이브 채널에 속하지 않습니다.");
+            }
+        }
 
         Document document = Document.builder()
                 .documentType(DocumentType.CUSTOM)
@@ -156,6 +200,7 @@ public class CommonDriveService {
                 .memberSeq(userId)
                 .ynLock(isLocked != null && isLocked ? YnColumn.IS_TRUE : YnColumn.IS_FALSE)
                 .folder(folder)
+                .driveChannel(driveChannel)
                 .build();
 
         Document savedDocument = documentRepository.save(document);
@@ -172,7 +217,28 @@ public class CommonDriveService {
                 String fileName = file.getOriginalFilename();
                 String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
 
-                Folder folder = parentFolderId != null ? folderRepository.findById(parentFolderId).orElse(null) : null;
+                // 같은 위치에 같은 이름의 파일이 있는지 확인
+                if(parentFolderId != null) {
+                    // 폴더 내 파일 중복 검증
+                    if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
+                        throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 파일이 이미 존재합니다: " + fileName);
+                    }
+                } else {
+                    // 최상위 파일 중복 검증
+                    if(documentRepository.findTopLevelDocumentByNameAndChannel(fileName, null, driveChannel.getDriveChannelSeq()).isPresent()) {
+                        throw new IllegalArgumentException("최상위에 같은 이름의 파일이 이미 존재합니다: " + fileName);
+                    }
+                }
+
+                // 부모폴더가 있는 경우에만 폴더 설정
+                Folder folder = null;
+                if(parentFolderId != null){
+                    folder = folderRepository.findById(parentFolderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+                    // 부모 폴더가 같은 드라이브 채널에 속하는지 확인
+                    if(!folder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                        throw new IllegalArgumentException("부모 폴더가 해당 드라이브 채널에 속하지 않습니다.");
+                    }
+                }
 
                 Document document = Document.builder()
                         .documentType(DocumentType.LOCAL)
@@ -181,6 +247,7 @@ public class CommonDriveService {
                         .memberSeq(userId)
                         .ynLock(YnColumn.IS_FALSE)
                         .folder(folder)
+                        .driveChannel(driveChannel)
                         .build();
 
                 Document savedDocument = documentRepository.save(document);
@@ -210,9 +277,17 @@ public class CommonDriveService {
         } else {
             Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
-            // 같은 드라이브 채널 내에서 같은 폴더 하위에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
-            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getFolder().getDriveChannel(), newParentId).isPresent()) {
-                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+            // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
+            if(newParentId != null) {
+                // 폴더로 이동하는 경우
+                if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
+                    throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+                }
+            } else {
+                // 최상위로 이동하는 경우
+                if(documentRepository.findTopLevelDocumentByNameAndChannel(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
+                    throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
+                }
             }
 
             Folder newFolder = newParentId != null ? folderRepository.findById(newParentId).orElse(null) : null;
@@ -259,7 +334,8 @@ public class CommonDriveService {
     public DriveItemDto renameFolder(Long folderId, String newFolderName) {
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
-        if(folderRepository.findByFolderNameAndFolderSeqNot(newFolderName, folderId).isPresent()) {
+        // 같은 위치에서 폴더 이름 중복 검사
+        if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(newFolderName, folderId, folder.getDriveChannel(), folder.getParentFolderSeq()).isPresent()) {
             throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
         }
 

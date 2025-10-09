@@ -31,8 +31,11 @@ public class Document extends BaseEntity {
     @Builder.Default
     private String ynLock = YnColumn.IS_FALSE;;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = true)
     private Folder folder;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "drive_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private DriveChannel driveChannel;
     @Builder.Default
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DocumentLine> documentLineList = new ArrayList<>();

@@ -28,4 +28,7 @@ public class DriveChannel extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "driveChannel")
     private List<Folder> FolderList = new ArrayList<>();
+    @Builder.Default
+    @OneToMany(mappedBy = "driveChannel")
+    private List<Document> documentList = new ArrayList<>();
 }

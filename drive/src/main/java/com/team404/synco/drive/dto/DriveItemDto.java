@@ -49,7 +49,7 @@ public class DriveItemDto {
                 .uploadDate(folder.getCreatedAt())
                 .modifiedDate(folder.getUpdatedAt())
                 .icon(typeInfo.icon)
-                .parentFolderSeq(folder.getParentFolderSeq() == 0L ? null : folder.getParentFolderSeq())
+                .parentFolderSeq(folder.getParentFolderSeq())
                 .children(new ArrayList<>())
                 .build();
     }

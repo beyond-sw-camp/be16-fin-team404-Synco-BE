@@ -16,7 +16,8 @@ public class Folder extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long folderSeq;
-    private long parentFolderSeq;
+    @Column(nullable = true)
+    private Long parentFolderSeq;
     @Column(nullable = false)
     private String folderName;
     @Column(nullable = false)
