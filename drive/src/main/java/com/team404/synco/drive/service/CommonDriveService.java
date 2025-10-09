@@ -12,7 +12,6 @@ import com.team404.synco.drive.entity.Folder;
 import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
-import com.team404.synco.drive.specification.DriveItemSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,28 +64,39 @@ public class CommonDriveService {
         return channel;
     }
 
-    // 드라이브 아이템 목록 조회
+    // 드라이브 아이템 목록 조회 (더보기 버튼 방식 페이지네이션)
     public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
                                             Long parentFolderSeq,
                                             Pageable pageable,
                                             String sortBy,
                                             String sortOrder) {
         
-        Pageable sortedPageable = createSortedPageable(pageable, sortBy, sortOrder);
+        // 폴더와 문서용 정렬된 Pageable 생성
+        Pageable folderPageable = createFolderSortedPageable(pageable, sortBy, sortOrder);
+        Pageable documentPageable = createDocumentSortedPageable(pageable, sortBy, sortOrder);
         
-        Page<Folder> folders = folderRepository.findAll(DriveItemSpecification.folderByDriveChannelAndParent(driveChannel.getDriveChannelSeq(), parentFolderSeq), sortedPageable);
-        Page<Document> documents = documentRepository.findAll(DriveItemSpecification.documentByDriveChannelAndParent(driveChannel.getDriveChannelSeq(), parentFolderSeq), sortedPageable);
+        // 폴더와 문서를 각각 페이징해서 조회
+        Page<Folder> folders = folderRepository.findFoldersByDriveChannelAndParent(
+            driveChannel.getDriveChannelSeq(), parentFolderSeq, folderPageable);
+        Page<Document> documents = documentRepository.findDocumentsByDriveChannelAndParent(
+            driveChannel.getDriveChannelSeq(), parentFolderSeq, documentPageable);
         
+        // 폴더 우선으로 합치기
         List<DriveItemDto> allItems = new ArrayList<>();
         allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).collect(Collectors.toList()));
         allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).collect(Collectors.toList()));
         
+        // 총 개수 계산
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
+        
+        // 더보기 버튼 표시를 위한 로직
+        boolean hasMore = (pageable.getPageNumber() + 1) * pageable.getPageSize() < totalElements;
         
         return new PageImpl<>(allItems, pageable, totalElements);
     }
     
-    private Pageable createSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
+    // 폴더용 정렬된 Pageable 생성
+    private Pageable createFolderSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
         if (sortBy == null || sortBy.trim().isEmpty()) {
             return pageable;
         }
@@ -98,13 +108,43 @@ public class CommonDriveService {
         switch (sortBy.toLowerCase()) {
             case "name":
                 orders.add(Sort.Order.by("folderName").with(direction));
-                orders.add(Sort.Order.by("documentName").with(direction));
                 orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
                 break;
                 
             case "date":
                 orders.add(Sort.Order.by("updatedAt").with(direction));
                 orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+                break;
+                
+            default:
+                return pageable;
+        }
+        
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(orders)
+        );
+    }
+    
+    // 문서용 정렬된 Pageable 생성
+    private Pageable createDocumentSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            return pageable;
+        }
+        
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        
+        List<Sort.Order> orders = new ArrayList<>();
+        
+        switch (sortBy.toLowerCase()) {
+            case "name":
+                orders.add(Sort.Order.by("documentName").with(direction));
+                orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
+                break;
+                
+            case "date":
+                orders.add(Sort.Order.by("updatedAt").with(direction));
                 orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
                 break;
                 
@@ -118,6 +158,53 @@ public class CommonDriveService {
             Sort.by(orders)
         );
     }
+    
+    // 드라이브 아이템 정렬 (주석처리 - DB 레벨 정렬로 대체)
+    /*
+    private List<DriveItemDto> sortDriveItems(List<DriveItemDto> items, String sortBy, String sortOrder) {
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            return items.stream()
+                    .sorted((a, b) -> {
+                        // 폴더가 먼저 나오도록
+                        if (!a.getType().equals(b.getType())) {
+                            return a.getType().equals("folder") ? -1 : 1;
+                        }
+                        // 같은 타입끼리는 이름순
+                        return a.getName().compareTo(b.getName());
+                    })
+                    .collect(Collectors.toList());
+        }
+        
+        boolean isDesc = "desc".equalsIgnoreCase(sortOrder);
+        
+        return items.stream()
+                .sorted((a, b) -> {
+                    // 1. 먼저 타입으로 정렬 (폴더가 항상 먼저)
+                    if (!a.getType().equals(b.getType())) {
+                        return a.getType().equals("folder") ? -1 : 1;
+                    }
+                    
+                    // 2. 같은 타입끼리는 정렬 기준에 따라 정렬
+                    int result = 0;
+                    switch (sortBy.toLowerCase()) {
+                        case "name":
+                            result = a.getName().compareTo(b.getName());
+                            break;
+                            
+                        case "date":
+                            result = a.getModifiedDate().compareTo(b.getModifiedDate());
+                            break;
+                            
+                        default:
+                            result = a.getName().compareTo(b.getName());
+                            break;
+                    }
+                    
+                    return isDesc ? -result : result;
+                })
+                .collect(Collectors.toList());
+    }
+    */
     
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {

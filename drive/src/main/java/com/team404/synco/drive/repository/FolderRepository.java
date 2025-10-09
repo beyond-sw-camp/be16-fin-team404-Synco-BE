@@ -2,6 +2,8 @@ package com.team404.synco.drive.repository;
 
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Folder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -60,4 +62,11 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     
     // 최상위 폴더들 조회 (순서대로)
     List<Folder> findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(Long driveChannelSeq);
+    
+    // 페이징 쿼리: 특정 드라이브 채널과 부모 폴더의 폴더들 조회
+    @Query("SELECT f FROM Folder f WHERE f.driveChannel.driveChannelSeq = :driveChannelSeq AND " +
+           "(:parentFolderSeq IS NULL AND f.parentFolderSeq IS NULL OR f.parentFolderSeq = :parentFolderSeq)")
+    Page<Folder> findFoldersByDriveChannelAndParent(@Param("driveChannelSeq") Long driveChannelSeq, 
+                                                   @Param("parentFolderSeq") Long parentFolderSeq, 
+                                                   Pageable pageable);
 }

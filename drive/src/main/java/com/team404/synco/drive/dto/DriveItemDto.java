@@ -31,8 +31,7 @@ public class DriveItemDto {
     // 공유문서 관련
     private Boolean isShared;
     private Boolean isLocked;
-    private String content;
-    
+
     // 파일 관련
     private String documentUrl;
     private DocumentType documentType;
@@ -68,7 +67,6 @@ public class DriveItemDto {
                 .parentFolderSeq(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
                 .isShared(typeInfo.isShared)
                 .isLocked(typeInfo.isLocked)
-                .content("")
                 .documentUrl(document.getDocumentUrl())
                 .documentType(document.getDocumentType())
                 .memberSeq(document.getMemberSeq())
