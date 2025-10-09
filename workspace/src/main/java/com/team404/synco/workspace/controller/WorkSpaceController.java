@@ -19,7 +19,8 @@ public class WorkSpaceController {
 
     // 팀 워크스페이스 생성
     @PostMapping("/create")
-    public ResponseEntity<ResponseDto<?>> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, @RequestHeader("X-Member-Seq")Long memberSeq){
+    public ResponseEntity<ResponseDto<?>> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto,
+                                                          @RequestHeader("X-Member-Seq")Long memberSeq){
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
     }

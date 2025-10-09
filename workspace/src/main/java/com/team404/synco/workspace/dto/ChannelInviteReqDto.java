@@ -4,12 +4,10 @@ import lombok.*;
 
 import java.util.List;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
-@Setter
 @Builder
 public class ChannelInviteReqDto {
     private Long ChannelSeq;
-    private List<Long> memberList;
+    private Long workSpaceSeq;
+    private List<Long> friendList;
 }

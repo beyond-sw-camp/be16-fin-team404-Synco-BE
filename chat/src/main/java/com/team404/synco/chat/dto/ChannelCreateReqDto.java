@@ -1,10 +1,7 @@
 package com.team404.synco.chat.dto;
 
 import com.team404.synco.chat.entity.ChatChannel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -15,7 +12,7 @@ import java.util.List;
 public class ChannelCreateReqDto {
     private String channelName;
     private Long workSpaceSeq;
-    private List<Long> memberList;
+    private List<Long> friendList;
     private Long memberSeq;
 
     public ChatChannel toEntity(){

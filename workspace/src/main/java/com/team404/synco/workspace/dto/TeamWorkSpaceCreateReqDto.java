@@ -10,10 +10,9 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-@Builder
 public class TeamWorkSpaceCreateReqDto {
     @NotEmpty(message = "워크스페이스 이름을 입력해주세요.")
     private String workSpaceName;
     private MultipartFile workSpaceThumbnailImage;
-    private List<Long> memberList;
+    private List<Long> friendList;
 }

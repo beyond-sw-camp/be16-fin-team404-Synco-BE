@@ -31,9 +31,9 @@ public class TaskService {
                 .build();
         scheduleManagementChannelMemberRepository.save(creator);
 
-        List<Long> memberList = taskChannelMemberCreateReqDto.getMemberList();
-        if (memberList != null && !memberList.isEmpty()) {
-            for (Long memberSeq : memberList) {
+        List<Long> friendList = taskChannelMemberCreateReqDto.getFriendList();
+        if (friendList != null && !friendList.isEmpty()) {
+            for (Long memberSeq : friendList) {
                 ScheduleManagementChannelMember scheduleManagementChannelMember = ScheduleManagementChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -46,14 +46,14 @@ public class TaskService {
 
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto){
-        List<Long> memberList = channelInviteReqDto.getMemberList();
-        for(Long memberSeq : memberList){
+        List<Long> friendList = channelInviteReqDto.getFriendList();
+        for(Long memberSeq : friendList){
             ScheduleManagementChannelMember scheduleManagementChannelMember = ScheduleManagementChannelMember.builder()
                     .memberSeq(memberSeq)
                     .authority(Authority.PARTICIPANT)
                     .build();
             scheduleManagementChannelMemberRepository.save(scheduleManagementChannelMember);
         }
-        return (long) channelInviteReqDto.getMemberList().size();
+        return (long) channelInviteReqDto.getFriendList().size();
     }
 }

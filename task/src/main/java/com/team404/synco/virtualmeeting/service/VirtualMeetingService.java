@@ -21,7 +21,8 @@ public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
 
-    public VirtualMeetingService(VirtualMeetingChannelRepository virtualMeetingChannelRepository, VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository) {
+    public VirtualMeetingService(VirtualMeetingChannelRepository virtualMeetingChannelRepository,
+                                 VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository) {
         this.virtualMeetingChannelRepository = virtualMeetingChannelRepository;
         this.virtualMeetingChannelMemberRepository = virtualMeetingChannelMemberRepository;
     }
@@ -38,15 +39,15 @@ public class VirtualMeetingService {
                 .build();
 
         // 초대된 멤버 추가
-        List<Long> memberList = channelCreateReqDto.getMemberList();
-        if(memberList != null && !memberList.isEmpty()){
-            for(Long memberSeq : memberList){
-                VirtualMeetingChannelMember virtualMeetingChannelMemberList = VirtualMeetingChannelMember.builder()
+        List<Long> friendList = channelCreateReqDto.getFriendList();
+        if(friendList != null && !friendList.isEmpty()){
+            for(Long memberSeq : friendList){
+                VirtualMeetingChannelMember virtualMeetingChannelFriendList = VirtualMeetingChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
                         .virtualMeetingChannel(virtualMeetingChannel)
                         .build();
-                virtualMeetingChannelMemberRepository.save(virtualMeetingChannelMemberList);
+                virtualMeetingChannelMemberRepository.save(virtualMeetingChannelFriendList);
             }
         }
 
@@ -56,10 +57,11 @@ public class VirtualMeetingService {
 
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto){
-        VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findById(channelInviteReqDto.getChatChannelSeq()).orElseThrow(() -> new EntityNotFoundException("등록되지 않은 채널입니다."));
+        VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findByVirtualMeetingChannelSeqAndWorkSpaceSeq(
+                channelInviteReqDto.getChannelSeq(), channelInviteReqDto.getWorkSpaceSeq()).orElseThrow(() -> new EntityNotFoundException("등록되지 않은 채널입니다."));
         log.info(virtualMeetingChannel.toString());
-        List<Long> memberList = channelInviteReqDto.getMemberList();
-        for(Long memberSeq : memberList){
+        List<Long> friendList = channelInviteReqDto.getFriendList();
+        for(Long memberSeq : friendList){
             VirtualMeetingChannelMember virtualMeetingChannelMember = VirtualMeetingChannelMember.builder()
                     .memberSeq(memberSeq)
                     .authority(Authority.PARTICIPANT)
@@ -67,7 +69,7 @@ public class VirtualMeetingService {
                     .build();
             virtualMeetingChannelMemberRepository.save(virtualMeetingChannelMember);
         }
-        return (long) channelInviteReqDto.getMemberList().size();
+        return (long) channelInviteReqDto.getFriendList().size();
 
     }
 }

@@ -24,5 +24,5 @@ public class ChatChannel extends BaseEntity {
 
     @Builder.Default
     @OneToMany(mappedBy = "chatChannel")
-    private List<ChatChannelMember> chatChannelMemberList = new ArrayList<>();
+    private List<ChatChannelMember> chatChannelfriendList = new ArrayList<>();
 }

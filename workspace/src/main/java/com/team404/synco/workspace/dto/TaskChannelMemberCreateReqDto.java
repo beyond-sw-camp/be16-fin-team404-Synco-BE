@@ -14,5 +14,5 @@ import java.util.List;
 public class TaskChannelMemberCreateReqDto {
     private Long memberSeq;
     private Long workSpaceReq;
-    private List<Long> memberList;
+    private List<Long> friendList;
 }

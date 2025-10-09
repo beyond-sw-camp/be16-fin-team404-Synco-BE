@@ -1,19 +1,16 @@
 package com.team404.synco.chat.dto;
 
-import com.team404.synco.chat.entity.ChatChannelMember;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@Setter
+@Builder
 public class ChannelInviteReqDto {
-    private List<Long> memberList;
+    private List<Long> friendList;
     private Long memberSeq;
-    private Long chatChannelSeq;
+    private Long channelSeq;
+    private Long workSpaceSeq;
 }

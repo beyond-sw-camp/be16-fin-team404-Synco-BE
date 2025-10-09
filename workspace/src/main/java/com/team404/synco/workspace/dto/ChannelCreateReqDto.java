@@ -1,9 +1,6 @@
 package com.team404.synco.workspace.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -12,8 +9,8 @@ import java.util.List;
 @Getter
 @Builder
 public class ChannelCreateReqDto {
-    private String ChannelName;
+    private String channelName;
     private Long workSpaceSeq;
     private Long memberSeq;
-    private List<Long> memberList;
+    private List<Long> friendList;
 }

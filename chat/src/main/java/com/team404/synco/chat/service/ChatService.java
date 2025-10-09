@@ -39,9 +39,9 @@ public class ChatService {
                 .build();
         chatChannelMemberRepository.save(creator);
 
-        List<Long> memberList = channelCreateReqDto.getMemberList();
-        if (memberList != null && !memberList.isEmpty()) {
-            for (Long memberSeq : memberList) {
+        List<Long> friendList = channelCreateReqDto.getFriendList();
+        if (friendList != null && !friendList.isEmpty()) {
+            for (Long memberSeq : friendList) {
                 ChatChannelMember chatChannelMember = ChatChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -55,10 +55,12 @@ public class ChatService {
     }
 
     // 멤버 추가
-    public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto){
-        ChatChannel chatChannel = chatChannelRepository.findFirstByOrderByChatChannelSeqAsc().orElseThrow(() -> new EntityNotFoundException("등록되지 않은 채널입니다."));
-        List<Long> memberList = channelInviteReqDto.getMemberList();
-        for(Long memberSeq : memberList){
+    public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto) {
+        ChatChannel chatChannel = chatChannelRepository.findByChatChannelSeqAndWorkSpaceSeq(channelInviteReqDto.getChannelSeq(),
+                channelInviteReqDto.getWorkSpaceSeq()).orElseThrow(() ->
+                new EntityNotFoundException("등록되지 않은 채널입니다."));
+        List<Long> friendList = channelInviteReqDto.getFriendList();
+        for (Long memberSeq : friendList) {
             ChatChannelMember chatChannelMember = ChatChannelMember.builder()
                     .memberSeq(memberSeq)
                     .authority(Authority.PARTICIPANT)
@@ -66,6 +68,6 @@ public class ChatService {
                     .build();
             chatChannelMemberRepository.save(chatChannelMember);
         }
-        return (long) channelInviteReqDto.getMemberList().size();
+        return (long) channelInviteReqDto.getFriendList().size();
     }
 }
