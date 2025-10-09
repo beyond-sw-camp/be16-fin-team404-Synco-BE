@@ -72,11 +72,11 @@ public class ProjectDriveController {
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 
-    // 프로젝트 드라이브 아이템 순서 변경
+    // 프로젝트 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
-    public CommonDto<?> reorderProjectItem(@RequestBody ReorderItemReqDto request) {
+    public CommonDto<?> reorderProjectFolder(@RequestBody ReorderItemReqDto request) {
         
-        projectDriveService.reorderProjectItem(request);
+        projectDriveService.reorderProjectFolder(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 

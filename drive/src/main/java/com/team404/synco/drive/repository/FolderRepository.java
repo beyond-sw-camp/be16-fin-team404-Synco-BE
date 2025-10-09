@@ -24,12 +24,22 @@ public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecif
     @Query("SELECT MAX(f.orders) FROM Folder f WHERE f.parentFolderSeq IS NULL AND f.driveChannel.driveChannelSeq = :driveChannelSeq")
     Optional<Long> findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(@Param("driveChannelSeq") Long driveChannelSeq);
 
-    // orders 조정 메서드
+    // orders 조정 메서드 (범위 지정) - 순서 변경용
+    @Query("UPDATE Folder f SET f.orders = f.orders + 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders >= :fromOrder AND f.orders <= :toOrder")
+    @Modifying
+    void incrementOrdersInRange(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder, @Param("toOrder") Long toOrder);
+
+    // orders 조정 메서드 (범위 지정) - 순서 변경용
+    @Query("UPDATE Folder f SET f.orders = f.orders - 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders >= :fromOrder AND f.orders <= :toOrder")
+    @Modifying
+    void decrementOrdersInRange(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder, @Param("toOrder") Long toOrder);
+
+    // orders 조정 메서드 (폴더 이동용)
     @Query("UPDATE Folder f SET f.orders = f.orders + 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders >= :fromOrder")
     @Modifying
     void incrementOrdersFrom(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);
 
-    // orders 조정 메서드
+    // orders 조정 메서드 (폴더 이동용)
     @Query("UPDATE Folder f SET f.orders = f.orders - 1 WHERE f.parentFolderSeq = :parentFolderSeq AND f.driveChannel.driveChannelSeq = :driveChannelSeq AND f.orders > :fromOrder")
     @Modifying
     void decrementOrdersFrom(@Param("parentFolderSeq") Long parentFolderSeq, @Param("driveChannelSeq") Long driveChannelSeq, @Param("fromOrder") Long fromOrder);

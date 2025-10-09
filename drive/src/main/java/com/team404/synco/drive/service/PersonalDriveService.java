@@ -59,9 +59,9 @@ public class PersonalDriveService {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
-    // 개인 드라이브 아이템 순서 변경
-    public void reorderPersonalItem(ReorderItemReqDto request) {
-        commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
+    // 개인 드라이브 폴더 순서 변경
+    public void reorderPersonalFolder(ReorderItemReqDto request) {
+        commonDriveService.reorderFolder(request.getItemId(), request.getNewOrder());
     }
 
     // 개인 드라이브 파일 다운로드

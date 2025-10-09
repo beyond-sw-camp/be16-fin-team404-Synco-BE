@@ -59,9 +59,9 @@ public class ProjectDriveService {
         commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
-    // 프로젝트 드라이브 아이템 순서 변경
-    public void reorderProjectItem(ReorderItemReqDto request) {
-        commonDriveService.reorderItem(request.getItemType(), request.getItemId(), request.getNewOrder());
+    // 프로젝트 드라이브 폴더 순서 변경
+    public void reorderProjectFolder(ReorderItemReqDto request) {
+        commonDriveService.reorderFolder(request.getItemId(), request.getNewOrder());
     }
 
     // 프로젝트 드라이브 파일 다운로드

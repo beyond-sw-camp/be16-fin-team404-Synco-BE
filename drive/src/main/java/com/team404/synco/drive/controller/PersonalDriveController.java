@@ -71,11 +71,11 @@ public class PersonalDriveController {
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 
-    // 개인 드라이브 아이템 순서 변경
+    // 개인 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
-    public CommonDto<?> reorderPersonalItem(@RequestBody ReorderItemReqDto request) {
+    public CommonDto<?> reorderPersonalFolder(@RequestBody ReorderItemReqDto request) {
         
-        personalDriveService.reorderPersonalItem(request);
+        personalDriveService.reorderPersonalFolder(request);
         return CommonDto.ok(null, HttpStatus.NO_CONTENT);
     }
 

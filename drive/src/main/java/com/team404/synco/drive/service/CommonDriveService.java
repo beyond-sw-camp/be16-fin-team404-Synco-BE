@@ -355,17 +355,8 @@ public class CommonDriveService {
         }
     }
 
-    // 아이템 순서 변경
-    public void reorderItem(String itemType, Long itemId, Long newOrder) {
-        if (DriveItemType.FOLDER.equals(itemType)) {
-            reorderFolder(itemId, newOrder);
-        } else {
-            throw new UnsupportedOperationException("문서의 순서 변경은 현재 지원하지 않습니다.");
-        }
-    }
-
-    // 폴더 순서 변경 로직
-    private void reorderFolder(Long folderId, Long newOrder) {
+    // 폴더 순서 변경
+    public void reorderFolder(Long folderId, Long newOrder) {
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         Long currentOrder = folder.getOrders();
@@ -377,12 +368,31 @@ public class CommonDriveService {
             return;
         }
 
+        // 유효한 순서 범위 검증
+        Long maxOrder;
+        if (parentFolderSeq != null) {
+            // 하위 폴더인 경우
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderSeq, driveChannelSeq)
+                    .orElse(0L);
+        } else {
+            // 최상위 폴더인 경우
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq)
+                    .orElse(0L);
+        }
+
+        // 순서가 유효한 범위를 벗어나는 경우 예외 발생
+        if (newOrder < 1 || newOrder > maxOrder) {
+            throw new IllegalArgumentException(
+                String.format("유효하지 않은 순서입니다. 순서는 1부터 %d까지 가능합니다.", maxOrder)
+            );
+        }
+
         if (currentOrder < newOrder) {
             // 뒤로 이동: 현재 순서보다 크고 새로운 순서 이하인 아이템들을 -1
-            folderRepository.decrementOrdersFrom(parentFolderSeq, driveChannelSeq, newOrder);
+            folderRepository.decrementOrdersInRange(parentFolderSeq, driveChannelSeq, currentOrder + 1, newOrder);
         } else {
-            // 앞으로 이동: 새로운 순서 이상인 아이템들을 +1
-            folderRepository.incrementOrdersFrom(parentFolderSeq, driveChannelSeq, newOrder);
+            // 앞으로 이동: 새로운 순서 이상이고 현재 순서 미만인 아이템들을 +1
+            folderRepository.incrementOrdersInRange(parentFolderSeq, driveChannelSeq, newOrder, currentOrder - 1);
         }
 
         // 폴더의 순서 업데이트
