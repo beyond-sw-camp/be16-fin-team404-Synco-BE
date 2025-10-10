@@ -35,4 +35,7 @@ public class ScheduleManagementChannelMember extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "scheduleManagementChannelMember", orphanRemoval = true)
     private List<Comment> commentList = new ArrayList<>();
+    public void updateAuthority(Authority authority){
+        this.authority = authority;
+    }
 }

@@ -120,9 +120,9 @@ public class WorkSpaceService {
         WorkSpace workSpace = workSpaceRepository.findById(teamWorkSpaceEditReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
         // 권한 검증
-       if(!workSpace.getMember().getMemberSeq().equals(memberSeq)){
-           throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
-       }
+        if (!workSpace.getMember().getMemberSeq().equals(memberSeq)) {
+            throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
+        }
         // 이름 수정
         workSpace.updateWorkSpaceName(teamWorkSpaceEditReqDto.getWorkSpaceName());
         // 썸네일 수정
@@ -146,7 +146,7 @@ public class WorkSpaceService {
         WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq).orElseThrow(() ->
                 new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
         // 권한 검증
-        if(!workSpace.getMember().getMemberSeq().equals(memberSeq)){
+        if (!workSpace.getMember().getMemberSeq().equals(memberSeq)) {
             throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
         }
 
@@ -169,6 +169,13 @@ public class WorkSpaceService {
         chatFeign.addMemberToChannel(channelInviteReqDto);
         taskFeign.addMemberToTaskChannel(channelInviteReqDto);
         taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto);
+    }
+
+    // 프로젝트 SUPER 권한 위임
+    public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq) {
+        chatFeign.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
+        taskFeign.delegateTaskChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
+        taskFeign.delegateVirtualMeetChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
     }
 
 //    // 내 워크스페이스 목록 조회

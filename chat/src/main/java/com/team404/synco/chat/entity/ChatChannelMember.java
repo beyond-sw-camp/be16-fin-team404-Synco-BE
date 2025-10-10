@@ -37,4 +37,8 @@ public class ChatChannelMember extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "chatChannelMember", orphanRemoval = true)
     private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
+
+    public void updateAuthority(Authority authority){
+        this.authority = authority;
+    }
 }

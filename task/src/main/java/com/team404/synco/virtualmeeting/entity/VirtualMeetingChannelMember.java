@@ -29,5 +29,8 @@ public class VirtualMeetingChannelMember extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "virtualMeetingChannelMember", orphanRemoval = true)
     private List<RecordingSummary> recordingSummaryList = new ArrayList<>();
+    public void updateAuthority(Authority authority){
+        this.authority = authority;
+    }
 
 }

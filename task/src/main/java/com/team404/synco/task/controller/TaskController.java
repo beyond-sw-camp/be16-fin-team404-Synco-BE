@@ -1,5 +1,6 @@
 package com.team404.synco.task.controller;
 
+import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.service.TaskService;
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.AccessDeniedException;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,6 +28,15 @@ public class TaskController {
     public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = taskService.addMemberToChannel(channelInviteReqDto);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
+    }
+
+    // 채널 SUPER 권한 위임
+    @PatchMapping("/delegateSuperAuthority")
+    public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
+                                                                 @RequestHeader("X-member-seq") Long memberSeq) throws AccessDeniedException
+    {
+        taskService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
 
     // 팀 테스크 전체 삭제
