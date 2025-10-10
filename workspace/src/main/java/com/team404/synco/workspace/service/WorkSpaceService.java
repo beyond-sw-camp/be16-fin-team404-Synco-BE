@@ -48,6 +48,10 @@ public class WorkSpaceService {
         WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder().member(member).workSpaceName(member.getName()).
                 workSpaceThumbnailImageUrl(member.getProfileImageUrl()).workSpaceType(WorkSpaceType.INDIVIDUAL).build());
 
+        // 워크스페이스 생성한 member정보 redis에 저장
+        workSpaceRedisService.addMemberInfo(member);
+        workSpaceRedisService.addWorkSpace(workSpace, member.getMemberSeq());
+
         // 개인 드라이브 생성
         driveFeign.createPersonalDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.INDIVIDUAL).workSpaceName(
                 workSpace.getWorkSpaceName()).workSpaceReq(workSpace.getWorkSpaceSeq()).build());
