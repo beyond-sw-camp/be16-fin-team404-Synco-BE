@@ -56,4 +56,9 @@ public class TaskService {
         }
         return (long) channelInviteReqDto.getFriendList().size();
     }
+
+    // 팀 Task 전체 삭제(WorkSpace 삭제시)
+    public void deleteAllTask(Long workSpaceSeq){
+        scheduleManagementChannelMemberRepository.deleteByWorkSpaceSeq(workSpaceSeq);
+    }
 }

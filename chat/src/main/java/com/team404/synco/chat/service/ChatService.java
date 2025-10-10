@@ -70,4 +70,9 @@ public class ChatService {
         }
         return (long) channelInviteReqDto.getFriendList().size();
     }
+
+    // 채널 전체 삭제(WorkSpace 삭제시)
+    public void deleteAllChannel(Long workSpaceSeq){
+        chatChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
+    }
 }

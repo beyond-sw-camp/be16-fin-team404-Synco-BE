@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ScheduleManagementChannelMemberRepository extends JpaRepository<ScheduleManagementChannelMember, Long> {
+    void deleteByWorkSpaceSeq(Long workSpaceSeq);
 }

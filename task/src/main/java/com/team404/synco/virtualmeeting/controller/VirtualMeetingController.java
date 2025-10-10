@@ -7,10 +7,7 @@ import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,5 +25,11 @@ public class VirtualMeetingController {
     public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = virtualMeetingService.addMemberToChannel(channelInviteReqDto);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
+    }
+
+    // 전체 채널 삭제(워크스페이스 삭제시)
+    @DeleteMapping("/{workSpaceSeq}")
+    public void deleteAllChannel(@PathVariable Long workSpaceSeq){
+        virtualMeetingService.deleteAllChannel(workSpaceSeq);
     }
 }

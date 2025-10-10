@@ -24,6 +24,6 @@ public class DriveChannel extends BaseEntity {
     @Column(nullable = false)
     private long workspaceSeq;
     @Builder.Default
-    @OneToMany(mappedBy = "driveChannel")
+    @OneToMany(mappedBy = "driveChannel", orphanRemoval = true)
     private List<Folder> FolderList = new ArrayList<>();
 }

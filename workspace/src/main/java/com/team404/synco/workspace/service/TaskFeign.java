@@ -4,6 +4,8 @@ import com.team404.synco.workspace.dto.ChannelCreateReqDto;
 import com.team404.synco.workspace.dto.ChannelInviteReqDto;
 import com.team404.synco.workspace.dto.TaskChannelMemberCreateReqDto;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -11,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface TaskFeign {
     @PostMapping("/task/create")
     void createTask(@RequestBody TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto);
+
+    @DeleteMapping("/task/{workSpaceSeq}")
+    void deleteTaskChannel(@PathVariable Long workSpaceSeq);
 
     @PostMapping("/virtual-meeting/addMember")
     void addMemberToTaskChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
@@ -20,4 +25,7 @@ public interface TaskFeign {
 
     @PostMapping("/virtual-meeting/addMember")
     void addMemberToVirtualMeetingChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
+
+    @DeleteMapping("/virtual-meeting/{workSpaceSeq}")
+    void deleteAllVirtualMeetingChannel(@PathVariable Long workSpaceSeq);
 }

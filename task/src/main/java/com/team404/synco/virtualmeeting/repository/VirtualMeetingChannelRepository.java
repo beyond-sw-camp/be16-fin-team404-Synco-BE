@@ -9,5 +9,5 @@ import java.util.Optional;
 @Repository
 public interface VirtualMeetingChannelRepository extends JpaRepository<VirtualMeetingChannel, Long> {
     Optional<VirtualMeetingChannel> findByVirtualMeetingChannelSeqAndWorkSpaceSeq(Long virtualMeetingChannelSeq, Long workSpaceSeq);
-
+    void deleteAllByWorkSpaceSeq(Long workSpaceSeq);
 }

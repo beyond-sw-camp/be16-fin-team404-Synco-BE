@@ -2,6 +2,7 @@ package com.team404.synco.workspace.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.workspace.dto.TeamWorkSpaceCreateReqDto;
+import com.team404.synco.workspace.dto.TeamWorkSpaceEditReqDto;
 import com.team404.synco.workspace.dto.WorkSpaceResDto;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -17,15 +20,30 @@ import org.springframework.web.bind.annotation.*;
 public class WorkSpaceController {
     private final WorkSpaceService workSpaceService;
 
-    // 팀 워크스페이스 생성
+    // 프로젝트 워크스페이스 생성
     @PostMapping("/create")
     public ResponseEntity<ResponseDto<?>> createWorkSpace(@ModelAttribute TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto,
                                                           @RequestHeader("X-Member-Seq")Long memberSeq){
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
     }
-    // 워크스페이스 수정
-    // 워크스페이스 삭제
+
+    // 프로젝트 워크스페이스 수정
+    @PatchMapping("/edit")
+    public ResponseEntity<ResponseDto<?>> editWorkSpace(@ModelAttribute TeamWorkSpaceEditReqDto teamWorkSpaceEditReqDto,
+                                                        @RequestHeader("X-Member-Seq")Long memberSeq) throws AccessDeniedException {
+        WorkSpaceResDto workSpaceResDto = workSpaceService.editWorkSpace(teamWorkSpaceEditReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(workSpaceResDto, HttpStatus.OK));
+    }
+
+    // 프로젝트 워크스페이스 삭제
+    @DeleteMapping("/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> deleteWorkSpace(@PathVariable Long workSpaceSeq,
+                                                        @RequestHeader("X-Member-Seq")Long memberSeq) throws Exception {
+        workSpaceService.deleteWorkSpace(workSpaceSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("팀 워크스페이스가 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
     // 내 워크스페이스 목록 조회
     // 워크스페이스 초대
     // 채널 생성

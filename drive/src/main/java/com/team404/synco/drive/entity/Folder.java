@@ -25,6 +25,6 @@ public class Folder extends BaseEntity {
     @JoinColumn(name = "drive_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private DriveChannel driveChannel;
     @Builder.Default
-    @OneToMany(mappedBy = "folder")
+    @OneToMany(mappedBy = "folder", orphanRemoval = true)
     private List<Document> DocumentList = new ArrayList<>();
 }

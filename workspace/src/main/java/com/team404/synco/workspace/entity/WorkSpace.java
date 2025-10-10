@@ -25,4 +25,12 @@ public class WorkSpace extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Member member;
+
+    public void updateWorkSpaceName(String workSpaceName){
+        this.workSpaceName = workSpaceName;
+    }
+
+    public void updateImageUrl(String imgUrl) {
+        this.workSpaceThumbnailImageUrl = imgUrl;
+    }
 }

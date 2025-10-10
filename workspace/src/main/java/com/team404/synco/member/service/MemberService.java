@@ -114,5 +114,4 @@ public class MemberService {
                 .accessToken(accessToken)
                 .build();
     }
-
 }

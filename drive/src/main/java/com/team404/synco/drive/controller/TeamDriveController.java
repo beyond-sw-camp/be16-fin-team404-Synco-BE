@@ -6,10 +6,7 @@ import com.team404.synco.drive.service.TeamDriveService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,5 +18,11 @@ public class TeamDriveController {
     public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
         Long id = teamDriveService.createChannel(driveCreateReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+    }
+
+    // 팀 드라이브 삭제(워크스페이스 삭제시)
+    @DeleteMapping("/{workSpaceSeq}")
+    public void deleteAllChannel(@PathVariable Long workSpaceSeq){
+        teamDriveService.deleteDrive(workSpaceSeq);
     }
 }

@@ -33,7 +33,7 @@ public class Document extends BaseEntity {
     @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Folder folder;
     @Builder.Default
-    @OneToMany(mappedBy = "document")
+    @OneToMany(mappedBy = "document", orphanRemoval = true)
     private List<DocumentLine> DocumentLineList = new ArrayList<>();
 
 }

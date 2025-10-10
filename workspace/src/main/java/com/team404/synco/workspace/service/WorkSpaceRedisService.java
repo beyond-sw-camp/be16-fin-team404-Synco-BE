@@ -18,12 +18,14 @@ import java.util.List;
 public class WorkSpaceRedisService {
     private final RedisTemplate<String, Object> memberRedisTemplate;
     private final RedisTemplate<String, Object> workSpaceRedisTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String MEMBER_KEY_PREFIX = "memberSeq:";
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
     private static final String WORKSPACE_LIST = "workSpaceList";
     private static final String FRIEND_LIST = "friendList";
     private static final String MEBMER_NAME = "memberName";
     private static final String MEMBER_PROFILE_URL = "memberProfileUrl";
+
 
     public WorkSpaceRedisService(@Qualifier("memberInventory") RedisTemplate<String, Object> memberRedisTemplate,
                                  @Qualifier("workSpaceInventory")RedisTemplate<String, Object> workSpaceRedisTemplate) {
@@ -55,7 +57,7 @@ public class WorkSpaceRedisService {
 
         if (existing != null) {
             try {
-                workSpaces = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
+                workSpaces = objectMapper.readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
                 throw new SerializationException("직렬화에 실패하였습니다.");
@@ -68,7 +70,7 @@ public class WorkSpaceRedisService {
         }
 
         try {
-            String json = new ObjectMapper().writeValueAsString(workSpaces);
+            String json = objectMapper.writeValueAsString(workSpaces);
             memberRedisTemplate.opsForHash().put(memberKey, WORKSPACE_LIST, json);
         } catch (Exception e) {
             throw new SerializationException("직렬화에 실패하였습니다.");
@@ -85,7 +87,7 @@ public class WorkSpaceRedisService {
 
         if (existing != null) {
             try {
-                friendList = new ObjectMapper().readValue(existing.toString(), new TypeReference<List<Long>>() {
+                friendList = objectMapper.readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
                 throw new SerializationException("직렬화에 실패하였습니다.");
@@ -98,10 +100,60 @@ public class WorkSpaceRedisService {
         }
 
         try {
-            String json = new ObjectMapper().writeValueAsString(friendList);
+            String json = objectMapper.writeValueAsString(friendList);
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, FRIEND_LIST, json);
         } catch (Exception e) {
             throw new SerializationException("직렬화에 실패하였습니다.");
         }
     }
+
+    // 워크스페이스를 멤버 정보에서 삭제
+    public void removeWorkspaceFromMember(Long memberSeq, Long workspaceSeq) throws Exception {
+        String key = MEMBER_KEY_PREFIX + memberSeq;
+        String field = WORKSPACE_LIST;
+
+        // 현재 문자열(JSON) 가져오기
+        String json = (String) memberRedisTemplate.opsForHash().get(key, field);
+        if (json == null) return;
+
+        // 역직렬화
+        List<Long> list = objectMapper.readValue(json, new TypeReference<List<Long>>() {});
+
+        // 값 제거
+        list.remove(workspaceSeq);
+
+        // 다시 직렬화하여 저장
+        String updatedWorkSpaceList = objectMapper.writeValueAsString(list);
+        memberRedisTemplate.opsForHash().put(key, field, updatedWorkSpaceList);
+    }
+
+    // 워크스페이스 목록에서 워크스페이스 삭제
+    public void removeWorkspace(Long workspaceSeq) throws Exception {
+        String key = WORKSPACE_KEY_PREFIX + workspaceSeq;
+        workSpaceRedisTemplate.delete(key);
+    }
+
+    // 친구 목록 조회
+    // ToDo : 개발중
+    /*public List<Long> getFriendList(Long workSpaceSeq) {
+        String key = "workSpaceSeq:" + workSpaceSeq;
+        Object redisValue = workSpaceRedisTemplate.opsForHash().get(key, "memberList");
+
+        if (redisValue == null) {
+            return new ArrayList<>();
+        }
+
+        try {
+            String json = redisValue.toString();
+
+            // 만약 따옴표로 감싸진 문자열일 경우 제거
+            if (json.startsWith("\"") && json.endsWith("\"")) {
+                json = json.substring(1, json.length() - 1);
+            }
+
+            return objectMapper.readValue(json, new TypeReference<List<Long>>() {});
+        } catch (Exception e) {
+            throw new SerializationException("Redis memberList 역직렬화 실패", e);
+        }
+    }*/
 }

@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface ChatChannelRepository extends JpaRepository<ChatChannel, Long> {
     Optional<ChatChannel> findByChatChannelSeqAndWorkSpaceSeq(Long chatChannelSeq, Long workSpaceSeq);
+    void deleteAllByWorkSpaceSeq(Long workSpaceSeq);
 }

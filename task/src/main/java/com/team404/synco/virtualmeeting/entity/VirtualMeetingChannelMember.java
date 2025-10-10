@@ -27,7 +27,7 @@ public class VirtualMeetingChannelMember extends BaseEntity {
     @JoinColumn(name = "virtual_meeting_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private VirtualMeetingChannel virtualMeetingChannel;
     @Builder.Default
-    @OneToMany(mappedBy = "virtualMeetingChannelMember")
+    @OneToMany(mappedBy = "virtualMeetingChannelMember", orphanRemoval = true)
     private List<RecordingSummary> recordingSummaryList = new ArrayList<>();
 
 }

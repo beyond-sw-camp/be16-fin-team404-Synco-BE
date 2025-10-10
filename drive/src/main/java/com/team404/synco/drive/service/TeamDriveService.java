@@ -18,4 +18,9 @@ public class TeamDriveService {
     public Long createChannel(DriveCreateReqDto driveCreateReqDto){
         return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
     }
+
+    // 드라이브 삭제(WorkSpace 삭제시)
+    public void deleteDrive(Long workSpaceSeq){
+        driveChannelRepository.deleteByWorkspaceSeq(workSpaceSeq);
+    }
 }

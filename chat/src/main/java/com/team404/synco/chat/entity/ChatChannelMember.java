@@ -31,10 +31,10 @@ public class ChatChannelMember extends BaseEntity {
     private ChatChannel chatChannel;
 
     @Builder.Default
-    @OneToMany(mappedBy = "chatChannelMember")
+    @OneToMany(mappedBy = "chatChannelMember", orphanRemoval = true)
     private List<ChatMessage> chatMessageList = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "chatChannelMember")
+    @OneToMany(mappedBy = "chatChannelMember", orphanRemoval = true)
     private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }

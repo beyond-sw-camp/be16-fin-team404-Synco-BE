@@ -11,7 +11,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -48,6 +50,10 @@ public class WorkSpaceService {
         WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder().member(member).workSpaceName(member.getName()).
                 workSpaceThumbnailImageUrl(member.getProfileImageUrl()).workSpaceType(WorkSpaceType.INDIVIDUAL).build());
 
+        // 워크스페이스 생성한 member정보 redis에 저장
+        workSpaceRedisService.addMemberInfo(member);
+        workSpaceRedisService.addWorkSpace(workSpace, member.getMemberSeq());
+
         // 개인 드라이브 생성
         driveFeign.createPersonalDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.INDIVIDUAL).workSpaceName(
                 workSpace.getWorkSpaceName()).workSpaceReq(workSpace.getWorkSpaceSeq()).build());
@@ -59,7 +65,7 @@ public class WorkSpaceService {
         return WorkSpaceResDto.fromEntity(workSpace);
     }
 
-    // 팀 워크스페이스 생성
+    // 프로젝트 워크스페이스 생성
     public WorkSpaceResDto createTeamWorkSpace(TeamWorkSpaceCreateReqDto teamWorkSpaceCreateReqDto, Long memberSeq) {
         // 워크스페이스 생성한 멤버 정보 불러오기
         Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
@@ -109,6 +115,55 @@ public class WorkSpaceService {
         return WorkSpaceResDto.fromEntity(workSpace);
     }
 
+    // 프로젝트 워크스페이스 수정
+    public WorkSpaceResDto editWorkSpace(TeamWorkSpaceEditReqDto teamWorkSpaceEditReqDto, Long memberSeq) throws AccessDeniedException {
+        WorkSpace workSpace = workSpaceRepository.findById(teamWorkSpaceEditReqDto.getWorkSpaceSeq()).orElseThrow(() ->
+                new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
+        // 권한 검증
+       if(!workSpace.getMember().getMemberSeq().equals(memberSeq)){
+           throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
+       }
+        // 이름 수정
+        workSpace.updateWorkSpaceName(teamWorkSpaceEditReqDto.getWorkSpaceName());
+        // 썸네일 수정
+        MultipartFile profileImage = teamWorkSpaceEditReqDto.getWorkSpaceThumbnailImage();
+        if (profileImage != null && !profileImage.isEmpty()) {
+            if (workSpace.getWorkSpaceThumbnailImageUrl() != null && !workSpace.getWorkSpaceThumbnailImageUrl().isEmpty()) {
+                try {
+                    s3Uploader.delete(workSpace.getWorkSpaceThumbnailImageUrl());
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("S3 이미지 삭제에 실패했습니다.");
+                }
+            }
+            String newThumbnailImageUrl = s3Uploader.upload(profileImage, WORKSPACE_THUMBNAIL_DIRECTORY);
+            workSpace.updateImageUrl(newThumbnailImageUrl);
+        }
+        return WorkSpaceResDto.fromEntity(workSpace);
+    }
+
+    // 워크스페이스 삭제
+    public void deleteWorkSpace(Long workSpaceSeq, Long memberSeq) throws Exception {
+        WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq).orElseThrow(() ->
+                new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
+        // 권한 검증
+        if(!workSpace.getMember().getMemberSeq().equals(memberSeq)){
+            throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
+        }
+
+        // 워크스페이스 삭제
+        workSpaceRepository.deleteById(workSpaceSeq);
+
+        // 워크스페이스 정보 레디스에서 삭제
+        workSpaceRedisService.removeWorkspaceFromMember(memberSeq, workSpaceSeq);
+        workSpaceRedisService.removeWorkspace(workSpaceSeq);
+
+        // 기본 채널 포함 채널 모두 삭제
+        chatFeign.deleteAllChannel(workSpaceSeq);
+        driveFeign.deleteTeamDrive(workSpaceSeq);
+        taskFeign.deleteTaskChannel(workSpaceSeq);
+        taskFeign.deleteAllVirtualMeetingChannel(workSpaceSeq);
+    }
+
     // 각 채널에 멤버 초대
     public void channelInvite(ChannelInviteReqDto channelInviteReqDto) {
         chatFeign.addMemberToChannel(channelInviteReqDto);
@@ -126,14 +181,6 @@ public class WorkSpaceService {
 //        return null;
 //    }
 //
-//    // 워크스페이스 수정
-//    public WorkSpaceEditResDto editWorkSpace(){
-//        return null;
-//    }
 //
-//    // 워크스페이스 삭제
-//    public Long deleteWorkSpace(){
-//        return null;
-//    }
 //
 }

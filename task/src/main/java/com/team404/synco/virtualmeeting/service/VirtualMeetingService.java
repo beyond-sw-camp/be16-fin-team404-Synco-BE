@@ -58,7 +58,8 @@ public class VirtualMeetingService {
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto){
         VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findByVirtualMeetingChannelSeqAndWorkSpaceSeq(
-                channelInviteReqDto.getChannelSeq(), channelInviteReqDto.getWorkSpaceSeq()).orElseThrow(() -> new EntityNotFoundException("등록되지 않은 채널입니다."));
+                channelInviteReqDto.getChannelSeq(), channelInviteReqDto.getWorkSpaceSeq()).orElseThrow(() ->
+                new EntityNotFoundException("등록되지 않은 채널입니다."));
         log.info(virtualMeetingChannel.toString());
         List<Long> friendList = channelInviteReqDto.getFriendList();
         for(Long memberSeq : friendList){
@@ -71,5 +72,10 @@ public class VirtualMeetingService {
         }
         return (long) channelInviteReqDto.getFriendList().size();
 
+    }
+
+    // 채널 전체 삭제(WorkSpace 삭제시)
+    public void deleteAllChannel(Long workSpaceSeq){
+        virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 }

@@ -7,10 +7,7 @@ import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -28,5 +25,11 @@ public class TaskController {
     public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = taskService.addMemberToChannel(channelInviteReqDto);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
+    }
+
+    // 팀 테스크 전체 삭제
+    @DeleteMapping("/{workSpaceSeq}")
+    public void deleteTeamTaskChannel(@PathVariable Long workSpaceSeq){
+        taskService.deleteAllTask(workSpaceSeq);
     }
 }
