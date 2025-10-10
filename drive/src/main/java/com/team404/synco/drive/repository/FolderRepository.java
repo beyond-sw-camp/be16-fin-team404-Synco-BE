@@ -5,7 +5,6 @@ import com.team404.synco.drive.entity.Folder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FolderRepository extends JpaRepository<Folder, Long>, JpaSpecificationExecutor<Folder> {
+public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findByParentFolderSeq(Long parentFolderSeq);
     
     // 특정 드라이브 채널 내의 최상위 폴더들 조회 (parentFolderSeq가 null인 경우)

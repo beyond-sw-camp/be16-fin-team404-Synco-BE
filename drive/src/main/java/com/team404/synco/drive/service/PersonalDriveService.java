@@ -1,12 +1,16 @@
 package com.team404.synco.drive.service;
 
+import com.team404.synco.common.constant.WorkSpaceType;
+import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
+import com.team404.synco.drive.repository.DocumentLineRepository;
 import com.team404.synco.drive.repository.DocumentRepository;
+import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,8 +19,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartException;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,47 +35,75 @@ public class PersonalDriveService {
 
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
+    private final DocumentLineRepository documentLineRepository;
+    private final DriveChannelRepository driveChannelRepository;
     private final S3Uploader s3Uploader;
 
+    // 개인 드라이브 채널 조회
+    @Transactional(readOnly = true)
+    public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
+        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
+        
+        // 개인 드라이브 채널인지 확인
+        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
+        }
+        
+        return channel;
+    }
+
     // 개인 드라이브 아이템 목록 조회
+    @Transactional(readOnly = true)
     public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(driveChannelSeq);
+        DriveChannel personalDrive = getPersonalDriveChannel(driveChannelSeq);
         return commonDriveService.getDriveItems(personalDrive, parentFolderId, pageable, sortBy, sortOrder);
     }
 
     // 개인 드라이브 폴더 생성
     public DriveItemDto createPersonalFolder(CreateFolderReqDto request) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 공유문서 생성
     public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        DriveChannel personalDriveChannel = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        DriveChannel personalDriveChannel = getPersonalDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.createSharedDoc(personalDriveChannel, userId, request.getDocumentName(),
-                request.getParentFolderSeq(), true);
+                request.getParentFolderSeq(), request.getIsLocked());
     }
 
     // 개인 드라이브 파일 업로드
     public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadReqDto request) {
-        DriveChannel personalDrive = commonDriveService.getPersonalDriveChannel(request.getDriveChannelSeq());
+        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
         return commonDriveService.uploadFiles(personalDrive, userId, request.getFiles(), request.getParentFolderSeq());
     }
 
     // 개인 드라이브 아이템 이동
     public void movePersonalItem(MoveItemReqDto request) {
-        commonDriveService.moveItem(request.getItemType(), request.getItemId(), request.getNewParentSeq());
+        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
+        commonDriveService.moveItem(personalDrive, request.getItemType(), request.getItemId(), request.getNewParentSeq());
     }
 
     // 개인 드라이브 폴더 순서 변경
     public void reorderPersonalFolder(ReorderItemReqDto request) {
-        commonDriveService.reorderFolder(request.getItemId(), request.getNewOrder());
+        // 채널 검증을 위해 조회 (보안상 중요)
+        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
+        commonDriveService.reorderFolder(personalDrive, request.getItemId(), request.getNewOrder());
     }
 
     // 개인 드라이브 파일 다운로드
-    public ResponseEntity<byte[]> downloadPersonalFile(Long documentSeq) {
-
+    public ResponseEntity<byte[]> downloadPersonalFile(Long driveChannelSeq, Long documentSeq) {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
+        
+        // 개인 드라이브 채널인지 확인
+        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 파일이 아닙니다: " + documentSeq);
+        }
+        
+        // 요청한 채널과 문서의 채널이 일치하는지 확인
+        if (!document.getDriveChannel().getDriveChannelSeq().equals(driveChannelSeq)) {
+            throw new IllegalArgumentException("요청한 채널의 파일이 아닙니다: " + documentSeq);
+        }
 
         try {
             byte[] fileContent = s3Uploader.download(document.getDocumentUrl());
@@ -86,12 +123,140 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 폴더 이름 변경
-    public DriveItemDto renamePersonalFolder(Long folderId, RenameFolderReqDto request) {
-        return commonDriveService.renameFolder(folderId, request.getNewFolderName());
+    public DriveItemDto renamePersonalFolder(RenameFolderReqDto request) {
+        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
+        return commonDriveService.renameFolder(personalDrive, request.getFolderSeq(), request.getNewFolderName());
     }
 
     // 개인 드라이브 아이템 삭제
-    public void deletePersonalItem(Long userId, String itemType, Long itemId) {
-        commonDriveService.deleteItem(userId, itemType, itemId);
+    public void deletePersonalItem(Long driveChannelSeq, Long userId, String itemType, Long itemId) {
+        DriveChannel personalDrive = getPersonalDriveChannel(driveChannelSeq);
+        commonDriveService.deleteItem(personalDrive, userId, itemType, itemId);
+    }
+
+    // 개인 드라이브 공유문서 상세 조회
+    @Transactional(readOnly = true)
+    public DocumentDetailDto getPersonalDocument(Long driveChannelSeq, Long documentSeq) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
+            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        
+        // 개인 드라이브 채널인지 확인
+        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
+        }
+        
+        // 문서의 라인별 내용 조회
+        List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+        
+        return DocumentDetailDto.fromDocument(document, documentLines);
+    }
+
+//    // 개인 드라이브 공유문서 내용 업데이트
+//    // TODO: 추후 개발 예정
+//    public DriveItemDto updatePersonalDocumentContent(UpdateDocumentReqDto request) {
+//        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
+//            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+//
+//        // 개인 드라이브 채널인지 확인
+//        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+//            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
+//        }
+//
+//        if (request.getContent() != null) {
+//            updateDocumentContent(document, request.getContent());
+//        }
+//
+//        return DriveItemDto.fromDocument(document);
+//    }
+
+    // 개인 드라이브 공유문서 잠금/해제 토글
+    public DriveItemDto togglePersonalDocumentLock(ToggleReqDto request) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        
+        // 개인 드라이브 채널인지 확인
+        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
+        }
+        
+        String currentLockStatus = document.getYnLock();
+        String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
+        document.updateLockStatus(newLockStatus);
+        
+        return DriveItemDto.fromDocument(document);
+    }
+
+    // 개인 드라이브 공유 문서 다운로드
+    public ResponseEntity<byte[]> downloadPersonalDocument(Long driveChannelSeq, Long documentSeq) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
+            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        
+        // 개인 드라이브 채널인지 확인
+        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
+        }
+        
+        try {
+            String content = getDocumentContent(document);
+            byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", document.getDocumentName() + ".txt");
+            
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(contentBytes);
+                
+        } catch (Exception e) {
+            log.error("문서 다운로드 실패: {}", document.getDocumentName(), e);
+            throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
+        }
+    }
+
+//    // 문서 내용 업데이트 (내부 메서드)
+//    // TODO: 추후 개발 예정
+//    private void updateDocumentContent(Document document, String content) {
+//        try {
+//            List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+//            documentLineRepository.deleteAll(existingLines);
+//
+//            // 새 내용을 라인별로 저장
+//            String[] lines = content.split("\n");
+//            List<DocumentLine> newLines = new ArrayList<>();
+//
+//            for (int i = 0; i < lines.length; i++) {
+//                DocumentLine line = DocumentLine.builder()
+//                    .documentContent(lines[i])
+//                    .documentLineSeq((long) (i + 1))
+//                    .document(document)
+//                    .build();
+//                newLines.add(line);
+//            }
+//
+//            documentLineRepository.saveAll(newLines);
+//
+//        } catch (Exception e) {
+//            log.error("문서 내용 업데이트 실패", e);
+//            throw new IllegalStateException("문서 내용 업데이트에 실패했습니다.", e);
+//        }
+//    }
+
+    // 문서 내용 조회
+    private String getDocumentContent(Document document) {
+        try {
+            List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+
+            if (documentLines.isEmpty()) {
+                return "문서 내용이 없습니다.";
+            }
+
+            return documentLines.stream()
+                .map(DocumentLine::getDocumentContent)
+                .collect(Collectors.joining("\n"));
+        } catch (Exception e) {
+            log.error("문서 내용 조회 실패", e);
+            return "문서 내용을 불러올 수 없습니다.";
+        }
     }
 }

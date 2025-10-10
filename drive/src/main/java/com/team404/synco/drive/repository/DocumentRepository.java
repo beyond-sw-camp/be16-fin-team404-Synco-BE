@@ -5,7 +5,6 @@ import com.team404.synco.drive.entity.DriveChannel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSpecificationExecutor<Document> {
+public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findByFolderFolderSeq(Long folderSeq);
 
     // 문서명 중복 체크
@@ -30,4 +29,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long>, JpaSp
     Page<Document> findDocumentsByDriveChannelAndParent(@Param("driveChannelSeq") Long driveChannelSeq, 
                                                        @Param("parentFolderSeq") Long parentFolderSeq, 
                                                        Pageable pageable);
+    
+    Optional<Document> findByDocumentSeqAndDriveChannelDriveChannelSeq(Long documentSeq, Long driveChannelSeq);
 }

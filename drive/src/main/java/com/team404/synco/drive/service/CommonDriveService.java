@@ -2,7 +2,6 @@ package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.DriveItemType;
-import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
@@ -10,13 +9,13 @@ import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Folder;
 import com.team404.synco.drive.repository.DocumentRepository;
-import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.repository.FolderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,40 +30,17 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class CommonDriveService {
 
-    private final DriveChannelRepository driveChannelRepository;
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
     private final S3Uploader s3Uploader;
     private final String folderNamePrefix = "drive/";
 
-    // 개인 드라이브 채널 조회
-    public DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
-        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
-        
-        // 개인 드라이브 채널인지 확인
-        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
-            throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
-        }
-        
-        return channel;
-    }
-
-    // 프로젝트 드라이브 채널 조회
-    public DriveChannel getProjectDriveChannel(Long driveChannelSeq) {
-        DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
-        
-        // 프로젝트 드라이브 채널인지 확인
-        if (channel.getWorkspaceType()!= WorkSpaceType.PROJECT) {
-            throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
-        }
-        
-        return channel;
-    }
-
     // 드라이브 아이템 목록 조회 (더보기 버튼 방식 페이지네이션)
+    @Transactional(readOnly = true)
     public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
                                             Long parentFolderSeq,
                                             Pageable pageable,
@@ -88,9 +64,6 @@ public class CommonDriveService {
         
         // 총 개수 계산
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
-        
-        // 더보기 버튼 표시를 위한 로직
-        boolean hasMore = (pageable.getPageNumber() + 1) * pageable.getPageSize() < totalElements;
         
         return new PageImpl<>(allItems, pageable, totalElements);
     }
@@ -158,53 +131,6 @@ public class CommonDriveService {
             Sort.by(orders)
         );
     }
-    
-    // 드라이브 아이템 정렬 (주석처리 - DB 레벨 정렬로 대체)
-    /*
-    private List<DriveItemDto> sortDriveItems(List<DriveItemDto> items, String sortBy, String sortOrder) {
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            return items.stream()
-                    .sorted((a, b) -> {
-                        // 폴더가 먼저 나오도록
-                        if (!a.getType().equals(b.getType())) {
-                            return a.getType().equals("folder") ? -1 : 1;
-                        }
-                        // 같은 타입끼리는 이름순
-                        return a.getName().compareTo(b.getName());
-                    })
-                    .collect(Collectors.toList());
-        }
-        
-        boolean isDesc = "desc".equalsIgnoreCase(sortOrder);
-        
-        return items.stream()
-                .sorted((a, b) -> {
-                    // 1. 먼저 타입으로 정렬 (폴더가 항상 먼저)
-                    if (!a.getType().equals(b.getType())) {
-                        return a.getType().equals("folder") ? -1 : 1;
-                    }
-                    
-                    // 2. 같은 타입끼리는 정렬 기준에 따라 정렬
-                    int result = 0;
-                    switch (sortBy.toLowerCase()) {
-                        case "name":
-                            result = a.getName().compareTo(b.getName());
-                            break;
-                            
-                        case "date":
-                            result = a.getModifiedDate().compareTo(b.getModifiedDate());
-                            break;
-                            
-                        default:
-                            result = a.getName().compareTo(b.getName());
-                            break;
-                    }
-                    
-                    return isDesc ? -result : result;
-                })
-                .collect(Collectors.toList());
-    }
-    */
     
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
@@ -299,9 +225,8 @@ public class CommonDriveService {
         for (MultipartFile file : files) {
             try {
                 String fileName = file.getOriginalFilename();
-                String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
-
-                // 같은 위치에 같은 이름의 파일이 있는지 확인
+                
+                // 같은 위치에 같은 이름의 파일이 있는지 확인 (S3 업로드 전에 검증)
                 if(parentFolderId != null) {
                     // 폴더 내 파일 중복 검증
                     if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
@@ -313,6 +238,9 @@ public class CommonDriveService {
                         throw new IllegalArgumentException("최상위에 같은 이름의 파일이 이미 존재합니다: " + fileName);
                     }
                 }
+                
+                // 중복 검증 통과 후 S3 업로드
+                String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
 
                 // 부모폴더가 있는 경우에만 폴더 설정
                 Folder folder = null;
@@ -326,6 +254,7 @@ public class CommonDriveService {
                         .documentName(fileName)
                         .documentUrl(fileUrl)
                         .memberSeq(userId)
+                        .fileSize(file.getSize())
                         .ynLock(YnColumn.IS_FALSE)
                         .folder(folder)
                         .driveChannel(driveChannel)
@@ -334,6 +263,9 @@ public class CommonDriveService {
                 Document savedDocument = documentRepository.save(document);
                 uploadedFiles.add(DriveItemDto.fromDocument(savedDocument));
 
+            } catch (IllegalArgumentException e) {
+                // 중복 파일명이나 파일 검증 실패 등의 경우
+                throw e;
             } catch (Exception e) {
                 throw new MultipartException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + file.getOriginalFilename(), e);
             }
@@ -344,11 +276,12 @@ public class CommonDriveService {
 
 
     // 아이템 이동
-    public void moveItem(String itemType, Long itemId, Long newParentId) {
+    public void moveItem(DriveChannel driveChannel, String itemType, Long itemId, Long newParentId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
-            moveFolderWithOrderAdjustment(itemId, newParentId);
+            moveFolderWithOrderAdjustment(driveChannel, itemId, newParentId);
         } else {
-            Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             
             // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
             if(newParentId != null) {
@@ -373,8 +306,9 @@ public class CommonDriveService {
     }
 
     // 폴더 이동 시 순서 조정 포함
-    private void moveFolderWithOrderAdjustment(Long folderId, Long newParentId) {
-        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+    private void moveFolderWithOrderAdjustment(DriveChannel driveChannel, Long folderId, Long newParentId) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         // 이동할 부모폴더가 있는 경우 존재 여부 확인
         if(newParentId != null) {
@@ -443,8 +377,9 @@ public class CommonDriveService {
     }
 
     // 폴더 순서 변경
-    public void reorderFolder(Long folderId, Long newOrder) {
-        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+    public void reorderFolder(DriveChannel driveChannel, Long folderId, Long newOrder) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         Long currentOrder = folder.getOrders();
         Long parentFolderSeq = folder.getParentFolderSeq();
@@ -488,8 +423,9 @@ public class CommonDriveService {
 
 
     // 폴더 이름 변경
-    public DriveItemDto renameFolder(Long folderId, String newFolderName) {
-        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+    public DriveItemDto renameFolder(DriveChannel driveChannel, Long folderId, String newFolderName) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         // 같은 위치에서 폴더 이름 중복 검사
         if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(newFolderName, folderId, folder.getDriveChannel(), folder.getParentFolderSeq()).isPresent()) {
@@ -502,13 +438,14 @@ public class CommonDriveService {
     }
 
     // 아이템 삭제
-    public void deleteItem(Long userId, String itemType, Long itemId) {
+    public void deleteItem(DriveChannel driveChannel, Long userId, String itemType, Long itemId) {
         if (DriveItemType.FOLDER.equals(itemType)) {
             // 폴더 삭제 전 권한 체크 (재귀적으로 내부 모든 문서가 내가 올린 것인지 확인)
-            validateFolderDeletePermission(userId, itemId);
-            deleteFolderRecursively(itemId);
+            validateFolderDeletePermission(driveChannel, userId, itemId);
+            deleteFolderRecursively(driveChannel, itemId);
         } else {
-            Document document = documentRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             // 문서 삭제 권한 체크
             if (document.getMemberSeq() != userId) {
                 throw new SecurityException("자신이 생성한 문서만 삭제할 수 있습니다.");
@@ -523,13 +460,13 @@ public class CommonDriveService {
     }
     
     // 폴더 삭제 권한 검증
-    private void validateFolderDeletePermission(Long userId, Long folderId) {
+    private void validateFolderDeletePermission(DriveChannel driveChannel, Long userId, Long folderId) {
         Set<Long> visitedFolders = new HashSet<>();
-        validateFolderDeletePermissionRecursive(userId, folderId, visitedFolders);
+        validateFolderDeletePermissionRecursive(driveChannel, userId, folderId, visitedFolders);
     }
     
     // 폴더 삭제 권한 검증 (재귀, 방문 추적)
-    private void validateFolderDeletePermissionRecursive(Long userId, Long folderId, Set<Long> visitedFolders) {
+    private void validateFolderDeletePermissionRecursive(DriveChannel driveChannel, Long userId, Long folderId, Set<Long> visitedFolders) {
         // 이미 방문한 폴더라면 스킵
         if (visitedFolders.contains(folderId)) {
             return;
@@ -541,6 +478,10 @@ public class CommonDriveService {
         // 1. 현재 폴더의 모든 문서 확인
         List<Document> documentsInFolder = documentRepository.findByFolderFolderSeq(folderId);
         for (Document document : documentsInFolder) {
+            // 문서가 해당 채널에 속하는지 확인
+            if (!document.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 문서는 무시
+            }
             if(document.getMemberSeq() != userId) {
                 throw new SecurityException("자신이 생성한 문서가 아닌 폴더는 삭제할 수 없습니다.");
             }
@@ -549,18 +490,23 @@ public class CommonDriveService {
         // 하위 폴더들 재귀적으로 확인
         List<Folder> subFolders = folderRepository.findByParentFolderSeq(folderId);
         for (Folder subFolder : subFolders) {
-            validateFolderDeletePermissionRecursive(userId, subFolder.getFolderSeq(), visitedFolders);
+            // 하위 폴더가 해당 채널에 속하는지 확인
+            if (!subFolder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 폴더는 무시
+            }
+            validateFolderDeletePermissionRecursive(driveChannel, userId, subFolder.getFolderSeq(), visitedFolders);
         }
     }
 
-    private void deleteFolderRecursively(Long folderId) {
-        Folder folderToDelete = folderRepository.findById(folderId).orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+    private void deleteFolderRecursively(DriveChannel driveChannel, Long folderId) {
+        Folder folderToDelete = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         Long parentFolderId = folderToDelete.getParentFolderSeq();
         Long driveChannelSeq = folderToDelete.getDriveChannel().getDriveChannelSeq();
 
         // 하위 폴더 ID 재귀적으로 수집
         List<Long> allFolderIds = new ArrayList<>();
-        collectAllSubFolderIds(folderId, allFolderIds);
+        collectAllSubFolderIds(driveChannel, folderId, allFolderIds);
         allFolderIds.add(folderId);
 
         // S3 파일들 수집 및 삭제
@@ -568,6 +514,10 @@ public class CommonDriveService {
         for (Long folderIdToDelete : allFolderIds) {
             List<Document> documents = documentRepository.findByFolderFolderSeq(folderIdToDelete);
             for (Document doc : documents) {
+                // 문서가 해당 채널에 속하는지 확인
+                if (!doc.getDriveChannel().getDriveChannelSeq().equals(driveChannelSeq)) {
+                    continue; // 다른 채널의 문서는 무시
+                }
                 if (doc.getDocumentType() == DocumentType.LOCAL) {
                     s3UrlsToDelete.add(doc.getDocumentUrl());
                 }
@@ -596,13 +546,13 @@ public class CommonDriveService {
         reorderFoldersSequentially(parentFolderId, driveChannelSeq);
     }
 
-    private void collectAllSubFolderIds(Long parentFolderId, List<Long> allFolderIds) {
+    private void collectAllSubFolderIds(DriveChannel driveChannel, Long parentFolderId, List<Long> allFolderIds) {
         Set<Long> visitedFolders = new HashSet<>();
-        collectAllSubFolderIdsRecursive(parentFolderId, allFolderIds, visitedFolders);
+        collectAllSubFolderIdsRecursive(driveChannel, parentFolderId, allFolderIds, visitedFolders);
     }
     
     // 하위 폴더 ID 재귀적으로 수집 (방문 추적)
-    private void collectAllSubFolderIdsRecursive(Long parentFolderId, List<Long> allFolderIds, Set<Long> visitedFolders) {
+    private void collectAllSubFolderIdsRecursive(DriveChannel driveChannel, Long parentFolderId, List<Long> allFolderIds, Set<Long> visitedFolders) {
         // 이미 방문한 폴더라면 스킵
         if (visitedFolders.contains(parentFolderId)) {
             return;
@@ -613,8 +563,12 @@ public class CommonDriveService {
         
         List<Folder> subFolders = folderRepository.findByParentFolderSeq(parentFolderId);
         for (Folder subFolder : subFolders) {
+            // 하위 폴더가 해당 채널에 속하는지 확인
+            if (!subFolder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 폴더는 무시
+            }
             allFolderIds.add(subFolder.getFolderSeq());
-            collectAllSubFolderIdsRecursive(subFolder.getFolderSeq(), allFolderIds, visitedFolders);
+            collectAllSubFolderIdsRecursive(driveChannel, subFolder.getFolderSeq(), allFolderIds, visitedFolders);
         }
     }
 

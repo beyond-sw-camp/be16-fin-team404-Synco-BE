@@ -40,9 +40,16 @@ public class FileTypeClassifier {
             boolean isShared = DocumentType.CUSTOM.equals(document.getDocumentType());
             boolean isLocked = document.getYnLock() != null && document.getYnLock().equals(YnColumn.IS_TRUE);
             
+            String size;
+            if (isShared) {
+                size = "-"; // 공유문서는 크기 표시 안함
+            } else {
+                size = formatFileSize(document.getFileSize());
+            }
+            
             return new DocumentTypeInfo(
                 isShared ? "shared-doc" : "file",
-                isShared ? "-" : "0 KB",
+                size,
                 isShared ? "mdi-file-document-multiple" : getFileIcon(document.getDocumentName()),
                 isShared,
                 isLocked
@@ -67,6 +74,30 @@ public class FileTypeClassifier {
         private static String getFileExtension(String fileName) {
             int lastDotIndex = fileName.lastIndexOf(".");
             return lastDotIndex == -1 ? "" : fileName.substring(lastDotIndex + 1);
+        }
+        
+        /**
+         * 파일 크기를 읽기 쉬운 형태로 포맷팅
+         */
+        private static String formatFileSize(Long fileSizeBytes) {
+            if (fileSizeBytes == null || fileSizeBytes == 0) {
+                return "0 B";
+            }
+            
+            String[] units = {"B", "KB", "MB", "GB", "TB"};
+            int unitIndex = 0;
+            double size = fileSizeBytes.doubleValue();
+            
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            
+            if (unitIndex == 0) {
+                return String.format("%.0f %s", size, units[unitIndex]);
+            } else {
+                return String.format("%.1f %s", size, units[unitIndex]);
+            }
         }
     }
 }

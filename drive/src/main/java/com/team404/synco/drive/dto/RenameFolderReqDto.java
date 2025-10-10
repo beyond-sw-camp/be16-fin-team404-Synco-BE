@@ -10,5 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RenameFolderReqDto {
+    private Long driveChannelSeq;
+    private Long folderSeq;
     private String newFolderName;
 }

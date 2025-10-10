@@ -5,12 +5,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ReorderItemReqDto {
-    private Long itemId;
+public class ToggleReqDto {
     private Long driveChannelSeq;
-    private Long newOrder;
+    private Long documentSeq;
 }

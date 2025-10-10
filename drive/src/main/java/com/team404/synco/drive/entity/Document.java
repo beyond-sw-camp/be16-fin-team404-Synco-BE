@@ -27,6 +27,8 @@ public class Document extends BaseEntity {
     private String documentUrl;
     @Column(nullable = false)
     private long memberSeq;
+    @Column(nullable = true)
+    private Long fileSize; // 파일 크기 (바이트 단위)
     @Column(nullable = false)
     @Builder.Default
     private String ynLock = YnColumn.IS_FALSE;;

@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MoveItemReqDto {
     private Long itemId;
+    private Long driveChannelSeq;
     private String itemType; // 'folder' or 'document'
     private Long newParentSeq;
 }
