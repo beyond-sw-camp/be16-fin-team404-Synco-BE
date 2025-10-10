@@ -9,7 +9,6 @@ import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.member.dto.MemberUpdateDto;
 import com.team404.synco.workspace.entity.WorkSpace;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -28,9 +27,9 @@ public class Member extends BaseEntity {
     private Long memberSeq;
     @Column(nullable = false)
     private String email;
-    @Column(nullable = false, unique = true)
+//    @Column(nullable = false, unique = true)
     private String memberId;
-    @Column(nullable = false)
+//    @Column(nullable = false)
     private String password;
     @Column(nullable = false)
     private String name;
@@ -74,5 +73,9 @@ public class Member extends BaseEntity {
 
     public void deleteMember() {
         this.ynDel = YnColumn.IS_TRUE;
+    }
+
+    public void registerMemberId(String memberId) {
+        this.memberId = memberId;
     }
 }

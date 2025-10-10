@@ -27,6 +27,9 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3Uploader;
     private final JwtTokenProvider jwtTokenProvider;
+    private final GoogleService googleService;
+    private final KakaoService kakaoService;
+    private final NaverService naverService;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
@@ -68,6 +71,7 @@ public class MemberService {
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .needMemberId(false)
                 .build();
     }
 
@@ -108,6 +112,68 @@ public class MemberService {
         String accessToken = jwtTokenProvider.createAtToken(member);
         return LoginResDto.builder()
                 .accessToken(accessToken)
+                .build();
+    }
+
+    public void registerMemberId(Long memberSeq, MemberIdReqDto memberIdReqDto) {
+        if (memberRepository.existsByMemberId(memberIdReqDto.getMemberId())) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+        }
+
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        if (member.getMemberId() != null) {
+            throw new IllegalStateException("이미 아이디가 등록된 회원입니다.");
+        }
+
+        member.registerMemberId(memberIdReqDto.getMemberId());
+    }
+
+    public LoginResDto googleLogin(RedirectDto redirectDto) {
+        AccessTokenDto accessTokenDto = googleService.getAccessToken(redirectDto.getCode());
+        GoogleProfileDto googleProfile = googleService.getGoogleProfile(accessTokenDto.getAccess_token());
+
+        return socialLoginProcess(SocialType.GOOGLE, googleProfile.getSub(), googleProfile.getEmail(), googleProfile.getName(), googleProfile.getPicture());
+    }
+
+    public LoginResDto kakaoLogin(RedirectDto redirectDto) {
+        AccessTokenDto accessTokenDto = kakaoService.getAccessToken(redirectDto.getCode());
+        KakaoProfileDto kakaoProfile = kakaoService.getKakaoProfile(accessTokenDto.getAccess_token());
+
+        return socialLoginProcess(SocialType.KAKAO, kakaoProfile.getId(), kakaoProfile.getKakao_account().getEmail(), kakaoProfile.getKakao_account().getProfile().getNickname(), kakaoProfile.getKakao_account().getProfile().getProfile_image_url());
+    }
+
+    public LoginResDto naverLogin(RedirectDto redirectDto) {
+        AccessTokenDto accessTokenDto = naverService.getAccessToken(redirectDto.getCode(), redirectDto.getState());
+        NaverProfileDto naverProfile = naverService.getNaverProfile(accessTokenDto.getAccess_token());
+        NaverProfileDto.Response response = naverProfile.getResponse();
+
+        return socialLoginProcess(SocialType.NAVER, response.getId(), response.getEmail(), response.getName(), response.getProfile_image());
+    }
+
+    private LoginResDto socialLoginProcess(SocialType socialType, String socialId, String email, String name, String profileImageUrl) {
+        Member member = memberRepository.findBySocialId(socialId)
+                .orElseGet(() -> {
+                    Member newMember = Member.builder()
+                            .email(email)
+                            .name(name)
+                            .socialType(socialType)
+                            .socialId(socialId)
+                            .profileImageUrl(profileImageUrl)
+                            .build();
+                    return memberRepository.save(newMember);
+                });
+
+        boolean needMemberId = member.getMemberId() == null || member.getMemberId().isBlank();
+
+        String accessToken = jwtTokenProvider.createAtToken(member);
+        String refreshToken = jwtTokenProvider.createRtToken(member);
+
+        return LoginResDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .needMemberId(needMemberId)
                 .build();
     }
 

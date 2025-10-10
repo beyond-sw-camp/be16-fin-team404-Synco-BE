@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/member")
 @RequiredArgsConstructor
@@ -50,6 +51,31 @@ public class MemberController {
     public ResponseEntity<ResponseDto<?>> generateNewAt(@RequestBody RefreshTokenDto refreshTokenDto) {
         LoginResDto loginResDto = memberService.generateNewAt(refreshTokenDto);
         return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    }
+
+    @PostMapping("/google/doLogin")
+    public ResponseEntity<ResponseDto<?>> googleLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.googleLogin(redirectDto);
+        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    }
+
+    @PostMapping("/kakao/doLogin")
+    public ResponseEntity<ResponseDto<?>> kakaoLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.kakaoLogin(redirectDto);
+        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    }
+
+    @PostMapping("/naver/doLogin")
+    public ResponseEntity<ResponseDto<?>> naverLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.naverLogin(redirectDto);
+        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    }
+
+    @PatchMapping("/social/memberId")
+    public ResponseEntity<ResponseDto<?>> registerMemberId(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                               @RequestBody @Validated MemberIdReqDto memberIdReqDto) {
+        memberService.registerMemberId(memberSeq, memberIdReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
     }
 
 }

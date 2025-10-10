@@ -18,11 +18,14 @@ public class JwtAuthFilter implements GlobalFilter {
 
     @Value("${jwt.secretKey}")
     private String secretKey;
-    // TODO: oauth 로그인 url 추가 에정
+
     private static final List<String> ALLOWED_PATHS = List.of(
             "/member/create",
             "/member/doLogin",
-            "/member/refreshAt"
+            "/member/refreshAt",
+            "/member/google/doLogin",
+            "/member/kakao/doLogin",
+            "/member/naver/doLogin"
     );
 
     @Override
