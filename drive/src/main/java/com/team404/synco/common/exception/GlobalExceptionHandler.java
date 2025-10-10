@@ -1,6 +1,6 @@
 package com.team404.synco.common.exception;
 
-import com.team404.synco.common.dto.CommonDto;
+import com.team404.synco.common.dto.ResponseDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
@@ -13,7 +13,6 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -217,6 +216,6 @@ public class GlobalExceptionHandler {
      * ======================== 공통 ResponseEntity 생성 ========================
      */
     private ResponseEntity<?> buildError(HttpStatus status, String message) {
-        return new ResponseEntity<>(CommonDto.fail(status,message), status);
+        return new ResponseEntity<>(ResponseDto.fail(status,message), status);
     }
 }
