@@ -16,8 +16,12 @@ import java.util.Optional;
 public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> findByFolderFolderSeq(Long folderSeq);
 
-    // 문서명 중복 체크
-    Optional<Document> findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(String documentName, Long documentSeq, DriveChannel driveChannel, Long folderSeq);
+    // 문서명 중복 체크 (폴더 내)
+    Optional<Document> findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(String documentName, Long documentSeq, DriveChannel driveChannel, Long folderSeq);
+    
+    // 최상위 문서 중복 검증 (새 파일 생성용)
+    @Query("SELECT d FROM Document d WHERE d.documentName = :documentName AND d.folder IS NULL AND d.driveChannel.driveChannelSeq = :driveChannelSeq")
+    Optional<Document> findTopLevelDocumentByNameAndChannelForNewFile(@Param("documentName") String documentName, @Param("driveChannelSeq") Long driveChannelSeq);
     
     // 최상위 문서 중복 검증을 위한 메서드 (folder가 null인 경우)
     @Query("SELECT d FROM Document d WHERE d.documentName = :documentName AND d.documentSeq != :documentSeq AND d.folder IS NULL AND d.driveChannel.driveChannelSeq = :driveChannelSeq")

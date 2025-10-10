@@ -180,18 +180,12 @@ public class CommonDriveService {
         // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인
         if(parentFolderId != null) {
             // 폴더 내 문서 중복 검증
-            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
+            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
                 throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
             }
         } else {
             // 최상위 문서 중복 검증
-            List<Document> existingDocs = documentRepository.findAll().stream()
-                .filter(doc -> doc.getDocumentName().equals(documentName))
-                .filter(doc -> doc.getFolder() == null)
-                .filter(doc -> doc.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq()))
-                .toList();
-            
-            if (!existingDocs.isEmpty()) {
+            if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(documentName, driveChannel.getDriveChannelSeq()).isPresent()) {
                 throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
             }
         }
@@ -208,6 +202,7 @@ public class CommonDriveService {
                 .documentName(documentName)
                 .documentUrl("/documents/" + UUID.randomUUID() + ".txt")
                 .memberSeq(userId)
+                .fileSize(0L) // 공유문서는 파일 크기를 0으로 설정
                 .ynLock(isLocked != null && isLocked ? YnColumn.IS_TRUE : YnColumn.IS_FALSE)
                 .folder(folder)
                 .driveChannel(driveChannel)
@@ -229,12 +224,12 @@ public class CommonDriveService {
                 // 같은 위치에 같은 이름의 파일이 있는지 확인 (S3 업로드 전에 검증)
                 if(parentFolderId != null) {
                     // 폴더 내 파일 중복 검증
-                    if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
+                    if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
                         throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 파일이 이미 존재합니다: " + fileName);
                     }
                 } else {
                     // 최상위 파일 중복 검증
-                    if(documentRepository.findTopLevelDocumentByNameAndChannel(fileName, null, driveChannel.getDriveChannelSeq()).isPresent()) {
+                    if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(fileName, driveChannel.getDriveChannelSeq()).isPresent()) {
                         throw new IllegalArgumentException("최상위에 같은 이름의 파일이 이미 존재합니다: " + fileName);
                     }
                 }
@@ -264,8 +259,7 @@ public class CommonDriveService {
                 uploadedFiles.add(DriveItemDto.fromDocument(savedDocument));
 
             } catch (IllegalArgumentException e) {
-                // 중복 파일명이나 파일 검증 실패 등의 경우
-                throw e;
+                throw e; // 중복 파일명 예외는 그대로 던짐
             } catch (Exception e) {
                 throw new MultipartException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + file.getOriginalFilename(), e);
             }
@@ -286,7 +280,7 @@ public class CommonDriveService {
             // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
             if(newParentId != null) {
                 // 폴더로 이동하는 경우
-                if(documentRepository.findByDocumentNameAndDocumentSeqNotAndFolderDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
+                if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
                     throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
                 }
             } else {
@@ -411,10 +405,30 @@ public class CommonDriveService {
 
         if (currentOrder < newOrder) {
             // 뒤로 이동: 현재 순서보다 크고 새로운 순서 이하인 아이템들을 -1
-            folderRepository.decrementOrdersInRange(parentFolderSeq, driveChannelSeq, currentOrder + 1, newOrder);
+            if (parentFolderSeq != null) {
+                folderRepository.decrementOrdersInRange(parentFolderSeq, driveChannelSeq, currentOrder + 1, newOrder);
+            } else {
+                // 최상위 폴더인 경우 별도 처리 필요
+                List<Folder> folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+                for (Folder f : folders) {
+                    if (f.getOrders() > currentOrder && f.getOrders() <= newOrder) {
+                        f.updateOrder(f.getOrders() - 1);
+                    }
+                }
+            }
         } else {
             // 앞으로 이동: 새로운 순서 이상이고 현재 순서 미만인 아이템들을 +1
-            folderRepository.incrementOrdersInRange(parentFolderSeq, driveChannelSeq, newOrder, currentOrder - 1);
+            if (parentFolderSeq != null) {
+                folderRepository.incrementOrdersInRange(parentFolderSeq, driveChannelSeq, newOrder, currentOrder - 1);
+            } else {
+                // 최상위 폴더인 경우 별도 처리 필요
+                List<Folder> folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+                for (Folder f : folders) {
+                    if (f.getOrders() >= newOrder && f.getOrders() < currentOrder) {
+                        f.updateOrder(f.getOrders() + 1);
+                    }
+                }
+            }
         }
 
         // 폴더의 순서 업데이트

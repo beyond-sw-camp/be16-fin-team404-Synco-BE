@@ -2,6 +2,7 @@ package com.team404.synco.drive.service;
 
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
@@ -9,7 +10,7 @@ import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.repository.DocumentLineRepository;
 import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.DriveChannelRepository;
-import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.drive.util.ContentTypeUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,8 +105,14 @@ public class ProjectDriveService {
             byte[] fileContent = s3Uploader.download(document.getDocumentUrl());
 
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", document.getDocumentName());
+            
+            // 파일 확장자에 따른 Content-Type 설정
+            String contentType = ContentTypeUtil.getContentType(document.getDocumentName());
+            headers.setContentType(MediaType.parseMediaType(contentType));
+            
+            // 파일명 인코딩 처리
+            String encodedFileName = URLEncoder.encode(document.getDocumentName(), StandardCharsets.UTF_8);
+            headers.setContentDispositionFormData("attachment", encodedFileName);
 
             return ResponseEntity.ok()
                     .headers(headers)
