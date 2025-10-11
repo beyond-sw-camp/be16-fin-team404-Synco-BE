@@ -26,7 +26,7 @@ import java.util.NoSuchElementException;
 
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class CommonExceptionHandler {
 
     /**
      * ======================== Entity/리소스 관련 예외 ========================

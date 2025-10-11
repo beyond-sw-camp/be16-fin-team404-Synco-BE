@@ -9,7 +9,6 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-@Builder
 public class FileUploadReqDto {
     private List<MultipartFile> files;
     private Long parentFolderSeq;

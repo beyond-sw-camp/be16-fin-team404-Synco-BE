@@ -62,34 +62,34 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 폴더 생성
-    public DriveItemDto createPersonalFolder(CreateFolderReqDto request) {
-        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createFolder(personalDrive, request.getFolderName(), request.getParentFolderSeq());
+    public DriveItemDto createPersonalFolder(CreateFolderReqDto createFolderReqDto) {
+        DriveChannel personalDrive = getPersonalDriveChannel(createFolderReqDto.getDriveChannelSeq());
+        return commonDriveService.createFolder(personalDrive, createFolderReqDto.getFolderName(), createFolderReqDto.getParentFolderSeq());
     }
 
     // 개인 드라이브 공유문서 생성
-    public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        DriveChannel personalDriveChannel = getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createSharedDoc(personalDriveChannel, userId, request.getDocumentName(),
-                request.getParentFolderSeq(), request.getIsLocked());
+    public DriveItemDto createPersonalSharedDoc(Long userId, CreateSharedDocReqDto createSharedDocReqDto) {
+        DriveChannel personalDriveChannel = getPersonalDriveChannel(createSharedDocReqDto.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(personalDriveChannel, userId, createSharedDocReqDto.getDocumentName(),
+                createSharedDocReqDto.getParentFolderSeq(), createSharedDocReqDto.getIsLocked());
     }
 
     // 개인 드라이브 파일 업로드
-    public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadReqDto request) {
-        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.uploadFiles(personalDrive, userId, request.getFiles(), request.getParentFolderSeq());
+    public List<DriveItemDto> uploadPersonalFiles(Long userId, FileUploadReqDto fileUploadReqDto) {
+        DriveChannel personalDrive = getPersonalDriveChannel(fileUploadReqDto.getDriveChannelSeq());
+        return commonDriveService.uploadFiles(personalDrive, userId, fileUploadReqDto.getFiles(), fileUploadReqDto.getParentFolderSeq());
     }
 
     // 개인 드라이브 아이템 이동
-    public void movePersonalItem(MoveItemReqDto request) {
-        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
-        commonDriveService.moveItem(personalDrive, request.getItemType(), request.getItemId(), request.getNewParentSeq());
+    public void movePersonalItem(MoveItemReqDto moveItemReqDto) {
+        DriveChannel personalDrive = getPersonalDriveChannel(moveItemReqDto.getDriveChannelSeq());
+        commonDriveService.moveItem(personalDrive, moveItemReqDto.getItemType(), moveItemReqDto.getItemId(), moveItemReqDto.getNewParentSeq());
     }
 
     // 개인 드라이브 폴더 순서 변경
-    public void reorderPersonalFolder(ReorderItemReqDto request) {
-        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
-        commonDriveService.reorderFolder(personalDrive, request.getItemId(), request.getNewOrder());
+    public void reorderPersonalFolder(ReorderItemReqDto reorderItemReqDto) {
+        DriveChannel personalDrive = getPersonalDriveChannel(reorderItemReqDto.getDriveChannelSeq());
+        commonDriveService.reorderFolder(personalDrive, reorderItemReqDto.getItemId(), reorderItemReqDto.getNewOrder());
     }
 
     // 개인 드라이브 파일 다운로드
@@ -130,9 +130,9 @@ public class PersonalDriveService {
     }
 
     // 개인 드라이브 폴더 이름 변경
-    public DriveItemDto renamePersonalFolder(RenameFolderReqDto request) {
-        DriveChannel personalDrive = getPersonalDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.renameFolder(personalDrive, request.getFolderSeq(), request.getNewFolderName());
+    public DriveItemDto renamePersonalFolder(RenameFolderReqDto renameFolderReqDto) {
+        DriveChannel personalDrive = getPersonalDriveChannel(renameFolderReqDto.getDriveChannelSeq());
+        return commonDriveService.renameFolder(personalDrive, renameFolderReqDto.getFolderSeq(), renameFolderReqDto.getNewFolderName());
     }
 
     // 개인 드라이브 아이템 삭제
@@ -177,13 +177,13 @@ public class PersonalDriveService {
 //    }
 
     // 개인 드라이브 공유문서 잠금/해제 토글
-    public DriveItemDto togglePersonalDocumentLock(ToggleReqDto request) {
-        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
+    public DriveItemDto togglePersonalDocumentLock(ToggleReqDto toggleReqDto) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(toggleReqDto.getDocumentSeq(), toggleReqDto.getDriveChannelSeq())
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 개인 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
-            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
+            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + toggleReqDto.getDocumentSeq());
         }
         
         String currentLockStatus = document.getYnLock();
@@ -262,7 +262,6 @@ public class PersonalDriveService {
                 .map(DocumentLine::getDocumentContent)
                 .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            log.error("문서 내용 조회 실패", e);
             return "문서 내용을 불러올 수 없습니다.";
         }
     }

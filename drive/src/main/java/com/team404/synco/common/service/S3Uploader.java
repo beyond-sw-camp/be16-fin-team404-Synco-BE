@@ -67,7 +67,6 @@ public class S3Uploader {
             
             return s3Client.getObjectAsBytes(request).asByteArray();
         } catch (Exception e) {
-            log.error("S3 다운로드 실패 - URL: {}", fileUrl, e);
             throw new IllegalArgumentException("S3 다운로드 실패", e);
         }
     }

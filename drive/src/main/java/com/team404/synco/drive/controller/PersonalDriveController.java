@@ -37,8 +37,8 @@ public class PersonalDriveController {
 
     // 개인 드라이브 폴더 생성
     @PostMapping("/folder")
-    public  ResponseEntity<ResponseDto<?>> createPersonalFolder(@RequestBody CreateFolderReqDto request) {
-        DriveItemDto folder = personalDriveService.createPersonalFolder(request);
+    public  ResponseEntity<ResponseDto<?>> createPersonalFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
+        DriveItemDto folder = personalDriveService.createPersonalFolder(createFolderReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(folder, HttpStatus.CREATED));
     }
 
@@ -46,9 +46,9 @@ public class PersonalDriveController {
     @PostMapping("/create/shared-docs")
     public ResponseEntity<ResponseDto<?>> createPersonalSharedDoc(
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @RequestBody CreateSharedDocReqDto request) {
+            @RequestBody CreateSharedDocReqDto createSharedDocReqDto) {
         
-        DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, request);
+        DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, createSharedDocReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(sharedDoc, HttpStatus.CREATED));
     }
 
@@ -56,26 +56,26 @@ public class PersonalDriveController {
     @PostMapping("/upload")
     public ResponseEntity<ResponseDto<?>> uploadPersonalFiles(
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @ModelAttribute FileUploadReqDto request) {
+            @ModelAttribute FileUploadReqDto fileUploadReqDto) {
 
-        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, request);
+        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, fileUploadReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(uploadedFiles, HttpStatus.CREATED));
     }
 
     // 개인 드라이브 아이템 이동
     @PatchMapping("/move")
     public ResponseEntity<ResponseDto<?>> movePersonalItem(
-            @RequestBody MoveItemReqDto request) {
+            @RequestBody MoveItemReqDto moveItemReqDto) {
         
-        personalDriveService.movePersonalItem(request);
+        personalDriveService.movePersonalItem(moveItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 이동하였습니다.", HttpStatus.OK));
     }
 
     // 개인 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
-    public ResponseEntity<ResponseDto<?>> reorderPersonalFolder(@RequestBody ReorderItemReqDto request) {
+    public ResponseEntity<ResponseDto<?>> reorderPersonalFolder(@RequestBody ReorderItemReqDto reorderItemReqDto) {
         
-        personalDriveService.reorderPersonalFolder(request);
+        personalDriveService.reorderPersonalFolder(reorderItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 순서를 변경하였습니다.", HttpStatus.OK));
     }
 
@@ -89,19 +89,19 @@ public class PersonalDriveController {
 
     // 폴더 이름 변경
     @PatchMapping("/folder/rename")
-    public ResponseEntity<ResponseDto<?>> renamePersonalFolder(@RequestBody RenameFolderReqDto request) {
-        DriveItemDto renamedFolder = personalDriveService.renamePersonalFolder(request);
+    public ResponseEntity<ResponseDto<?>> renamePersonalFolder(@RequestBody RenameFolderReqDto renameFolderReqDto) {
+        DriveItemDto renamedFolder = personalDriveService.renamePersonalFolder(renameFolderReqDto);
         return ResponseEntity.ok(ResponseDto.ok(renamedFolder, HttpStatus.OK));
     }
 
     // 개인 드라이브 아이템 삭제
-    @DeleteMapping("/{driveChannelSeq}/delete")
+    @DeleteMapping("/{driveChannelSeq}")
     public ResponseEntity<ResponseDto<?>> deletePersonalItem(
             @PathVariable Long driveChannelSeq,
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @RequestBody DeleteItemReqDto request) {
+            @RequestBody DeleteItemReqDto deleteItemReqDto) {
         
-        personalDriveService.deletePersonalItem(driveChannelSeq, userId, request.getItemType(), request.getItemId());
+        personalDriveService.deletePersonalItem(driveChannelSeq, userId, deleteItemReqDto.getItemType(), deleteItemReqDto.getItemId());
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
@@ -124,8 +124,8 @@ public class PersonalDriveController {
 
     // 개인 드라이브 문서 잠금/해제 토글
     @PostMapping("/documents/lock")
-    public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto request) {
-        DriveItemDto document = personalDriveService.togglePersonalDocumentLock(request);
+    public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
+        DriveItemDto document = personalDriveService.togglePersonalDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 

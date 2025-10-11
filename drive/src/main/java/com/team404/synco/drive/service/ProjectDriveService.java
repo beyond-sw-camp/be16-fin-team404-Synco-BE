@@ -62,33 +62,33 @@ public class ProjectDriveService {
     }
 
     // 프로젝트 드라이브 폴더 생성
-    public DriveItemDto createProjectFolder(CreateFolderReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createFolder(driveChannel, request.getFolderName(), request.getParentFolderSeq());
+    public DriveItemDto createProjectFolder(CreateFolderReqDto createFolderReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(createFolderReqDto.getDriveChannelSeq());
+        return commonDriveService.createFolder(driveChannel, createFolderReqDto.getFolderName(), createFolderReqDto.getParentFolderSeq());
     }
 
     // 프로젝트 드라이브 공유문서 생성
-    public DriveItemDto createProjectSharedDoc(Long userId, CreateSharedDocReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.createSharedDoc(driveChannel,userId, request.getDocumentName(), request.getParentFolderSeq(), request.getIsLocked());
+    public DriveItemDto createProjectSharedDoc(Long userId, CreateSharedDocReqDto createSharedDocReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(createSharedDocReqDto.getDriveChannelSeq());
+        return commonDriveService.createSharedDoc(driveChannel,userId, createSharedDocReqDto.getDocumentName(), createSharedDocReqDto.getParentFolderSeq(), createSharedDocReqDto.getIsLocked());
     }
 
     // 프로젝트 드라이브 파일 업로드
-    public List<DriveItemDto> uploadProjectFiles(Long userId, FileUploadReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.uploadFiles(driveChannel, userId, request.getFiles(), request.getParentFolderSeq());
+    public List<DriveItemDto> uploadProjectFiles(Long userId, FileUploadReqDto fileUploadReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(fileUploadReqDto.getDriveChannelSeq());
+        return commonDriveService.uploadFiles(driveChannel, userId, fileUploadReqDto.getFiles(), fileUploadReqDto.getParentFolderSeq());
     }
 
     // 프로젝트 드라이브 아이템 이동
-    public void moveProjectItem(MoveItemReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        commonDriveService.moveItem(driveChannel, request.getItemType(), request.getItemId(), request.getNewParentSeq());
+    public void moveProjectItem(MoveItemReqDto moveItemReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(moveItemReqDto.getDriveChannelSeq());
+        commonDriveService.moveItem(driveChannel, moveItemReqDto.getItemType(), moveItemReqDto.getItemId(), moveItemReqDto.getNewParentSeq());
     }
 
     // 프로젝트 드라이브 폴더 순서 변경
-    public void reorderProjectFolder(ReorderItemReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        commonDriveService.reorderFolder(driveChannel, request.getItemId(), request.getNewOrder());
+    public void reorderProjectFolder(ReorderItemReqDto reorderItemReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(reorderItemReqDto.getDriveChannelSeq());
+        commonDriveService.reorderFolder(driveChannel, reorderItemReqDto.getItemId(), reorderItemReqDto.getNewOrder());
     }
 
     // 프로젝트 드라이브 파일 다운로드
@@ -119,15 +119,14 @@ public class ProjectDriveService {
                     .body(fileContent);
 
         } catch (Exception e) {
-            log.error("파일 다운로드 실패: {}", document.getDocumentName(), e);
             throw new IllegalStateException("파일 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
     }
 
     // 프로젝트 드라이브 폴더 이름 변경
-    public DriveItemDto renameProjectFolder(RenameFolderReqDto request) {
-        DriveChannel driveChannel = getProjectDriveChannel(request.getDriveChannelSeq());
-        return commonDriveService.renameFolder(driveChannel, request.getFolderSeq(), request.getNewFolderName());
+    public DriveItemDto renameProjectFolder(RenameFolderReqDto renameFolderReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(renameFolderReqDto.getDriveChannelSeq());
+        return commonDriveService.renameFolder(driveChannel, renameFolderReqDto.getFolderSeq(), renameFolderReqDto.getNewFolderName());
     }
 
     // 프로젝트 드라이브 아이템 삭제
@@ -172,13 +171,13 @@ public class ProjectDriveService {
 //    }
 
     // 프로젝트 드라이브 공유문서 잠금/해제 토글
-    public DriveItemDto toggleProjectDocumentLock(ToggleReqDto request) {
-        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
+    public DriveItemDto toggleProjectDocumentLock(ToggleReqDto toggleReqDto) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(toggleReqDto.getDocumentSeq(), toggleReqDto.getDriveChannelSeq())
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
-            throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
+            throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + toggleReqDto.getDocumentSeq());
         }
         
         String currentLockStatus = document.getYnLock();
@@ -211,7 +210,6 @@ public class ProjectDriveService {
                 .body(contentBytes);
                 
         } catch (Exception e) {
-            log.error("문서 다운로드 실패: {}", document.getDocumentName(), e);
             throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
     }
@@ -238,7 +236,6 @@ public class ProjectDriveService {
             documentLineRepository.saveAll(newLines);
             
         } catch (Exception e) {
-            log.error("문서 내용 업데이트 실패", e);
             throw new IllegalStateException("문서 내용 업데이트에 실패했습니다.", e);
         }
     }
@@ -256,7 +253,6 @@ public class ProjectDriveService {
                 .map(DocumentLine::getDocumentContent)
                 .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            log.error("문서 내용 조회 실패", e);
             return "문서 내용을 불러올 수 없습니다.";
         }
     }

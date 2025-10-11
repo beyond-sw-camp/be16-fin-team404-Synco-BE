@@ -38,9 +38,9 @@ public class ProjectDriveController {
 
     // 프로젝트 드라이브 폴더 생성
     @PostMapping("/folder")
-    public ResponseEntity<ResponseDto<?>> createProjectFolder(@RequestBody CreateFolderReqDto request) {
+    public ResponseEntity<ResponseDto<?>> createProjectFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
         
-        DriveItemDto folder = projectDriveService.createProjectFolder(request);
+        DriveItemDto folder = projectDriveService.createProjectFolder(createFolderReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(folder, HttpStatus.CREATED));
     }
 
@@ -48,9 +48,9 @@ public class ProjectDriveController {
     @PostMapping("/create/shared-docs")
     public ResponseEntity<ResponseDto<?>> createProjectSharedDoc(
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @RequestBody CreateSharedDocReqDto request) {
+            @RequestBody CreateSharedDocReqDto createSharedDocReqDto) {
         
-        DriveItemDto sharedDoc = projectDriveService.createProjectSharedDoc(userId, request);
+        DriveItemDto sharedDoc = projectDriveService.createProjectSharedDoc(userId, createSharedDocReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(sharedDoc, HttpStatus.CREATED));
     }
 
@@ -58,25 +58,25 @@ public class ProjectDriveController {
     @PostMapping("/upload")
     public ResponseEntity<ResponseDto<?>> uploadProjectFiles(
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @ModelAttribute FileUploadReqDto request) {
+            @ModelAttribute FileUploadReqDto fileUploadReqDto) {
 
-        List<DriveItemDto> uploadedFiles = projectDriveService.uploadProjectFiles(userId, request);
+        List<DriveItemDto> uploadedFiles = projectDriveService.uploadProjectFiles(userId, fileUploadReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(uploadedFiles, HttpStatus.CREATED));
     }
 
     // 프로젝트 드라이브 아이템 이동
     @PatchMapping("/move")
-    public ResponseEntity<ResponseDto<?>> moveProjectItem(@RequestBody MoveItemReqDto request) {
+    public ResponseEntity<ResponseDto<?>> moveProjectItem(@RequestBody MoveItemReqDto moveItemReqDto) {
         
-        projectDriveService.moveProjectItem(request);
+        projectDriveService.moveProjectItem(moveItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 이동하였습니다.", HttpStatus.OK));
     }
 
     // 프로젝트 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
-    public ResponseEntity<ResponseDto<?>> reorderProjectFolder(@RequestBody ReorderItemReqDto request) {
+    public ResponseEntity<ResponseDto<?>> reorderProjectFolder(@RequestBody ReorderItemReqDto reorderItemReqDto) {
         
-        projectDriveService.reorderProjectFolder(request);
+        projectDriveService.reorderProjectFolder(reorderItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 순서를 변경하였습니다.", HttpStatus.OK));
     }
 
@@ -91,20 +91,20 @@ public class ProjectDriveController {
 
     // 프로젝트 드라이브 폴더 이름 변경
     @PatchMapping("/folder/rename")
-    public ResponseEntity<ResponseDto<?>> renameProjectFolder(@RequestBody RenameFolderReqDto request) {
+    public ResponseEntity<ResponseDto<?>> renameProjectFolder(@RequestBody RenameFolderReqDto renameFolderReqDto) {
         
-        DriveItemDto renamedFolder = projectDriveService.renameProjectFolder(request);
+        DriveItemDto renamedFolder = projectDriveService.renameProjectFolder(renameFolderReqDto);
         return ResponseEntity.ok(ResponseDto.ok(renamedFolder, HttpStatus.OK));
     }
 
     // 프로젝트 드라이브 아이템 삭제
-    @DeleteMapping("/{driveChannelSeq}/delete")
+    @DeleteMapping("/{driveChannelSeq}")
     public ResponseEntity<ResponseDto<?>> deleteProjectItem(
             @PathVariable Long driveChannelSeq,
             @RequestHeader(value = "X-Member-Seq") Long userId,
-            @RequestBody DeleteItemReqDto request) {
+            @RequestBody DeleteItemReqDto deleteItemReqDto) {
         
-        projectDriveService.deleteProjectItem(driveChannelSeq, userId, request.getItemType(), request.getItemId());
+        projectDriveService.deleteProjectItem(driveChannelSeq, userId, deleteItemReqDto.getItemType(), deleteItemReqDto.getItemId());
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
@@ -127,8 +127,8 @@ public class ProjectDriveController {
 
     // 프로젝트 드라이브 문서 잠금/해제 토글
     @PostMapping("/documents/lock")
-    public ResponseEntity<ResponseDto<?>> toggleProjectDocumentLock(@RequestBody ToggleReqDto request) {
-        DriveItemDto document = projectDriveService.toggleProjectDocumentLock(request);
+    public ResponseEntity<ResponseDto<?>> toggleProjectDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
+        DriveItemDto document = projectDriveService.toggleProjectDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
@@ -139,15 +139,4 @@ public class ProjectDriveController {
             @PathVariable Long documentSeq) {
         return projectDriveService.downloadProjectDocument(driveChannelSeq, documentSeq);
     }
-
-    // TODO: 프로젝트 스페이스 생성자가 진행할 예정.
-    // 프로젝트 드라이브 채널 생성
-//    @PostMapping("/channels")
-//    public CommonDto<?> createProjectDriveChannel(
-//            @RequestHeader(value = "X-Member-Seq", defaultValue = "1") Long userId,
-//            @RequestBody CreateDriveChannelRequest request) {
-//        
-//        DriveItemDto channel = projectDriveService.createProjectDriveChannel(userId, request);
-//        return CommonDto.ok(channel, HttpStatus.CREATED);
-//    }
 }

@@ -543,9 +543,8 @@ public class CommonDriveService {
                 for (String s3Url : s3UrlsToDelete) {
                     s3Uploader.delete(s3Url);
                 }
-                log.info("S3 파일 삭제 완료: {} 개 파일", s3UrlsToDelete.size());
             } catch (Exception e) {
-                log.error("S3 파일 삭제 실패", e);
+                throw new  RuntimeException("S3 파일 삭제 중 오류가 발생했습니다.", e);
             }
         }
 
