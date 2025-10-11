@@ -10,12 +10,19 @@ import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Transactional
 @Service
@@ -239,6 +246,33 @@ public class MemberService {
 
     public void logout(Long memberSeq) {
         jwtTokenProvider.deleteRt(memberSeq);
+    }
+
+    //회원 검색 (memberId로 시작 문자 검색)
+    @Transactional(readOnly = true)
+    public Page<MemberSearchResDto> searchMembers(Long memberSeq, String keyword, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new IllegalArgumentException("검색 키워드를 입력해주세요.");
+        }
+
+        Specification<Member> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // memberId로 시작하는 회원 검색 (LIKE 'keyword%')
+            String keywordPattern = keyword + "%";
+            predicates.add(cb.like(root.get("memberId"), keywordPattern));
+
+            // 자기 자신 제외
+            predicates.add(cb.notEqual(root.get("memberSeq"), memberSeq));
+
+            // 탈퇴 회원 제외
+            predicates.add(cb.equal(root.get("ynDel"), YnColumn.IS_FALSE));
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Member> memberList = memberRepository.findAll(spec, pageable);
+        return memberList.map(MemberSearchResDto::fromEntity);
     }
 
 }

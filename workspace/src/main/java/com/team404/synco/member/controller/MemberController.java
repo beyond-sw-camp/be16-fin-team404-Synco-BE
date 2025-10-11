@@ -5,6 +5,8 @@ import com.team404.synco.common.util.CookieUtil;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -29,9 +31,9 @@ public class MemberController {
     @PostMapping("/doLogin")
     public ResponseEntity<ResponseDto<?>> doLogin(@RequestBody LoginReqDto loginReqDto) {
         LoginResDto loginResDto = memberService.doLogin(loginReqDto);
-        
+
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
@@ -58,9 +60,9 @@ public class MemberController {
     @PostMapping("/logout")
     public ResponseEntity<ResponseDto<?>> logout(@RequestHeader("X-Member-Seq") Long memberSeq) {
         memberService.logout(memberSeq);
-        
+
         ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                 .body(ResponseDto.ok("로그아웃 성공", HttpStatus.OK));
@@ -69,7 +71,7 @@ public class MemberController {
     @PostMapping("/refreshAt")
     public ResponseEntity<ResponseDto<?>> generateNewAt(@CookieValue("refreshToken") String refreshToken) {
         LoginResDto loginResDto = memberService.generateNewAt(refreshToken);
-        
+
         return ResponseEntity.ok()
                 .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
     }
@@ -96,9 +98,9 @@ public class MemberController {
     @PostMapping("/google/doLogin")
     public ResponseEntity<ResponseDto<?>> googleLogin(@RequestBody RedirectDto redirectDto) {
         LoginResDto loginResDto = memberService.googleLogin(redirectDto);
-        
+
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
@@ -107,9 +109,9 @@ public class MemberController {
     @PostMapping("/kakao/doLogin")
     public ResponseEntity<ResponseDto<?>> kakaoLogin(@RequestBody RedirectDto redirectDto) {
         LoginResDto loginResDto = memberService.kakaoLogin(redirectDto);
-        
+
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
@@ -118,9 +120,9 @@ public class MemberController {
     @PostMapping("/naver/doLogin")
     public ResponseEntity<ResponseDto<?>> naverLogin(@RequestBody RedirectDto redirectDto) {
         LoginResDto loginResDto = memberService.naverLogin(redirectDto);
-        
+
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
-        
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
                 .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
@@ -131,6 +133,13 @@ public class MemberController {
                                                @RequestBody @Validated MemberIdReqDto memberIdReqDto) {
         memberService.registerMemberId(memberSeq, memberIdReqDto);
         return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ResponseDto<?>> searchMembers(@RequestHeader("X-Member-Seq") Long memberSeq, @RequestParam String keyword,
+                                                        Pageable pageable) {
+        Page<MemberSearchResDto> searchResult = memberService.searchMembers(memberSeq, keyword, pageable);
+        return ResponseEntity.ok(ResponseDto.ok(searchResult, HttpStatus.OK));
     }
 
 }
