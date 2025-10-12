@@ -1,4 +1,4 @@
-package com.team404.synco.email.service;
+package com.team404.synco.common.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -10,8 +10,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.util.Random;
 
@@ -21,43 +19,36 @@ import java.util.Random;
 public class EmailService {
 
     private final JavaMailSender javaMailSender;
+    private final TemplateEngine templateEngine;
+    
+    private static final String UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
+    private static final String NUMBERS = "0123456789";
+    private static final String SPECIAL_CHARS = "!@#$%^&*";
+    private static final int PASSWORD_LENGTH = 10;
+    private static final int REQUIRED_CHARS = 4;
 
     @Value("${spring.mail.username}")
     private String senderEmail;
 
-    /**
-     * 임시 비밀번호 생성
-     * 영문 대소문자, 숫자, 특수문자를 포함한 10자리 임시 비밀번호 생성
-     */
     public String createTempPassword() {
         StringBuilder tempPassword = new StringBuilder();
         Random random = new Random();
         
-        // 영문 대문자, 소문자, 숫자, 특수문자 각각 최소 1개씩 포함
-        String upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        String lowerCase = "abcdefghijklmnopqrstuvwxyz";
-        String numbers = "0123456789";
-        String specialChars = "!@#$%^&*";
+        tempPassword.append(UPPER_CASE.charAt(random.nextInt(UPPER_CASE.length())));
+        tempPassword.append(LOWER_CASE.charAt(random.nextInt(LOWER_CASE.length())));
+        tempPassword.append(NUMBERS.charAt(random.nextInt(NUMBERS.length())));
+        tempPassword.append(SPECIAL_CHARS.charAt(random.nextInt(SPECIAL_CHARS.length())));
         
-        // 각 카테고리에서 최소 1개씩 선택
-        tempPassword.append(upperCase.charAt(random.nextInt(upperCase.length())));
-        tempPassword.append(lowerCase.charAt(random.nextInt(lowerCase.length())));
-        tempPassword.append(numbers.charAt(random.nextInt(numbers.length())));
-        tempPassword.append(specialChars.charAt(random.nextInt(specialChars.length())));
-        
-        // 나머지 6자리는 랜덤으로 선택
-        String allChars = upperCase + lowerCase + numbers + specialChars;
-        for (int i = 0; i < 6; i++) {
+        String allChars = UPPER_CASE + LOWER_CASE + NUMBERS + SPECIAL_CHARS;
+        int remainingLength = PASSWORD_LENGTH - REQUIRED_CHARS;
+        for (int i = 0; i < remainingLength; i++) {
             tempPassword.append(allChars.charAt(random.nextInt(allChars.length())));
         }
         
-        // 섞기
         return shuffleString(tempPassword.toString());
     }
 
-    /**
-     * 문자열 섞기
-     */
     private String shuffleString(String input) {
         char[] chars = input.toCharArray();
         Random random = new Random();
@@ -72,29 +63,14 @@ public class EmailService {
         return new String(chars);
     }
 
-    /**
-     * 이메일 내용 생성 (Thymeleaf 템플릿 사용)
-     */
+    // 이메일 내용 생성 (Thymeleaf 템플릿 사용)
     private String setContext(String tempPassword) {
         Context context = new Context();
-        TemplateEngine templateEngine = new TemplateEngine();
-        ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
-
         context.setVariable("tempPassword", tempPassword);
-
-        templateResolver.setPrefix("templates/");
-        templateResolver.setSuffix(".html");
-        templateResolver.setTemplateMode(TemplateMode.HTML);
-        templateResolver.setCacheable(false);
-
-        templateEngine.setTemplateResolver(templateResolver);
-
         return templateEngine.process("tempPassword", context);
     }
 
-    /**
-     * 임시 비밀번호 이메일 폼 생성
-     */
+    // 임시 비밀번호 이메일 폼 생성
     private MimeMessage createTempPasswordEmailForm(String email, String tempPassword) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -107,9 +83,7 @@ public class EmailService {
         return message;
     }
 
-    /**
-     * 임시 비밀번호 이메일 발송
-     */
+    // 임시 비밀번호 이메일 발송
     public void sendTempPassword(String email, String tempPassword) {
         try {
             log.info("임시 비밀번호 이메일 발송 시작: {}", email);

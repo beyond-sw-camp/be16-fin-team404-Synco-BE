@@ -4,7 +4,7 @@ import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.email.service.EmailService;
+import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
