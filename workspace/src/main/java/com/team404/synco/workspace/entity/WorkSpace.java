@@ -20,6 +20,7 @@ public class WorkSpace extends BaseEntity {
     private String workSpaceName;
     private String workSpaceThumbnailImageUrl;
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private WorkSpaceType workSpaceType = WorkSpaceType.INDIVIDUAL;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
