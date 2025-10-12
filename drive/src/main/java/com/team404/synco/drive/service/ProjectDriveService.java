@@ -52,7 +52,7 @@ public class ProjectDriveService {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (channel.getWorkspaceType() != WorkSpaceType.PROJECT) {
+        if (channel.getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
         
@@ -102,7 +102,7 @@ public class ProjectDriveService {
             .orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 파일이 아닙니다: " + documentSeq);
         }
 
@@ -147,7 +147,7 @@ public class ProjectDriveService {
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
         }
         
@@ -181,7 +181,7 @@ public class ProjectDriveService {
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + toggleReqDto.getDocumentSeq());
         }
         
@@ -198,7 +198,7 @@ public class ProjectDriveService {
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
         }
         

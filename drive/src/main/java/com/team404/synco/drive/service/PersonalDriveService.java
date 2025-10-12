@@ -90,7 +90,7 @@ public class PersonalDriveService {
         Document document = documentRepository.findById(documentSeq).orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
 
         // 개인 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 파일이 아닙니다: " + documentSeq);
         }
 
@@ -141,7 +141,7 @@ public class PersonalDriveService {
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
 
         // 개인 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
         }
 
@@ -157,7 +157,7 @@ public class PersonalDriveService {
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
 
         // 개인 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + toggleReqDto.getDocumentSeq());
         }
 
@@ -174,7 +174,7 @@ public class PersonalDriveService {
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
 
         // 개인 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
         }
 
@@ -201,7 +201,7 @@ public class PersonalDriveService {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
 
         // 개인 드라이브 채널인지 확인
-        if (channel.getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
+        if (channel.getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
             throw new IllegalArgumentException("개인 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
 
