@@ -17,6 +17,7 @@ public class DriveChannel extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long driveChannelSeq;
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private WorkSpaceType workSpaceType = WorkSpaceType.INDIVIDUAL;
     @Column(nullable = false)
@@ -24,9 +25,6 @@ public class DriveChannel extends BaseEntity {
     @Column(nullable = false)
     private long workspaceSeq;
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private WorkSpaceType workspaceType = WorkSpaceType.PROJECT;
     @Builder.Default
     @OneToMany(mappedBy = "driveChannel")
     private List<Folder> FolderList = new ArrayList<>();
