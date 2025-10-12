@@ -256,17 +256,4 @@ public class ProjectDriveService {
             return "문서 내용을 불러올 수 없습니다.";
         }
     }
-
-
-    // TODO: 프로젝트 스페이스 생성자가 진행할 예정.
-    // 프로젝트 드라이브 채널 생성
-//    public DriveItemDto createProjectDriveChannel(Long userId, CreateDriveChannelRequest request) {
-//        DriveChannel channel = DriveChannel.builder()
-//                .driveChannelName(request.getDriveChannelName())
-//                .workspaceSeq(request.getWorkspaceSeq())
-//                .workspaceType(WorkSpaceType.PROJECT)
-//                .build();
-//
-//        return null;
-//    }
 }

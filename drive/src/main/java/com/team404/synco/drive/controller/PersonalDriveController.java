@@ -114,14 +114,6 @@ public class PersonalDriveController {
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-//    // 개인 드라이브 문서 내용 업데이트
-//    // TODO: 추후 개발 예정
-//    @PutMapping("/documents/update")
-//    public CommonDto<?> updatePersonalDocumentContent(@RequestBody DriveItemDto request) {
-//        DriveItemDto updatedDocument = personalDriveService.updatePersonalDocumentContent(request);
-//        return CommonDto.ok(updatedDocument, HttpStatus.OK);
-//    }
-
     // 개인 드라이브 문서 잠금/해제 토글
     @PostMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {

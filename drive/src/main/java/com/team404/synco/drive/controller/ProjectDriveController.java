@@ -117,14 +117,6 @@ public class ProjectDriveController {
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-//    // 프로젝트 드라이브 문서 내용 업데이트
-//    // TODO: 추후 개발 예정
-//    @PutMapping("/documents/update")
-//    public CommonDto<?> updateProjectDocumentContent(@RequestBody UpdateDocumentReqDto request) {
-//        DriveItemDto updatedDocument = projectDriveService.updateProjectDocumentContent(request);
-//        return CommonDto.ok(updatedDocument, HttpStatus.OK);
-//    }
-
     // 프로젝트 드라이브 문서 잠금/해제 토글
     @PostMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> toggleProjectDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
