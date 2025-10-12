@@ -42,6 +42,11 @@ public class PersonalDriveService {
     private final DriveChannelRepository driveChannelRepository;
     private final S3Uploader s3Uploader;
 
+    // 드라이브 생성
+    public Long createChannel(DriveCreateReqDto driveCreateReqDto){
+        return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
+    }
+
     // 개인 드라이브 아이템 목록 조회
     @Transactional(readOnly = true)
     public Page<DriveItemDto> getPersonalDriveItems(Long driveChannelSeq, Long parentFolderId, Pageable pageable, String sortBy, String sortOrder) {
@@ -146,24 +151,6 @@ public class PersonalDriveService {
         return DocumentDetailDto.fromDocument(document, documentLines);
     }
 
-//    // 개인 드라이브 공유문서 내용 업데이트
-//    // TODO: 추후 개발 예정
-//    public DriveItemDto updatePersonalDocumentContent(UpdateDocumentReqDto request) {
-//        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
-//            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-//
-//        // 개인 드라이브 채널인지 확인
-//        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.INDIVIDUAL) {
-//            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
-//        }
-//
-//        if (request.getContent() != null) {
-//            updateDocumentContent(document, request.getContent());
-//        }
-//
-//        return DriveItemDto.fromDocument(document);
-//    }
-
     // 개인 드라이브 공유문서 잠금/해제 토글
     public DriveItemDto togglePersonalDocumentLock(ToggleReqDto toggleReqDto) {
         Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(toggleReqDto.getDocumentSeq(), toggleReqDto.getDriveChannelSeq())
@@ -209,34 +196,6 @@ public class PersonalDriveService {
         }
     }
 
-//    // 문서 내용 업데이트 (내부 메서드)
-//    // TODO: 추후 개발 예정
-//    private void updateDocumentContent(Document document, String content) {
-//        try {
-//            List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-//            documentLineRepository.deleteAll(existingLines);
-//
-//            // 새 내용을 라인별로 저장
-//            String[] lines = content.split("\n");
-//            List<DocumentLine> newLines = new ArrayList<>();
-//
-//            for (int i = 0; i < lines.length; i++) {
-//                DocumentLine line = DocumentLine.builder()
-//                    .documentContent(lines[i])
-//                    .documentLineSeq((long) (i + 1))
-//                    .document(document)
-//                    .build();
-//                newLines.add(line);
-//            }
-//
-//            documentLineRepository.saveAll(newLines);
-//
-//        } catch (Exception e) {
-//            log.error("문서 내용 업데이트 실패", e);
-//            throw new IllegalStateException("문서 내용 업데이트에 실패했습니다.", e);
-//        }
-//    }
-
     // 개인 드라이브 채널 조회
     private DriveChannel getPersonalDriveChannel(Long driveChannelSeq) {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
@@ -264,8 +223,5 @@ public class PersonalDriveService {
         } catch (Exception e) {
             return "문서 내용을 불러올 수 없습니다.";
         }
-    // 드라이브 생성
-    public Long createChannel(DriveCreateReqDto driveCreateReqDto){
-        return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
     }
 }

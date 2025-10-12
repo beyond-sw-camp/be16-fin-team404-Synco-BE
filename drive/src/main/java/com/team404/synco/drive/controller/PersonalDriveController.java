@@ -24,6 +24,13 @@ public class PersonalDriveController {
 
     private final PersonalDriveService personalDriveService;
 
+    // 드라이브 생성
+    @PostMapping("/create")
+    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
+        Long id = personalDriveService.createChannel(driveCreateReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+    }
+
     // 개인 드라이브 아이템 목록 조회
     @GetMapping("/{driveChannelSeq}/items")
     public ResponseEntity<ResponseDto<?>> getPersonalDriveItems(
@@ -128,10 +135,5 @@ public class PersonalDriveController {
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
         return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
-    // 드라이브 생성
-    @PostMapping("/create")
-    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
-        Long id = personalDriveService.createChannel(driveCreateReqDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 }

@@ -23,6 +23,13 @@ public class ProjectDriveController {
 
     private final ProjectDriveService projectDriveService;
 
+    // 드라이브 생성
+    @PostMapping("/create")
+    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
+        Long id = projectDriveService.createChannel(driveCreateReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+    }
+
     // 프로젝트 드라이브 아이템 목록 조회
     @GetMapping("/{driveChannelSeq}/items")
     public ResponseEntity<ResponseDto<?>> getProjectDriveItems(

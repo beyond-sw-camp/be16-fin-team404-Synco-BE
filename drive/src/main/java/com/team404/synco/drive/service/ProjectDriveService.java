@@ -41,6 +41,11 @@ public class ProjectDriveService {
     private final DriveChannelRepository driveChannelRepository;
     private final S3Uploader s3Uploader;
 
+    // 드라이브 생성
+    public Long createChannel(DriveCreateReqDto driveCreateReqDto){
+        return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
+    }
+
     // 프로젝트 드라이브 채널 조회
     @Transactional(readOnly = true)
     public DriveChannel getProjectDriveChannel(Long driveChannelSeq) {
@@ -211,32 +216,6 @@ public class ProjectDriveService {
                 
         } catch (Exception e) {
             throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
-        }
-    }
-
-    // 문서 내용 업데이트 (내부 메서드)
-    private void updateDocumentContent(Document document, String content) {
-        try {
-            List<DocumentLine> existingLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-            documentLineRepository.deleteAll(existingLines);
-            
-            // 새 내용을 라인별로 저장
-            String[] lines = content.split("\n");
-            List<DocumentLine> newLines = new ArrayList<>();
-            
-            for (int i = 0; i < lines.length; i++) {
-                DocumentLine line = DocumentLine.builder()
-                    .documentContent(lines[i])
-                    .documentLineSeq((long) (i + 1))
-                    .document(document)
-                    .build();
-                newLines.add(line);
-            }
-            
-            documentLineRepository.saveAll(newLines);
-            
-        } catch (Exception e) {
-            throw new IllegalStateException("문서 내용 업데이트에 실패했습니다.", e);
         }
     }
 
