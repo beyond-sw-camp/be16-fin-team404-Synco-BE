@@ -8,11 +8,12 @@ import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "chat-service")
 public interface ChatFeign {
-    @PostMapping("/chat/createChannel")
-    void createChatChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
+    @PostMapping("/chat/createBasicChannel")
+    void createChatBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
 
     @PostMapping("/chat/addMember")
-    void addMemberToChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
+    void addMemberToChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto,
+                            @RequestHeader("X-member-seq") Long memberSeq);
 
     @DeleteMapping("/chat/{workSpaceSeq}")
     void deleteAllChannel(@PathVariable Long workSpaceSeq);

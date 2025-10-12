@@ -5,6 +5,7 @@ import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.service.TaskService;
 import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
+import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,15 @@ public class TaskController {
     public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto){
         Long id = taskService.addMemberToChannel(channelInviteReqDto);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
+    }
+
+    // 채널 권한 설정
+    @PostMapping("/changeChannelAuthority")
+    public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
+                                                                 @RequestHeader("X-member-seq")Long memberSeq) throws AccessDeniedException
+    {
+        taskService.grantToMember(grantAuthorityReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임

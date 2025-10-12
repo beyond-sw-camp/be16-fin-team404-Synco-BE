@@ -10,7 +10,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class GrantAuthorityReqDto {
-    private Long grantMemberSeq;
     private Long workSpaceSeq;
+    private Long grantMemberSeq;
+    private Long channelSeq;
     private String authority;
 }

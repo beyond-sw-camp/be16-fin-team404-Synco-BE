@@ -33,4 +33,6 @@ public class WorkSpace extends BaseEntity {
     public void updateImageUrl(String imgUrl) {
         this.workSpaceThumbnailImageUrl = imgUrl;
     }
+
+    public void updateSuperMember(Member member){this.member = member;}
 }

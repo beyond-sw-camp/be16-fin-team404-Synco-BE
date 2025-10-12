@@ -17,21 +17,22 @@ public interface TaskFeign {
 
     @PatchMapping("/task/delegateSuperAuthority")
     void delegateTaskChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                  @RequestHeader("X-member-seq") Long memberSeq);
+                                           @RequestHeader("X-Member-seq") Long memberSeq);
 
-    @PostMapping("/virtual-meeting/addMember")
+    @PostMapping("/task/addMember")
     void addMemberToTaskChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
 
-    @PostMapping("/virtual-meeting/createChannel")
-    void createVirtualMeetChannel(@RequestBody ChannelCreateReqDto virtualMeetingChannelCreateReqDto);
+    @PostMapping("/virtual-meeting/createBasicChannel")
+    void createVirtualMeetBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
 
     @PostMapping("/virtual-meeting/addMember")
-    void addMemberToVirtualMeetingChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
+    void addMemberToVirtualMeetingChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto,
+                                          @RequestHeader("X-Member-seq") Long memberSeq);
 
     @DeleteMapping("/virtual-meeting/{workSpaceSeq}")
     void deleteAllVirtualMeetingChannel(@PathVariable Long workSpaceSeq);
 
     @PatchMapping("/virtual-meeting/delegateSuperAuthority")
     void delegateVirtualMeetChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                @RequestHeader("X-member-seq") Long memberSeq);
+                                                  @RequestHeader("X-Member-seq") Long memberSeq);
 }

@@ -1,10 +1,7 @@
 package com.team404.synco.workspace.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
-import com.team404.synco.workspace.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.workspace.dto.TeamWorkSpaceCreateReqDto;
-import com.team404.synco.workspace.dto.TeamWorkSpaceEditReqDto;
-import com.team404.synco.workspace.dto.WorkSpaceResDto;
+import com.team404.synco.workspace.dto.*;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,13 +44,20 @@ public class WorkSpaceController {
     //프로젝트 워크스페이스 SUPER 권한 위임
     @PatchMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                                 @RequestHeader("X-member-seq") Long memberSeq) throws AccessDeniedException {
+                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
         workSpaceService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("워크스페이스의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
-    // 내 워크스페이스 목록 조회
+
     // 워크스페이스 초대
-    // 채널 생성
-    // 채널 수정
+    @PostMapping("/invite")
+    public ResponseEntity<ResponseDto<?>> inviteWorkSpace(@RequestBody ChannelInviteReqDto channelInviteReqDto,
+                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+        workSpaceService.inviteWorkSpace(channelInviteReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에 초대되었습니다.", HttpStatus.OK));
+    }
+
+    // 내 워크스페이스 목록 조회
+
     // 채널 삭제
 }
