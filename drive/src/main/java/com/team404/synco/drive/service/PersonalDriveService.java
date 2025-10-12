@@ -9,6 +9,7 @@ import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.repository.DocumentLineRepository;
 import com.team404.synco.drive.repository.DocumentRepository;
+import com.team404.synco.drive.dto.DriveCreateReqDto;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.util.ContentTypeUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -263,5 +264,8 @@ public class PersonalDriveService {
         } catch (Exception e) {
             return "문서 내용을 불러올 수 없습니다.";
         }
+    // 드라이브 생성
+    public Long createChannel(DriveCreateReqDto driveCreateReqDto){
+        return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
     }
 }

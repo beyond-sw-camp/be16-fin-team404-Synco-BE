@@ -1,4 +1,4 @@
-package com.team404.synco.common.dto;
+package com.team404.synco.common.constant.dto;
 
 import lombok.Builder;
 import lombok.Getter;

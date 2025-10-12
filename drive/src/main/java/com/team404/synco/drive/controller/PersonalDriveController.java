@@ -2,6 +2,7 @@ package com.team404.synco.drive.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.drive.dto.*;
+import com.team404.synco.drive.dto.DriveCreateReqDto;
 import com.team404.synco.drive.service.PersonalDriveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -127,5 +128,10 @@ public class PersonalDriveController {
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
         return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
+    // 드라이브 생성
+    @PostMapping("/create")
+    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
+        Long id = personalDriveService.createChannel(driveCreateReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 }
