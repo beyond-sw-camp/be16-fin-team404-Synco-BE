@@ -59,8 +59,8 @@ public class CommonDriveService {
         
         // 폴더 우선으로 합치기
         List<DriveItemDto> allItems = new ArrayList<>();
-        allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).collect(Collectors.toList()));
-        allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).collect(Collectors.toList()));
+        allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).toList());
+        allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).toList());
         
         // 총 개수 계산
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
