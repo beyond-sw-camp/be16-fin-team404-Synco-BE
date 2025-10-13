@@ -113,7 +113,7 @@ public class PersonalDriveController {
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
-    // 개인 드라이브 문서 상세 조회
+    // 개인 드라이브 공유문서 상세 조회
     @GetMapping("/{driveChannelSeq}/documents/{documentSeq}")
     public ResponseEntity<ResponseDto<?>> getPersonalDocument(
             @PathVariable Long driveChannelSeq,
@@ -122,18 +122,25 @@ public class PersonalDriveController {
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-    // 개인 드라이브 문서 잠금/해제 토글
+    // 개인 드라이브 공유문서 잠금/해제 토글
     @PostMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
         DriveItemDto document = personalDriveService.togglePersonalDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-    // 개인 드라이브 문서 다운로드
+    // 개인 드라이브 공유문서 다운로드
     @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
     public ResponseEntity<byte[]> downloadPersonalDocument(
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
         return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
+    }
+
+    // 개인 드라이브 폴더 트리 조회
+    @GetMapping("/{driveChannelSeq}/folders/tree")
+    public ResponseEntity<ResponseDto<?>> getPersonalFolderTree(@PathVariable Long driveChannelSeq) {
+        List<FolderTreeDto> folderTree = personalDriveService.getPersonalFolderTree(driveChannelSeq);
+        return ResponseEntity.ok(ResponseDto.ok(folderTree, HttpStatus.OK));
     }
 }

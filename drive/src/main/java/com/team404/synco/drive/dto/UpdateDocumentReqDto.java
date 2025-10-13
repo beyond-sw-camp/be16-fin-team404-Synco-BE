@@ -10,5 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateDocumentReqDto {
+    private Long documentSeq;
+    private Long driveChannelSeq;
     private String content;
 }

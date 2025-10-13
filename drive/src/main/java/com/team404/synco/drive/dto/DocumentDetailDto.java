@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
@@ -20,10 +21,30 @@ public class DocumentDetailDto {
     private Boolean isLocked; // 잠금 상태
     private List<String> content; // 문서 내용 (라인별)
     
-    public static DocumentDetailDto fromDocument(Document document, List<DocumentLine> documentLines) {
+    /**
+     * DocumentLine 리스트에서 DTO 생성 (DB 조회 시)
+     */
+    public static DocumentDetailDto fromEntity(Document document, List<DocumentLine> documentLines) {
         List<String> content = documentLines.stream()
                 .map(DocumentLine::getDocumentContent)
                 .toList();
+        
+        return DocumentDetailDto.builder()
+                .id(document.getDocumentSeq())
+                .name(document.getDocumentName())
+                .isLocked(YnColumn.IS_TRUE.equals(document.getYnLock()))
+                .content(content)
+                .build();
+    }
+    
+    /**
+     * 텍스트 컨텐츠에서 DTO 생성 (Redis 캐시 HIT 시)
+     */
+    public static DocumentDetailDto fromEntityWithContent(Document document, String textContent) {
+        // 텍스트를 라인별로 분할
+        List<String> content = textContent.isEmpty() 
+            ? List.of() 
+            : Arrays.asList(textContent.split("\n", -1));
         
         return DocumentDetailDto.builder()
                 .id(document.getDocumentSeq())

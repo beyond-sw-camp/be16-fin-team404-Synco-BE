@@ -18,4 +18,12 @@ public class DocumentLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "document_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Document document;
+
+    public void updateContent(String content) {
+        this.documentContent = content;
+    }
+
+    public void updateLineNumber(Long lineNumber) {
+        this.documentLineSeq = lineNumber;
+    }
 }

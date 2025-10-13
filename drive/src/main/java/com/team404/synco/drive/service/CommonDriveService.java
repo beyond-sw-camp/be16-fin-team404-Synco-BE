@@ -5,6 +5,7 @@ import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.DriveItemDto;
+import com.team404.synco.drive.dto.FolderTreeDto;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Folder;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -618,6 +620,44 @@ public class CommonDriveService {
         }
         
         return false;
+    }
+
+    // ✅ 드라이브 폴더 트리 조회
+    @Transactional(readOnly = true)
+    public List<FolderTreeDto> getFolderTree(Long driveChannelSeq) {
+        // 모든 폴더 조회
+        List<Folder> allFolders = folderRepository.findByDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+        
+        // 폴더 ID를 키로 하는 맵 생성
+        Map<Long, FolderTreeDto> folderMap = allFolders.stream()
+                .collect(Collectors.toMap(
+                    Folder::getFolderSeq,
+                    FolderTreeDto::fromEntity
+                ));
+        
+        List<FolderTreeDto> rootFolders = new ArrayList<>();
+        
+        // 계층 구조 구성
+        for (Folder folder : allFolders) {
+            FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
+            
+            if (folder.getParentFolderSeq() == null) {
+                // 최상위 폴더
+                folderDto.setDepthAndPath(0, folder.getFolderName());
+                rootFolders.add(folderDto);
+            } else {
+                // 하위 폴더
+                FolderTreeDto parentDto = folderMap.get(folder.getParentFolderSeq());
+                if (parentDto != null && parentDto.getDepth() != null) {
+                    String path = parentDto.getPath() + "/" + folder.getFolderName();
+                    folderDto.setDepthAndPath(parentDto.getDepth() + 1, path);
+                    parentDto.addChild(folderDto);
+                }
+            }
+        }
+        
+        log.info("폴더 트리 조회 완료 - DriveChannelSeq: {}, 총 폴더 수: {}", driveChannelSeq, allFolders.size());
+        return rootFolders;
     }
 
 }

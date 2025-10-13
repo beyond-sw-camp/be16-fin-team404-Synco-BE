@@ -8,6 +8,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import java.util.List;
@@ -18,11 +19,14 @@ public class JwtAuthFilter implements GlobalFilter {
 
     @Value("${jwt.secretKey}")
     private String secretKey;
+    
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
     // TODO: oauth 로그인 url 추가 에정
     private static final List<String> ALLOWED_PATHS = List.of(
             "/member/create",
             "/member/doLogin",
-            "/member/refreshAt"
+            "/member/refreshAt",
+            "/drive/**"
     );
 
     @Override
@@ -33,8 +37,12 @@ public class JwtAuthFilter implements GlobalFilter {
         String path = exchange.getRequest().getURI().getRawPath();
         log.info(path);
 
-        if (ALLOWED_PATHS.contains(path)) {
-            return chain.filter(exchange);
+        // ✅ 패턴 매칭으로 허용된 경로 확인
+        for (String allowedPath : ALLOWED_PATHS) {
+            if (pathMatcher.match(allowedPath, path)) {
+                log.info("허용된 경로: {}", path);
+                return chain.filter(exchange);
+            }
         }
 
         try {

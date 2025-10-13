@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -148,7 +147,7 @@ public class PersonalDriveService {
         // 문서의 라인별 내용 조회
         List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
 
-        return DocumentDetailDto.fromDocument(document, documentLines);
+        return DocumentDetailDto.fromEntity(document, documentLines);
     }
 
     // 개인 드라이브 공유문서 잠금/해제 토글
@@ -223,5 +222,12 @@ public class PersonalDriveService {
         } catch (Exception e) {
             return "문서 내용을 불러올 수 없습니다.";
         }
+    }
+
+    // 개인 드라이브 폴더 트리 조회 
+    @Transactional(readOnly = true)
+    public List<FolderTreeDto> getPersonalFolderTree(Long driveChannelSeq) {
+        DriveChannel driveChannel = getPersonalDriveChannel(driveChannelSeq);
+        return commonDriveService.getFolderTree(driveChannel.getDriveChannelSeq());
     }
 }

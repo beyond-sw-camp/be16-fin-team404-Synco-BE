@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +38,7 @@ public class ProjectDriveService {
     private final DocumentRepository documentRepository;
     private final DocumentLineRepository documentLineRepository;
     private final DriveChannelRepository driveChannelRepository;
+    private final DocumentSyncService documentSyncService;
     private final S3Uploader s3Uploader;
 
     // 드라이브 생성
@@ -143,52 +143,49 @@ public class ProjectDriveService {
     // 프로젝트 드라이브 공유문서 상세 조회
     @Transactional(readOnly = true)
     public DocumentDetailDto getProjectDocument(Long driveChannelSeq, Long documentSeq) {
-        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
         
         // 프로젝트 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
         }
         
-        // 문서의 라인별 내용 조회
-        List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+        // 1. Redis 캐시 확인
+        String cachedContent = documentSyncService.getDocumentContentFromCache(documentSeq);
         
-        return DocumentDetailDto.fromDocument(document, documentLines);
+        if (cachedContent != null) {
+            // 캐시 HIT: Redis에서 바로 반환
+            return DocumentDetailDto.fromEntityWithContent(document, cachedContent);
+        }
+        
+        // 2. 캐시 MISS: DB에서 조회
+        List<DocumentLine> documentLines = documentLineRepository
+            .findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
+        
+        // 3. 라인들을 텍스트로 변환
+        String textContent = documentSyncService.loadDocumentLinesAsText(documentLines);
+        
+        // 4. Redis에 캐시
+        documentSyncService.cacheDocumentContent(documentSeq, textContent);
+        
+        // 5. 응답 (기존 방식과 동일한 형태로)
+        return DocumentDetailDto.fromEntity(document, documentLines);
     }
-
-//    // 프로젝트 드라이브 공유문서 내용 업데이트
-//    //    // TODO: 추후 개발 예정
-//    public DriveItemDto updateProjectDocumentContent(UpdateDocumentReqDto request) {
-//        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(request.getDocumentSeq(), request.getDriveChannelSeq())
-//            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-//
-//        // 프로젝트 드라이브 채널인지 확인
-//        if (document.getDriveChannel().getWorkspaceType() != WorkSpaceType.PROJECT) {
-//            throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + request.getDocumentSeq());
-//        }
-//
-//        if (request.getContent() != null) {
-//            updateDocumentContent(document, request.getContent());
-//        }
-//
-//        return DriveItemDto.fromDocument(document);
-//    }
 
     // 프로젝트 드라이브 공유문서 잠금/해제 토글
     public DriveItemDto toggleProjectDocumentLock(ToggleReqDto toggleReqDto) {
         Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(toggleReqDto.getDocumentSeq(), toggleReqDto.getDriveChannelSeq())
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-        
+
         // 프로젝트 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + toggleReqDto.getDocumentSeq());
         }
-        
+
         String currentLockStatus = document.getYnLock();
         String newLockStatus = YnColumn.IS_TRUE.equals(currentLockStatus) ? YnColumn.IS_FALSE : YnColumn.IS_TRUE;
         document.updateLockStatus(newLockStatus);
-        
+
         return DriveItemDto.fromDocument(document);
     }
 
@@ -196,24 +193,24 @@ public class ProjectDriveService {
     public ResponseEntity<byte[]> downloadProjectDocument(Long driveChannelSeq, Long documentSeq) {
         Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
             .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-        
+
         // 프로젝트 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
         }
-        
+
         try {
             String content = getDocumentContent(document);
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-            
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", document.getDocumentName() + ".txt");
-            
+
             return ResponseEntity.ok()
                 .headers(headers)
                 .body(contentBytes);
-                
+
         } catch (Exception e) {
             throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
         }
@@ -234,5 +231,12 @@ public class ProjectDriveService {
         } catch (Exception e) {
             return "문서 내용을 불러올 수 없습니다.";
         }
+    }
+
+    // 프로젝트 드라이브 폴더 트리 조회
+    @Transactional(readOnly = true)
+    public List<FolderTreeDto> getProjectFolderTree(Long driveChannelSeq) {
+        DriveChannel driveChannel = getProjectDriveChannel(driveChannelSeq);
+        return commonDriveService.getFolderTree(driveChannelSeq);
     }
 }
