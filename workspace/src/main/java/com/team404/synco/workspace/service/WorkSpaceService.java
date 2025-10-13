@@ -79,7 +79,7 @@ public class WorkSpaceService {
         // 워크스페이스 생성
         WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder().member(member)
                 .workSpaceName(teamWorkSpaceCreateReqDto.getWorkSpaceName()).workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
-                .workSpaceType(WorkSpaceType.TEAM).build());
+                .workSpaceType(WorkSpaceType.PROJECT).build());
 
         // 워크스페이스 생성한 member정보 redis에 저장
         workSpaceRedisService.addMemberInfo(member);
@@ -101,7 +101,7 @@ public class WorkSpaceService {
                 .memberSeq(workSpace.getMember().getMemberSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
 
         // 기본 드라이브 생성
-        driveFeign.createTeamDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.TEAM).workSpaceName(
+        driveFeign.createTeamDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.PROJECT).workSpaceName(
                 workSpace.getWorkSpaceName()).workSpaceReq(workSpace.getWorkSpaceSeq()).build());
 
         // 기본 화상회의 채널 생성
