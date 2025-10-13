@@ -8,6 +8,7 @@ import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
+import com.team404.synco.workspace.service.WorkSpaceService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,12 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberService {
 
     private static final String PROFILE_IMAGE_DIRECTORY = "profile";
-
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3Uploader;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+    private final WorkSpaceService workSpaceService;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
@@ -49,6 +50,9 @@ public class MemberService {
         }
 
         Member member = memberRepository.save(createMemberDto.toEntity(encodedPassword, profileImageUrl));
+
+
+        workSpaceService.createIndividualWorkSpace(member.getMemberSeq());
         return member.getMemberSeq();
     }
 

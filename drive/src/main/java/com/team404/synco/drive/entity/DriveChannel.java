@@ -1,5 +1,6 @@
 package com.team404.synco.drive.entity;
 
+import com.team404.synco.common.constant.WorkSpaceType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,8 +17,10 @@ public class DriveChannel extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long driveChannelSeq;
+    @Enumerated(EnumType.STRING)
+    private WorkSpaceType workSpaceType = WorkSpaceType.INDIVIDUAL;
     @Column(nullable = false)
-    private String driveChannelName;
+    private String workspaceName;
     @Column(nullable = false)
     private long workspaceSeq;
     @Builder.Default
