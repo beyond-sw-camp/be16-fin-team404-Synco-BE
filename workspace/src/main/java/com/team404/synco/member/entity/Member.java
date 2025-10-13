@@ -75,4 +75,8 @@ public class Member extends BaseEntity {
     public void deleteMember() {
         this.ynDel = YnColumn.IS_TRUE;
     }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
