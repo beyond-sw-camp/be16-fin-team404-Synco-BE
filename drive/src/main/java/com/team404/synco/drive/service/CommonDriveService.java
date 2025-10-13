@@ -72,27 +72,36 @@ public class CommonDriveService {
     
     // 폴더용 정렬된 Pageable 생성
     private Pageable createFolderSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            return pageable;
-        }
-        
         Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
         
         List<Sort.Order> orders = new ArrayList<>();
         
-        switch (sortBy.toLowerCase()) {
-            case "name":
-                orders.add(Sort.Order.by("folderName").with(direction));
-                orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
-                break;
-                
-            case "date":
-                orders.add(Sort.Order.by("updatedAt").with(direction));
-                orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
-                break;
-                
-            default:
-                return pageable;
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            // ✅ 기본 정렬: orders 기준 (폴더 순서)
+            orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC));
+            orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+        } else {
+            switch (sortBy.toLowerCase()) {
+                case "name":
+                    orders.add(Sort.Order.by("folderName").with(direction));
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                case "date":
+                    orders.add(Sort.Order.by("updatedAt").with(direction));
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                case "orders":
+                    orders.add(Sort.Order.by("orders").with(direction));
+                    orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                default:
+                    // ✅ 기본 정렬: orders 기준
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC));
+                    orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+            }
         }
         
         return PageRequest.of(
@@ -104,27 +113,31 @@ public class CommonDriveService {
     
     // 문서용 정렬된 Pageable 생성
     private Pageable createDocumentSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            return pageable;
-        }
-        
         Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
         
         List<Sort.Order> orders = new ArrayList<>();
         
-        switch (sortBy.toLowerCase()) {
-            case "name":
-                orders.add(Sort.Order.by("documentName").with(direction));
-                orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
-                break;
-                
-            case "date":
-                orders.add(Sort.Order.by("updatedAt").with(direction));
-                orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
-                break;
-                
-            default:
-                return pageable;
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            // ✅ 기본 정렬: 생성일 기준 (Document에 orders 필드 추가 시 orders 기준으로 변경 예정)
+            orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC));
+            orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
+        } else {
+            switch (sortBy.toLowerCase()) {
+                case "name":
+                    orders.add(Sort.Order.by("documentName").with(direction));
+                    orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC)); // 보조 정렬
+                    break;
+                    
+                case "date":
+                    orders.add(Sort.Order.by("updatedAt").with(direction));
+                    orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                default:
+                    // ✅ 기본 정렬: 생성일 기준
+                    orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC));
+                    orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
+            }
         }
         
         return PageRequest.of(
@@ -393,6 +406,7 @@ public class CommonDriveService {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderSeq, driveChannelSeq)
                     .orElse(0L);
         } else {
+
             // 최상위 폴더인 경우
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq)
                     .orElse(0L);
