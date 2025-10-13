@@ -129,9 +129,7 @@ public class MemberService {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
         }
 
-        return FindIdResDto.builder()
-                .memberId(member.getMemberId())
-                .build();
+        return FindIdResDto.fromEntity(member);
     }
 
     public void findPassword(FindPasswordReqDto findPasswordReqDto) {
@@ -146,14 +144,11 @@ public class MemberService {
         }
 
         String tempPassword = emailService.createTempPassword();
-        log.info("임시 비밀번호 생성 완료. 회원: {}", member.getMemberId());
 
         String encodedTempPassword = passwordEncoder.encode(tempPassword);
         member.updatePassword(encodedTempPassword);
-        log.info("임시 비밀번호 DB 저장 완료. 회원: {}", member.getMemberId());
 
         emailService.sendTempPassword(member.getEmail(), tempPassword);
-        log.info("임시 비밀번호 이메일 발송 완료. 회원: {}, 이메일: {}", member.getMemberId(), member.getEmail());
     }
 
     public void changePassword(Long memberSeq, ChangePasswordReqDto changePasswordReqDto) {
@@ -174,7 +169,6 @@ public class MemberService {
 
         String encodedNewPassword = passwordEncoder.encode(changePasswordReqDto.getNewPassword());
         member.updatePassword(encodedNewPassword);
-        log.info("비밀번호 변경 완료. 회원: {}", member.getMemberId());
     }
 
 }

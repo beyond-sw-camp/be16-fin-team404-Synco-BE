@@ -86,10 +86,8 @@ public class EmailService {
     // 임시 비밀번호 이메일 발송
     public void sendTempPassword(String email, String tempPassword) {
         try {
-            log.info("임시 비밀번호 이메일 발송 시작: {}", email);
             MimeMessage emailForm = createTempPasswordEmailForm(email, tempPassword);
             javaMailSender.send(emailForm);
-            log.info("임시 비밀번호 이메일 발송 완료: {}", email);
         } catch (MessagingException e) {
             log.error("임시 비밀번호 이메일 발송 실패: {}", email, e);
             throw new RuntimeException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
