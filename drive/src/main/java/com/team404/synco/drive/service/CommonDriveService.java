@@ -319,9 +319,9 @@ public class CommonDriveService {
 
         // 현재 위치와 이동할 위치가 같은지 확인
         Long currentParentId = folder.getParentFolderSeq();
-        if (Objects.equals(currentParentId, newParentId)) {
-            throw new IllegalArgumentException("이미 해당 위치에 있는 폴더입니다.");
-        }
+//        if (Objects.equals(currentParentId, newParentId)) {
+//            throw new IllegalArgumentException("이미 해당 위치에 있는 폴더입니다.");
+//        }
 
         // 같은 드라이브 채널 내에서 같은 부모 폴더 하위에 같은 이름의 폴더가 있는지 확인
         if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folder.getFolderName(), folderId, folder.getDriveChannel(), newParentId).isPresent()) {
