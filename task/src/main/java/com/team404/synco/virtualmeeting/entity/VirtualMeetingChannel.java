@@ -23,6 +23,6 @@ public class VirtualMeetingChannel extends BaseEntity {
     private long workSpaceSeq;
     @Builder.Default
     @OneToMany(mappedBy = "virtualMeetingChannel")
-    private List<VirtualMeetingChannelMember> virtualMeetingChannelMemberList = new ArrayList<>();
+    private List<VirtualMeetingChannelMember> virtualMeetingChannelfriendList = new ArrayList<>();
 
 }

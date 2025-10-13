@@ -23,6 +23,9 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/create",
             "/member/doLogin",
             "/member/refreshAt",
+            "/member/findId",
+            "/member/findPassword"
+            "/member/refreshAt",
             "/member/google/doLogin",
             "/member/kakao/doLogin",
             "/member/naver/doLogin"

@@ -2,6 +2,7 @@ package com.team404.synco.common.service;
 
 import com.team404.synco.common.dto.ResponseDto;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -23,6 +24,12 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ResponseDto<?>> handleEntityNotFoundException(EntityNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ResponseDto.fail(HttpStatus.NOT_FOUND, e.getMessage()));
+    }
+
+    @ExceptionHandler(SerializationException.class)
+    public ResponseEntity<?> handleSerializationException(SerializationException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ResponseDto.fail(HttpStatus.NOT_FOUND, e.getMessage()));
     }

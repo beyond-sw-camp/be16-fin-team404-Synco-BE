@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-
 @RestController
 @RequestMapping("/member")
 @RequiredArgsConstructor
@@ -51,6 +50,25 @@ public class MemberController {
     public ResponseEntity<ResponseDto<?>> generateNewAt(@RequestBody RefreshTokenDto refreshTokenDto) {
         LoginResDto loginResDto = memberService.generateNewAt(refreshTokenDto);
         return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    }
+
+    @PostMapping("/findId")
+    public ResponseEntity<ResponseDto<?>> findMemberId(@RequestBody @Validated FindIdReqDto findIdReqDto) {
+        FindIdResDto findIdResDto = memberService.findMemberId(findIdReqDto);
+        return ResponseEntity.ok(ResponseDto.ok(findIdResDto, HttpStatus.OK));
+    }
+
+    @PostMapping("/findPassword")
+    public ResponseEntity<ResponseDto<?>> findPassword(@RequestBody @Validated FindPasswordReqDto findPasswordReqDto) {
+        memberService.findPassword(findPasswordReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("임시 비밀번호가 이메일로 발송되었습니다.", HttpStatus.OK));
+    }
+
+    @PatchMapping("/changePassword")
+    public ResponseEntity<ResponseDto<?>> changePassword(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                         @RequestBody @Validated ChangePasswordReqDto changePasswordReqDto) {
+        memberService.changePassword(memberSeq, changePasswordReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("비밀번호가 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 
     @PostMapping("/google/doLogin")
