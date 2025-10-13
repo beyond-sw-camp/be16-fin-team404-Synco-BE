@@ -49,4 +49,8 @@ public class Document extends BaseEntity {
     public void updateLockStatus(String ynLock) {
         this.ynLock = ynLock;
     }
+
+    public void updateDocumentName(String newDocumentName) {
+        this.documentName = newDocumentName;
+    }
 }

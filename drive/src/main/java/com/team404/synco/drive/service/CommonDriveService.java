@@ -287,7 +287,7 @@ public class CommonDriveService {
                 }
             } else {
                 // 최상위로 이동하는 경우
-                if(documentRepository.findTopLevelDocumentByNameAndChannel(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
+                if(documentRepository.findTopLevelDocumentByNameAndChannelExcluding(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
                     throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
                 }
             }
@@ -658,6 +658,34 @@ public class CommonDriveService {
         
         log.info("폴더 트리 조회 완료 - DriveChannelSeq: {}, 총 폴더 수: {}", driveChannelSeq, allFolders.size());
         return rootFolders;
+    }
+
+    // ✅ 문서 이름 변경
+    public void renameDocument(DriveChannel driveChannel, Long documentSeq, String newDocumentName) {
+        // 문서 조회
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentSeq));
+        
+        // 같은 폴더 내에 같은 이름의 문서가 있는지 확인
+        if (document.getFolder() != null) {
+            // 폴더 내 문서 중복 검증
+            documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(
+                    newDocumentName, documentSeq, driveChannel, document.getFolder().getFolderSeq()
+            ).ifPresent(existingDoc -> {
+                throw new IllegalArgumentException("해당 폴더에 같은 이름의 문서가 이미 존재합니다: " + newDocumentName);
+            });
+        } else {
+            // 최상위 문서 중복 검증
+            documentRepository.findTopLevelDocumentByNameAndChannelExcluding(
+                    newDocumentName, documentSeq, driveChannel.getDriveChannelSeq()
+            ).ifPresent(existingDoc -> {
+                throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다: " + newDocumentName);
+            });
+        }
+        
+        // 문서 이름 변경
+        document.updateDocumentName(newDocumentName);
+        log.info("문서 이름 변경 완료 - DocumentSeq: {}, NewName: {}", documentSeq, newDocumentName);
     }
 
 }

@@ -123,7 +123,7 @@ public class PersonalDriveController {
     }
 
     // 개인 드라이브 공유문서 잠금/해제 토글
-    @PostMapping("/documents/lock")
+    @PatchMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
         DriveItemDto document = personalDriveService.togglePersonalDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
@@ -142,5 +142,12 @@ public class PersonalDriveController {
     public ResponseEntity<ResponseDto<?>> getPersonalFolderTree(@PathVariable Long driveChannelSeq) {
         List<FolderTreeDto> folderTree = personalDriveService.getPersonalFolderTree(driveChannelSeq);
         return ResponseEntity.ok(ResponseDto.ok(folderTree, HttpStatus.OK));
+    }
+
+    // 개인 드라이브 문서 이름 변경
+    @PatchMapping("/document/rename")
+    public ResponseEntity<ResponseDto<?>> renamePersonalDocument(@RequestBody RenameDocumentReqDto renameDocumentReqDto) {
+        personalDriveService.renamePersonalDocument(renameDocumentReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 }

@@ -230,4 +230,10 @@ public class PersonalDriveService {
         DriveChannel driveChannel = getPersonalDriveChannel(driveChannelSeq);
         return commonDriveService.getFolderTree(driveChannel.getDriveChannelSeq());
     }
+
+    // 개인 드라이브 문서 이름 변경
+    public void renamePersonalDocument(RenameDocumentReqDto renameDocumentReqDto) {
+        DriveChannel driveChannel = getPersonalDriveChannel(renameDocumentReqDto.getDriveChannelSeq());
+        commonDriveService.renameDocument(driveChannel, renameDocumentReqDto.getDocumentSeq(), renameDocumentReqDto.getNewDocumentName());
+    }
 }

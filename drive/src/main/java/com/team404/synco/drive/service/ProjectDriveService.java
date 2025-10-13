@@ -239,4 +239,10 @@ public class ProjectDriveService {
         DriveChannel driveChannel = getProjectDriveChannel(driveChannelSeq);
         return commonDriveService.getFolderTree(driveChannelSeq);
     }
+
+    // 프로젝트 드라이브 문서 이름 변경
+    public void renameProjectDocument(RenameDocumentReqDto renameDocumentReqDto) {
+        DriveChannel driveChannel = getProjectDriveChannel(renameDocumentReqDto.getDriveChannelSeq());
+        commonDriveService.renameDocument(driveChannel, renameDocumentReqDto.getDocumentSeq(), renameDocumentReqDto.getNewDocumentName());
+    }
 }

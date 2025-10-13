@@ -127,7 +127,7 @@ public class ProjectDriveController {
     }
 
     // 프로젝트 드라이브 공유문서 잠금/해제 토글
-    @PostMapping("/documents/lock")
+    @PatchMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> toggleProjectDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
         DriveItemDto document = projectDriveService.toggleProjectDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
@@ -146,5 +146,12 @@ public class ProjectDriveController {
     public ResponseEntity<ResponseDto<?>> getProjectFolderTree(@PathVariable Long driveChannelSeq) {
         List<FolderTreeDto> folderTree = projectDriveService.getProjectFolderTree(driveChannelSeq);
         return ResponseEntity.ok(ResponseDto.ok(folderTree, HttpStatus.OK));
+    }
+
+    // 프로젝트 드라이브 문서 이름 변경
+    @PatchMapping("/document/rename")
+    public ResponseEntity<ResponseDto<?>> renameProjectDocument(@RequestBody RenameDocumentReqDto renameDocumentReqDto) {
+        projectDriveService.renameProjectDocument(renameDocumentReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 }
