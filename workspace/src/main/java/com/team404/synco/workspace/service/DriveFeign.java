@@ -12,9 +12,9 @@ public interface DriveFeign {
     @PostMapping("/drive/personal/create")
     void createPersonalDrive(@RequestBody DriveCreateReqDto driveCreateReqDto);
 
-    @PostMapping("/drive/team/create")
+    @PostMapping("/drive/project/create")
     void createTeamDrive(@RequestBody DriveCreateReqDto driveCreateReqDto);
 
-    @DeleteMapping("/drive/team/{workSpaceSeq}")
+    @DeleteMapping("/drive/project/{workSpaceSeq}")
     void deleteTeamDrive(@PathVariable Long workSpaceSeq);
 }

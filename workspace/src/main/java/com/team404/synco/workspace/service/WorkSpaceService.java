@@ -81,21 +81,6 @@ public class WorkSpaceService {
                 .workSpaceName(teamWorkSpaceCreateReqDto.getWorkSpaceName()).workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
                 .workSpaceType(WorkSpaceType.PROJECT).build());
 
-        // 워크스페이스 생성한 member정보 redis에 저장
-        workSpaceRedisService.addMemberInfo(member);
-        workSpaceRedisService.addWorkSpace(workSpace, member.getMemberSeq());
-        workSpaceRedisService.addMemberToWorkSpace(workSpace, member.getMemberSeq());
-
-        // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = teamWorkSpaceCreateReqDto.getFriendList();
-        invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
-                .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
-            workSpaceRedisService.addMemberInfo(inviteMember);
-            workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
-            workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
-        });
-
-
         // 기본 채팅 채널 생성
         chatFeign.createChatBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(workSpace.getWorkSpaceSeq())
                 .memberSeq(workSpace.getMember().getMemberSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
@@ -112,6 +97,21 @@ public class WorkSpaceService {
         // 기본 task 생성
         taskFeign.createTask(TaskChannelMemberCreateReqDto.builder().memberSeq(memberSeq).
                 workSpaceReq(workSpace.getWorkSpaceSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+
+        // 워크스페이스 생성한 member정보 redis에 저장
+        workSpaceRedisService.addMemberInfo(member);
+        workSpaceRedisService.addWorkSpace(workSpace, member.getMemberSeq());
+        workSpaceRedisService.addMemberToWorkSpace(workSpace, member.getMemberSeq());
+
+        // 워크스페이스에 초대된 member정보 redis에 저장
+        List<Long> invitefriendList = teamWorkSpaceCreateReqDto.getFriendList();
+        invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
+            workSpaceRedisService.addMemberInfo(inviteMember);
+            workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
+            workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
+        });
+
         return WorkSpaceResDto.fromEntity(workSpace);
     }
 
