@@ -19,14 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -46,117 +39,117 @@ public class CommonDriveService {
                                             Pageable pageable,
                                             String sortBy,
                                             String sortOrder) {
-        
+
         // 폴더와 문서용 정렬된 Pageable 생성
         Pageable folderPageable = createFolderSortedPageable(pageable, sortBy, sortOrder);
         Pageable documentPageable = createDocumentSortedPageable(pageable, sortBy, sortOrder);
-        
+
         // 폴더와 문서를 각각 페이징해서 조회
         Page<Folder> folders = folderRepository.findFoldersByDriveChannelAndParent(
-            driveChannel.getDriveChannelSeq(), parentFolderSeq, folderPageable);
+                driveChannel.getDriveChannelSeq(), parentFolderSeq, folderPageable);
         Page<Document> documents = documentRepository.findDocumentsByDriveChannelAndParent(
-            driveChannel.getDriveChannelSeq(), parentFolderSeq, documentPageable);
-        
+                driveChannel.getDriveChannelSeq(), parentFolderSeq, documentPageable);
+
         // 폴더 우선으로 합치기
         List<DriveItemDto> allItems = new ArrayList<>();
         allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).toList());
         allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).toList());
-        
+
         // 총 개수 계산
         long totalElements = folders.getTotalElements() + documents.getTotalElements();
-        
+
         return new PageImpl<>(allItems, pageable, totalElements);
     }
-    
+
     // 폴더용 정렬된 Pageable 생성
     private Pageable createFolderSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
         if (sortBy == null || sortBy.trim().isEmpty()) {
             return pageable;
         }
-        
+
         Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        
+
         List<Sort.Order> orders = new ArrayList<>();
-        
+
         switch (sortBy.toLowerCase()) {
             case "name":
                 orders.add(Sort.Order.by("folderName").with(direction));
                 orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
                 break;
-                
+
             case "date":
                 orders.add(Sort.Order.by("updatedAt").with(direction));
                 orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
                 break;
-                
+
             default:
                 return pageable;
         }
-        
+
         return PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(orders)
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(orders)
         );
     }
-    
+
     // 문서용 정렬된 Pageable 생성
     private Pageable createDocumentSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
         if (sortBy == null || sortBy.trim().isEmpty()) {
             return pageable;
         }
-        
+
         Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        
+
         List<Sort.Order> orders = new ArrayList<>();
-        
+
         switch (sortBy.toLowerCase()) {
             case "name":
                 orders.add(Sort.Order.by("documentName").with(direction));
                 orders.add(Sort.Order.by("updatedAt").with(Sort.Direction.DESC));
                 break;
-                
+
             case "date":
                 orders.add(Sort.Order.by("updatedAt").with(direction));
                 orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
                 break;
-                
+
             default:
                 return pageable;
         }
-        
+
         return PageRequest.of(
-            pageable.getPageNumber(),
-            pageable.getPageSize(),
-            Sort.by(orders)
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(orders)
         );
     }
-    
+
     // 폴더 생성
     public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
 
         // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 폴더가 있는지 확인
-        if(parentFolderId != null) {
+        if (parentFolderId != null) {
             // 하위 폴더 중복 검증
-            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, parentFolderId).isPresent()) {
+            if (folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, parentFolderId).isPresent()) {
                 throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
             }
         } else {
             // 최상위 폴더 중복 검증
-            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, null).isPresent()) {
+            if (folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, null).isPresent()) {
                 throw new IllegalArgumentException("최상위에 같은 이름의 폴더가 이미 존재합니다.");
             }
         }
 
         // 부모폴더가 있는 경우에만 존재 여부 확인
-        if(parentFolderId != null){
+        if (parentFolderId != null) {
             folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
-                .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+                    .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
         }
 
         // 최대 orders 조회
         long maxOrder;
-        if(parentFolderId != null) {
+        if (parentFolderId != null) {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq()).orElse(0L);
         } else {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannel.getDriveChannelSeq()).orElse(0L);
@@ -178,23 +171,23 @@ public class CommonDriveService {
     public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
 
         // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인
-        if(parentFolderId != null) {
+        if (parentFolderId != null) {
             // 폴더 내 문서 중복 검증
-            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
+            if (documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
                 throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
             }
         } else {
             // 최상위 문서 중복 검증
-            if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(documentName, driveChannel.getDriveChannelSeq()).isPresent()) {
+            if (documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(documentName, driveChannel.getDriveChannelSeq()).isPresent()) {
                 throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
             }
         }
 
         // 부모폴더가 있는 경우에만 폴더 설정
         Folder folder = null;
-        if(parentFolderId != null){
+        if (parentFolderId != null) {
             folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
-                .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+                    .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
         }
 
         Document document = Document.builder()
@@ -220,28 +213,28 @@ public class CommonDriveService {
         for (MultipartFile file : files) {
             try {
                 String fileName = file.getOriginalFilename();
-                
+
                 // 같은 위치에 같은 이름의 파일이 있는지 확인 (S3 업로드 전에 검증)
-                if(parentFolderId != null) {
+                if (parentFolderId != null) {
                     // 폴더 내 파일 중복 검증
-                    if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
+                    if (documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
                         throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 파일이 이미 존재합니다: " + fileName);
                     }
                 } else {
                     // 최상위 파일 중복 검증
-                    if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(fileName, driveChannel.getDriveChannelSeq()).isPresent()) {
+                    if (documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(fileName, driveChannel.getDriveChannelSeq()).isPresent()) {
                         throw new IllegalArgumentException("최상위에 같은 이름의 파일이 이미 존재합니다: " + fileName);
                     }
                 }
-                
+
                 // 중복 검증 통과 후 S3 업로드
                 String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
 
                 // 부모폴더가 있는 경우에만 폴더 설정
                 Folder folder = null;
-                if(parentFolderId != null){
+                if (parentFolderId != null) {
                     folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
-                        .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+                            .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
                 }
 
                 Document document = Document.builder()
@@ -275,25 +268,25 @@ public class CommonDriveService {
             moveFolderWithOrderAdjustment(driveChannel, itemId, newParentId);
         } else {
             Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
-                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-            
+                    .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+
             // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
-            if(newParentId != null) {
+            if (newParentId != null) {
                 // 폴더로 이동하는 경우
-                if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
+                if (documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
                     throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
                 }
             } else {
                 // 최상위로 이동하는 경우
-                if(documentRepository.findTopLevelDocumentByNameAndChannel(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
+                if (documentRepository.findTopLevelDocumentByNameAndChannel(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
                     throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
                 }
             }
 
             Folder newFolder = null;
-            if(newParentId != null) {
+            if (newParentId != null) {
                 newFolder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(newParentId, document.getDriveChannel().getDriveChannelSeq())
-                    .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
+                        .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
             }
             document.updateFolder(newFolder);
         }
@@ -302,13 +295,13 @@ public class CommonDriveService {
     // 폴더 이동 시 순서 조정 포함
     private void moveFolderWithOrderAdjustment(DriveChannel driveChannel, Long folderId, Long newParentId) {
         Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
-            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         // 이동할 부모폴더가 있는 경우 존재 여부 확인
-        if(newParentId != null) {
+        if (newParentId != null) {
             folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(newParentId, folder.getDriveChannel().getDriveChannelSeq())
-                .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
-            
+                    .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
+
             // 순환 참조 방지: 이동할 폴더가 현재 폴더의 하위 폴더인지 확인
             if (isCircularReference(folderId, newParentId)) {
                 throw new IllegalArgumentException("자기 자신의 하위 폴더로는 이동할 수 없습니다.");
@@ -322,7 +315,7 @@ public class CommonDriveService {
         }
 
         // 같은 드라이브 채널 내에서 같은 부모 폴더 하위에 같은 이름의 폴더가 있는지 확인
-        if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folder.getFolderName(), folderId, folder.getDriveChannel(), newParentId).isPresent()) {
+        if (folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folder.getFolderName(), folderId, folder.getDriveChannel(), newParentId).isPresent()) {
             throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
         }
         Long currentOrder = folder.getOrders();
@@ -337,7 +330,7 @@ public class CommonDriveService {
 
         //  새 위치에서 최대 순서 조회 및 설정
         long maxOrder;
-        if(newParentId != null) {
+        if (newParentId != null) {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(newParentId, driveChannelSeq).orElse(0L);
         } else {
             maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq).orElse(0L);
@@ -346,15 +339,15 @@ public class CommonDriveService {
         // 폴더의 부모와 순서 업데이트
         folder.updateParentFolderSeq(newParentId);
         folder.updateOrder(maxOrder + 1L);
-        
+
         // 이동하기 전 위치의 모든 폴더 순서를 연속적으로 재정렬
         reorderFoldersSequentially(currentParentId, driveChannelSeq);
     }
-    
+
     // 폴더 순서를 연속적으로 재정렬
     private void reorderFoldersSequentially(Long parentFolderId, Long driveChannelSeq) {
         List<Folder> folders;
-        
+
         if (parentFolderId != null) {
             // 하위 폴더들 조회
             folders = folderRepository.findByParentFolderSeqAndDriveChannelDriveChannelSeqOrderByOrders(parentFolderId, driveChannelSeq);
@@ -362,7 +355,7 @@ public class CommonDriveService {
             // 최상위 폴더들 조회
             folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
         }
-        
+
         // 순서를 1부터 연속적으로 재설정
         for (int i = 0; i < folders.size(); i++) {
             Folder folder = folders.get(i);
@@ -373,7 +366,7 @@ public class CommonDriveService {
     // 폴더 순서 변경
     public void reorderFolder(DriveChannel driveChannel, Long folderId, Long newOrder) {
         Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
-            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         Long currentOrder = folder.getOrders();
         Long parentFolderSeq = folder.getParentFolderSeq();
@@ -399,7 +392,7 @@ public class CommonDriveService {
         // 순서가 유효한 범위를 벗어나는 경우 예외 발생
         if (newOrder < 1 || newOrder > maxOrder) {
             throw new IllegalArgumentException(
-                String.format("유효하지 않은 순서입니다. 순서는 1부터 %d까지 가능합니다.", maxOrder)
+                    String.format("유효하지 않은 순서입니다. 순서는 1부터 %d까지 가능합니다.", maxOrder)
             );
         }
 
@@ -439,10 +432,10 @@ public class CommonDriveService {
     // 폴더 이름 변경
     public DriveItemDto renameFolder(DriveChannel driveChannel, Long folderId, String newFolderName) {
         Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
-            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
 
         // 같은 위치에서 폴더 이름 중복 검사
-        if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(newFolderName, folderId, folder.getDriveChannel(), folder.getParentFolderSeq()).isPresent()) {
+        if (folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(newFolderName, folderId, folder.getDriveChannel(), folder.getParentFolderSeq()).isPresent()) {
             throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
         }
 
@@ -459,12 +452,12 @@ public class CommonDriveService {
             deleteFolderRecursively(driveChannel, itemId);
         } else {
             Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
-                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
             // 문서 삭제 권한 체크
             if (document.getMemberSeq() != userId) {
                 throw new SecurityException("자신이 생성한 문서만 삭제할 수 있습니다.");
             }
-            
+
             if (document.getDocumentType() == DocumentType.LOCAL) {
                 s3Uploader.delete(document.getDocumentUrl());
             }
@@ -472,23 +465,23 @@ public class CommonDriveService {
             documentRepository.delete(document);
         }
     }
-    
+
     // 폴더 삭제 권한 검증
     private void validateFolderDeletePermission(DriveChannel driveChannel, Long userId, Long folderId) {
         Set<Long> visitedFolders = new HashSet<>();
         validateFolderDeletePermissionRecursive(driveChannel, userId, folderId, visitedFolders);
     }
-    
+
     // 폴더 삭제 권한 검증 (재귀, 방문 추적)
     private void validateFolderDeletePermissionRecursive(DriveChannel driveChannel, Long userId, Long folderId, Set<Long> visitedFolders) {
         // 이미 방문한 폴더라면 스킵
         if (visitedFolders.contains(folderId)) {
             return;
         }
-        
+
         // 현재 폴더를 방문한 것으로 표시
         visitedFolders.add(folderId);
-        
+
         // 1. 현재 폴더의 모든 문서 확인
         List<Document> documentsInFolder = documentRepository.findByFolderFolderSeq(folderId);
         for (Document document : documentsInFolder) {
@@ -496,7 +489,7 @@ public class CommonDriveService {
             if (!document.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
                 continue; // 다른 채널의 문서는 무시
             }
-            if(document.getMemberSeq() != userId) {
+            if (document.getMemberSeq() != userId) {
                 throw new SecurityException("자신이 생성한 문서가 아닌 폴더는 삭제할 수 없습니다.");
             }
         }
@@ -514,7 +507,7 @@ public class CommonDriveService {
 
     private void deleteFolderRecursively(DriveChannel driveChannel, Long folderId) {
         Folder folderToDelete = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
-            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
         Long parentFolderId = folderToDelete.getParentFolderSeq();
         Long driveChannelSeq = folderToDelete.getDriveChannel().getDriveChannelSeq();
 
@@ -544,7 +537,7 @@ public class CommonDriveService {
                     s3Uploader.delete(s3Url);
                 }
             } catch (Exception e) {
-                throw new  RuntimeException("S3 파일 삭제 중 오류가 발생했습니다.", e);
+                throw new RuntimeException("S3 파일 삭제 중 오류가 발생했습니다.", e);
             }
         }
 
@@ -554,7 +547,7 @@ public class CommonDriveService {
             folderRepository.deleteById(folderIdToDelete);
         }
         log.info("폴더 CASCADE 삭제 완료: {} 개 폴더", allFolderIds.size());
-        
+
         // 삭제 후 부모 폴더의 순서를 연속적으로 재정렬
         reorderFoldersSequentially(parentFolderId, driveChannelSeq);
     }
@@ -563,17 +556,17 @@ public class CommonDriveService {
         Set<Long> visitedFolders = new HashSet<>();
         collectAllSubFolderIdsRecursive(driveChannel, parentFolderId, allFolderIds, visitedFolders);
     }
-    
+
     // 하위 폴더 ID 재귀적으로 수집 (방문 추적)
     private void collectAllSubFolderIdsRecursive(DriveChannel driveChannel, Long parentFolderId, List<Long> allFolderIds, Set<Long> visitedFolders) {
         // 이미 방문한 폴더라면 스킵
         if (visitedFolders.contains(parentFolderId)) {
             return;
         }
-        
+
         // 현재 폴더를 방문한 것으로 표시
         visitedFolders.add(parentFolderId);
-        
+
         List<Folder> subFolders = folderRepository.findByParentFolderSeq(parentFolderId);
         for (Folder subFolder : subFolders) {
             // 하위 폴더가 해당 채널에 속하는지 확인
@@ -590,22 +583,22 @@ public class CommonDriveService {
         if (folderId.equals(newParentId)) {
             return true; // 자기 자신으로 이동하는 경우
         }
-        
+
         // 방문한 폴더를 추적하는 Set
         Set<Long> visitedFolders = new HashSet<>();
         return isCircularReferenceRecursive(folderId, newParentId, visitedFolders);
     }
-    
+
     // 재귀적으로 순환 참조 검증 (방문한 폴더 추적)
     private boolean isCircularReferenceRecursive(Long folderId, Long newParentId, Set<Long> visitedFolders) {
         // 이미 방문한 폴더라면 순환 참조가 아님 (이미 체크했으므로)
         if (visitedFolders.contains(folderId)) {
             return false;
         }
-        
+
         // 현재 폴더를 방문한 것으로 표시
         visitedFolders.add(folderId);
-        
+
         // 재귀적으로 하위 폴더들을 확인
         List<Folder> subFolders = folderRepository.findByParentFolderSeq(folderId);
         for (Folder subFolder : subFolders) {
@@ -616,7 +609,7 @@ public class CommonDriveService {
                 return true; // 간접 하위 폴더인 경우
             }
         }
-        
+
         return false;
     }
 

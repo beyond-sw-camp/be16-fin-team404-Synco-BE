@@ -27,12 +27,15 @@ public class ScheduleManagementChannelMember extends BaseEntity {
     @Column(nullable = false)
     private long workSpaceSeq;
     @Builder.Default
-    @OneToMany(mappedBy = "scheduleManagementChannelMember")
+    @OneToMany(mappedBy = "scheduleManagementChannelMember", orphanRemoval = true)
     private List<Board> boardList = new ArrayList<>();
     @Builder.Default
     @OneToMany(mappedBy = "picMemberSeq")
     private List<Task> taskList = new ArrayList<>();
     @Builder.Default
-    @OneToMany(mappedBy = "scheduleManagementChannelMember")
+    @OneToMany(mappedBy = "scheduleManagementChannelMember", orphanRemoval = true)
     private List<Comment> commentList = new ArrayList<>();
+    public void updateAuthority(Authority authority){
+        this.authority = authority;
+    }
 }

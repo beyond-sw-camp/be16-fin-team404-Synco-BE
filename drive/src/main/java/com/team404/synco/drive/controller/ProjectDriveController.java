@@ -25,7 +25,7 @@ public class ProjectDriveController {
 
     // 드라이브 생성
     @PostMapping("/create")
-    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
+    public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto) {
         Long id = projectDriveService.createChannel(driveCreateReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
@@ -46,7 +46,7 @@ public class ProjectDriveController {
     // 프로젝트 드라이브 폴더 생성
     @PostMapping("/folder")
     public ResponseEntity<ResponseDto<?>> createProjectFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
-        
+
         DriveItemDto folder = projectDriveService.createProjectFolder(createFolderReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(folder, HttpStatus.CREATED));
     }
@@ -56,7 +56,7 @@ public class ProjectDriveController {
     public ResponseEntity<ResponseDto<?>> createProjectSharedDoc(
             @RequestHeader(value = "X-Member-Seq") Long userId,
             @RequestBody CreateSharedDocReqDto createSharedDocReqDto) {
-        
+
         DriveItemDto sharedDoc = projectDriveService.createProjectSharedDoc(userId, createSharedDocReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(sharedDoc, HttpStatus.CREATED));
     }
@@ -74,7 +74,7 @@ public class ProjectDriveController {
     // 프로젝트 드라이브 아이템 이동
     @PatchMapping("/move")
     public ResponseEntity<ResponseDto<?>> moveProjectItem(@RequestBody MoveItemReqDto moveItemReqDto) {
-        
+
         projectDriveService.moveProjectItem(moveItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 이동하였습니다.", HttpStatus.OK));
     }
@@ -82,7 +82,7 @@ public class ProjectDriveController {
     // 프로젝트 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
     public ResponseEntity<ResponseDto<?>> reorderProjectFolder(@RequestBody ReorderItemReqDto reorderItemReqDto) {
-        
+
         projectDriveService.reorderProjectFolder(reorderItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 순서를 변경하였습니다.", HttpStatus.OK));
     }
@@ -92,14 +92,14 @@ public class ProjectDriveController {
     public ResponseEntity<byte[]> downloadProjectFile(
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
-        
+
         return projectDriveService.downloadProjectFile(driveChannelSeq, documentSeq);
     }
 
     // 프로젝트 드라이브 폴더 이름 변경
     @PatchMapping("/folder/rename")
     public ResponseEntity<ResponseDto<?>> renameProjectFolder(@RequestBody RenameFolderReqDto renameFolderReqDto) {
-        
+
         DriveItemDto renamedFolder = projectDriveService.renameProjectFolder(renameFolderReqDto);
         return ResponseEntity.ok(ResponseDto.ok(renamedFolder, HttpStatus.OK));
     }
@@ -110,7 +110,7 @@ public class ProjectDriveController {
             @PathVariable Long driveChannelSeq,
             @RequestHeader(value = "X-Member-Seq") Long userId,
             @RequestBody DeleteItemReqDto deleteItemReqDto) {
-        
+
         projectDriveService.deleteProjectItem(driveChannelSeq, userId, deleteItemReqDto.getItemType(), deleteItemReqDto.getItemId());
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
@@ -137,5 +137,11 @@ public class ProjectDriveController {
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
         return projectDriveService.downloadProjectDocument(driveChannelSeq, documentSeq);
+    }
+
+    // 팀 드라이브 삭제(워크스페이스 삭제시)
+    @DeleteMapping("/{workSpaceSeq}")
+    public void deleteAllChannel(@PathVariable Long workSpaceSeq) {
+        projectDriveService.deleteDrive(workSpaceSeq);
     }
 }

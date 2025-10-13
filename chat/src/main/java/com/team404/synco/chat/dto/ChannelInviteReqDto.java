@@ -7,7 +7,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@Builder
+@Setter
 public class ChannelInviteReqDto {
     private List<Long> friendList;
     private Long memberSeq;
