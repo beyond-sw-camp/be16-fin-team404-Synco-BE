@@ -13,12 +13,12 @@ public interface ChatFeign {
 
     @PostMapping("/chat/addMember")
     void addMemberToChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto,
-                            @RequestHeader("X-member-seq") Long memberSeq);
+                            @RequestHeader("X-Member-Seq") Long memberSeq);
 
     @DeleteMapping("/chat/{workSpaceSeq}")
     void deleteAllChannel(@PathVariable Long workSpaceSeq);
 
     @PatchMapping("/chat/delegateSuperAuthority")
     void delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                @RequestHeader("X-member-seq") Long memberSeq);
+                                @RequestHeader("X-Member-Seq") Long memberSeq);
 }

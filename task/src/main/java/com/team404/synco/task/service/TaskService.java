@@ -49,6 +49,7 @@ public class TaskService {
 
     // 채널 권한 설정
     public void grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
+        log.info("taskFeign 호출 시작");
         // 기본 채널 멤버 조회
         ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.
                 findFirstByMemberSeqAndWorkSpaceSeq(memberSeq, grantAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
@@ -70,6 +71,7 @@ public class TaskService {
             default:
                 break;
         }
+        log.info("taskFeign 호출 종료");
     }
 
     // SUPER 권한 위임

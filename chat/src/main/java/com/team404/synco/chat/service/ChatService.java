@@ -53,8 +53,24 @@ public class ChatService {
         return chatChannel.getChatChannelSeq();
     }
 
+    // 채널 생성(1:1 채팅 채널)
+    public Long createIndividualChatChannel(ChannelCreateReqDto channelCreateReqDto){
+        ChatChannel chatChannel = chatChannelRepository.save(channelCreateReqDto.toEntity());
 
-    // 채널 생성
+        // 채팅 대상 list에 추가
+        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+                .stream()
+                .filter(Objects::nonNull)
+                .map(friendSeq -> ChatChannelMember.builder()
+                        .memberSeq(friendSeq)
+                        .chatChannel(chatChannel)
+                        .authority(Authority.SUPER)
+                        .build())
+                .forEach(chatChannelMemberRepository::save);
+        return chatChannel.getChatChannelSeq();
+    }
+
+    // 채널 생성(팀)
     public Long createChannel(ChannelCreateReqDto channelCreateReqDto, Long memberSeq) throws AccessDeniedException {
         // 기본 채널이 있는지 검증
         ChatChannel basicChannel = chatChannelRepository.
@@ -98,12 +114,14 @@ public class ChatService {
                 (grantAuthorityReqDto.getChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
                 -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
         // 권한 변경
-        String authority = String.valueOf(changeAuthorityMember.getAuthority());
+        String authority = grantAuthorityReqDto.getAuthority();
         switch (authority) {
             case "MANAGER":
                 changeAuthorityMember.updateAuthority(Authority.MANAGER);
+                break;
             case "PARTICIPANT":
                 changeAuthorityMember.updateAuthority(Authority.PARTICIPANT);
+                break;
             default:
                 break;
         }
@@ -112,16 +130,22 @@ public class ChatService {
     // 채널 SUPER 권한 위임
     public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq)
             throws AccessDeniedException {
+        log.info("chatFeign 호출 시작");
+        // 기본 채널이 있는지 검증
+        ChatChannel basicChannel = chatChannelRepository.
+                findFirstByWorkSpaceSeqOrderByChatChannelSeqAsc(delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(() ->
+                        new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
         // SUPER 권한 검증
         ChatChannelMember superAuthorityMember = checkAuthorityIsSuper(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 조회
         ChatChannelMember changeAuthorityMember = chatChannelMemberRepository.findByChannelAndMember
-                (memberSeq, delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
+                (basicChannel.getChatChannelSeq(), delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
                 -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         // 위임할 사용자의 권한을 SUPER로 변경
         changeAuthorityMember.updateAuthority(Authority.SUPER);
         // 현재 사용자의 권한을 참여자로 변경
         superAuthorityMember.updateAuthority(Authority.PARTICIPANT);
+        log.info("chatFeign 호출 완료");
     }
 
     // 멤버 추가
