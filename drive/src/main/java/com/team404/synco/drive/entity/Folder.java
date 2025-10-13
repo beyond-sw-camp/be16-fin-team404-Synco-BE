@@ -16,7 +16,8 @@ public class Folder extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long folderSeq;
-    private long parentFolderSeq;
+    @Column(nullable = true)
+    private Long parentFolderSeq;
     @Column(nullable = false)
     private String folderName;
     @Column(nullable = false)
@@ -25,6 +26,18 @@ public class Folder extends BaseEntity {
     @JoinColumn(name = "drive_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private DriveChannel driveChannel;
     @Builder.Default
-    @OneToMany(mappedBy = "folder")
-    private List<Document> DocumentList = new ArrayList<>();
+    @OneToMany(mappedBy = "folder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Document> documentList = new ArrayList<>();
+
+    public void updateParentFolderSeq(Long newParentFolderSeq) {
+        this.parentFolderSeq = newParentFolderSeq;
+    }
+    
+    public void updateOrder(Long newOrder) {
+        this.orders = newOrder;
+    }
+    
+    public void updateFolderName(String newFolderName) {
+        this.folderName = newFolderName;
+    }
 }
