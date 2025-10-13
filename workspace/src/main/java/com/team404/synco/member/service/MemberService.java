@@ -4,6 +4,7 @@ import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
@@ -27,6 +28,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3Uploader;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
     private final WorkSpaceService workSpaceService;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
@@ -55,15 +57,15 @@ public class MemberService {
     }
 
     public LoginResDto doLogin(LoginReqDto loginReqDto) {
-        Member member = memberRepository.findByEmailAndSocialType(loginReqDto.getEmail(), SocialType.NORMAL)
-                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
+        Member member = memberRepository.findByMemberIdAndSocialType(loginReqDto.getMemberId(), SocialType.NORMAL)
+                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
 
         if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
             throw new IllegalArgumentException("이미 탈퇴한 계정입니다.");
         }
 
         if (!passwordEncoder.matches(loginReqDto.getPassword(), member.getPassword())) {
-            throw new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
         String accessToken = jwtTokenProvider.createAtToken(member);
@@ -113,6 +115,60 @@ public class MemberService {
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public FindIdResDto findMemberId(FindIdReqDto findIdReqDto) {
+        Member member = memberRepository.findByNameAndEmailAndSocialType(
+                findIdReqDto.getName(),
+                findIdReqDto.getEmail(),
+                SocialType.NORMAL
+        ).orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보를 찾을 수 없습니다."));
+
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
+        return FindIdResDto.fromEntity(member);
+    }
+
+    public void findPassword(FindPasswordReqDto findPasswordReqDto) {
+        Member member = memberRepository.findByMemberIdAndEmailAndSocialType(
+                findPasswordReqDto.getMemberId(),
+                findPasswordReqDto.getEmail(),
+                SocialType.NORMAL
+        ).orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보를 찾을 수 없습니다."));
+
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
+        String tempPassword = emailService.createTempPassword();
+
+        String encodedTempPassword = passwordEncoder.encode(tempPassword);
+        member.updatePassword(encodedTempPassword);
+
+        emailService.sendTempPassword(member.getEmail(), tempPassword);
+    }
+
+    public void changePassword(Long memberSeq, ChangePasswordReqDto changePasswordReqDto) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
+        if (!passwordEncoder.matches(changePasswordReqDto.getCurrentPassword(), member.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        if (passwordEncoder.matches(changePasswordReqDto.getNewPassword(), member.getPassword())) {
+            throw new IllegalArgumentException("새 비밀번호는 현재 비밀번호와 다르게 설정해주세요.");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(changePasswordReqDto.getNewPassword());
+        member.updatePassword(encodedNewPassword);
     }
 
 }
