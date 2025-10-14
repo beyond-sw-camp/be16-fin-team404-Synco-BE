@@ -113,8 +113,8 @@ public class MemberService {
         member.deleteMember();
     }
 
-    public LoginResDto generateNewAt(RefreshTokenDto refreshTokenDto) {
-        Member member = jwtTokenProvider.validateRt(refreshTokenDto.getRefreshToken());
+    public LoginResDto generateNewAt(String refreshToken) {
+        Member member = jwtTokenProvider.validateRt(refreshToken);
         String accessToken = jwtTokenProvider.createAtToken(member);
         return LoginResDto.builder()
                 .accessToken(accessToken)
@@ -235,6 +235,10 @@ public class MemberService {
 
         String encodedNewPassword = passwordEncoder.encode(changePasswordReqDto.getNewPassword());
         member.updatePassword(encodedNewPassword);
+    }
+
+    public void logout(Long memberSeq) {
+        jwtTokenProvider.deleteRt(memberSeq);
     }
 
 }
