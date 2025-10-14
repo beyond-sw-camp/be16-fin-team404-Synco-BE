@@ -25,7 +25,6 @@ import org.springframework.web.multipart.MultipartException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -234,5 +233,10 @@ public class ProjectDriveService {
         } catch (Exception e) {
             return "문서 내용을 불러올 수 없습니다.";
         }
+    }
+
+    // 드라이브 삭제(WorkSpace 삭제시)
+    public void deleteDrive(Long workSpaceSeq){
+        driveChannelRepository.deleteByWorkspaceSeq(workSpaceSeq);
     }
 }

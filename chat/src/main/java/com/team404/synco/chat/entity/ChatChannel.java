@@ -23,6 +23,6 @@ public class ChatChannel extends BaseEntity {
     private long workSpaceSeq;
 
     @Builder.Default
-    @OneToMany(mappedBy = "chatChannel")
+    @OneToMany(mappedBy = "chatChannel", orphanRemoval = true)
     private List<ChatChannelMember> chatChannelfriendList = new ArrayList<>();
 }

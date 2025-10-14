@@ -37,6 +37,6 @@ public class Task extends BaseEntity {
     @JoinColumn(name = "board_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Board board;
     @Builder.Default
-    @OneToMany(mappedBy = "task")
+    @OneToMany(mappedBy = "task", orphanRemoval = true)
     private List<Comment> commentList = new ArrayList<>();
 }

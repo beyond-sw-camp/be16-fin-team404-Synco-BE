@@ -28,6 +28,6 @@ public class ChatVote extends BaseEntity {
     private ChatMessage chatMessage;
 
     @Builder.Default
-    @OneToMany(mappedBy = "chatVote")
+    @OneToMany(mappedBy = "chatVote", orphanRemoval = true)
     private List<ChatVoteDetail> chatVoteDetailList = new ArrayList<>();
 }
