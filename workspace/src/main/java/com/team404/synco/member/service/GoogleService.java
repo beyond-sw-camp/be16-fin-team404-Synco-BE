@@ -25,35 +25,43 @@ public class GoogleService {
 
 
     public AccessTokenDto getAccessToken(String code){
+        try {
+            RestClient restClient = RestClient.create();
 
-        RestClient restClient = RestClient.create();
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("code", code);
+            params.add("client_id", googleClientId);
+            params.add("client_secret", googleClientSecret);
+            params.add("redirect_uri", googleRedirectUri);
+            params.add("grant_type", "authorization_code");
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("code", code);
-        params.add("client_id", googleClientId);
-        params.add("client_secret", googleClientSecret);
-        params.add("redirect_uri", googleRedirectUri);
-        params.add("grant_type", "authorization_code");
+            ResponseEntity<AccessTokenDto> response =  restClient.post()
+                    .uri("https://oauth2.googleapis.com/token")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .body(params)
+                    .retrieve()
+                    .toEntity(AccessTokenDto.class);
 
-        ResponseEntity<AccessTokenDto> response =  restClient.post()
-                .uri("https://oauth2.googleapis.com/token")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .body(params)
-                .retrieve()
-                .toEntity(AccessTokenDto.class);
-
-        log.info("응답 accesstoken JSON {}", response.getBody());
-        return response.getBody();
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("구글 액세스 토큰 발급 실패: {}", e.getMessage());
+            throw new IllegalStateException("구글 로그인 중 오류가 발생했습니다.", e);
+        }
     }
 
     public GoogleProfileDto getGoogleProfile(String token){
-        RestClient restClient = RestClient.create();
-        ResponseEntity<GoogleProfileDto> response =  restClient.get()
-                .uri("https://openidconnect.googleapis.com/v1/userinfo")
-                .header("Authorization", "Bearer "+token)
-                .retrieve()
-                .toEntity(GoogleProfileDto.class);
-        log.info("profile JSON{}", response.getBody());
-        return response.getBody();
+        try {
+            RestClient restClient = RestClient.create();
+            ResponseEntity<GoogleProfileDto> response =  restClient.get()
+                    .uri("https://openidconnect.googleapis.com/v1/userinfo")
+                    .header("Authorization", "Bearer "+token)
+                    .retrieve()
+                    .toEntity(GoogleProfileDto.class);
+            
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("구글 프로필 조회 실패: {}", e.getMessage());
+            throw new IllegalStateException("구글 사용자 정보를 가져오는 중 오류가 발생했습니다.", e);
+        }
     }
 }

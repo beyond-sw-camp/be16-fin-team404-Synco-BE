@@ -24,34 +24,45 @@ public class NaverService {
     private String naverRedirectUri;
 
     public AccessTokenDto getAccessToken(String code, String state) {
-        RestClient restClient = RestClient.create();
+        try {
+            RestClient restClient = RestClient.create();
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", naverClientId);
-        params.add("client_secret", naverClientSecret);
-        params.add("code", code);
-        params.add("state", state); // CSRF 방지 값 (인가 요청 시 전달했던 state)
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("grant_type", "authorization_code");
+            params.add("client_id", naverClientId);
+            params.add("client_secret", naverClientSecret);
+            params.add("redirect_uri", naverRedirectUri);
+            params.add("code", code);
+            params.add("state", state); // CSRF 방지 값 (인가 요청 시 전달했던 state)
 
-        ResponseEntity<AccessTokenDto> response = restClient.post()
-                .uri("https://nid.naver.com/oauth2.0/token")
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .body(params)
-                .retrieve()
-                .toEntity(AccessTokenDto.class);
-        log.info("응답 accesstoken JSON {}", response.getBody());
-        return response.getBody();
+            ResponseEntity<AccessTokenDto> response = restClient.post()
+                    .uri("https://nid.naver.com/oauth2.0/token")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .body(params)
+                    .retrieve()
+                    .toEntity(AccessTokenDto.class);
+            
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("네이버 액세스 토큰 발급 실패: {}", e.getMessage());
+            throw new IllegalStateException("네이버 로그인 중 오류가 발생했습니다.", e);
+        }
     }
 
     public NaverProfileDto getNaverProfile(String accessToken) {
-        RestClient restClient = RestClient.create();
+        try {
+            RestClient restClient = RestClient.create();
 
-        ResponseEntity<NaverProfileDto> response = restClient.get()
-                .uri("https://openapi.naver.com/v1/nid/me")
-                .header("Authorization", "Bearer " + accessToken)
-                .retrieve()
-                .toEntity(NaverProfileDto.class);
-        log.info("profile JSON{}", response.getBody());
-        return response.getBody();
+            ResponseEntity<NaverProfileDto> response = restClient.get()
+                    .uri("https://openapi.naver.com/v1/nid/me")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .toEntity(NaverProfileDto.class);
+            
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("네이버 프로필 조회 실패: {}", e.getMessage());
+            throw new IllegalStateException("네이버 사용자 정보를 가져오는 중 오류가 발생했습니다.", e);
+        }
     }
 }
