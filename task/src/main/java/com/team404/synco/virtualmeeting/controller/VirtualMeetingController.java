@@ -2,9 +2,7 @@ package com.team404.synco.virtualmeeting.controller;
 
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.common.constant.dto.ResponseDto;
-import com.team404.synco.virtualmeeting.dto.ChannelCreateReqDto;
-import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
-import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
+import com.team404.synco.virtualmeeting.dto.*;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,9 +27,25 @@ public class VirtualMeetingController {
     // 채널 생성
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto,
-                                                        @RequestHeader("X-Member-Seq")Long memberSeq) throws AccessDeniedException {
-        Long id = virtualMeetingService.createChannel(channelCreateReqDto, memberSeq);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        ChannelCreateResDto channelCreateResDto = virtualMeetingService.createChannel(channelCreateReqDto, memberSeq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelCreateResDto, HttpStatus.CREATED));
+    }
+
+    // 채널 수정
+    @PatchMapping("/rename")
+    public ResponseEntity<ResponseDto<?>> renameChannel(@RequestBody ChannelEditReqDto channelEditReqDto,
+                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        ChannelEditResDto channelEditResDto = virtualMeetingService.renameChannel(channelEditReqDto, memberSeq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelEditResDto, HttpStatus.CREATED));
+    }
+
+    // 채널 삭제
+    @DeleteMapping("/{channelSeq}")
+    public ResponseEntity<ResponseDto<?>> deleteChannel(@PathVariable("channelSeq") Long channelSeq,
+                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        virtualMeetingService.deleteChannel(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("채널이 삭제되었습니다.", HttpStatus.OK));
     }
 
     // 채널에 멤버 추가
@@ -45,14 +59,13 @@ public class VirtualMeetingController {
     // 채널 권한 설정
     @PostMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
-                                                                 @RequestHeader("X-Member-Seq")Long memberSeq) throws AccessDeniedException
-    {
-        virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(channelGrantResDto, HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException
     {

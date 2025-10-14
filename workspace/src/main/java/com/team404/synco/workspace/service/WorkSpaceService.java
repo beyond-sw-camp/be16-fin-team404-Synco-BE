@@ -105,12 +105,14 @@ public class WorkSpaceService {
 
         // 워크스페이스에 초대된 member정보 redis에 저장
         List<Long> invitefriendList = teamWorkSpaceCreateReqDto.getFriendList();
-        invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
-                .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
-            workSpaceRedisService.addMemberInfo(inviteMember);
-            workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
-            workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
-        });
+        if(!invitefriendList.isEmpty()){
+            invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
+                    .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
+                workSpaceRedisService.addMemberInfo(inviteMember);
+                workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
+                workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
+            });
+        }
 
         return WorkSpaceResDto.fromEntity(workSpace);
     }
@@ -184,11 +186,12 @@ public class WorkSpaceService {
     }
 
     // 프로젝트 SUPER 권한 위임
-    public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq) {
+    public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
         WorkSpace workSpace = workSpaceRepository.findById(delegateSuperAuthorityReqDto.getWorkSpaceSeq())
                         .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 워크스페이스입니다."));
         Member delegateMember = memberRepository.findById(delegateSuperAuthorityReqDto.getDelegateMemberSeq())
                         .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."));
+        checkAuthority(workSpace, memberSeq);
         workSpace.updateSuperMember(delegateMember);
         chatFeign.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         taskFeign.delegateTaskChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);

@@ -15,7 +15,7 @@ public interface TaskFeign {
     @DeleteMapping("/task/{workSpaceSeq}")
     void deleteTaskChannel(@PathVariable Long workSpaceSeq);
 
-    @PatchMapping("/task/delegateSuperAuthority")
+    @PostMapping("/task/delegateSuperAuthority")
     void delegateTaskChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                            @RequestHeader("X-Member-Seq") Long memberSeq);
 
@@ -32,7 +32,7 @@ public interface TaskFeign {
     @DeleteMapping("/virtual-meeting/{workSpaceSeq}")
     void deleteAllVirtualMeetingChannel(@PathVariable Long workSpaceSeq);
 
-    @PatchMapping("/virtual-meeting/delegateSuperAuthority")
+    @PostMapping("/virtual-meeting/delegateSuperAuthority")
     void delegateVirtualMeetChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                   @RequestHeader("X-Member-Seq") Long memberSeq);
 }

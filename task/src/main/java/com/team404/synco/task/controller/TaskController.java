@@ -41,7 +41,7 @@ public class TaskController {
     }
 
     // 채널 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException
     {

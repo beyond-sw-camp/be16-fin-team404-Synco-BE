@@ -18,7 +18,7 @@ public interface ChatFeign {
     @DeleteMapping("/chat/{workSpaceSeq}")
     void deleteAllChannel(@PathVariable Long workSpaceSeq);
 
-    @PatchMapping("/chat/delegateSuperAuthority")
+    @PostMapping("/chat/delegateSuperAuthority")
     void delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                 @RequestHeader("X-Member-Seq") Long memberSeq);
 }

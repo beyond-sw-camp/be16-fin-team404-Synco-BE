@@ -1,9 +1,6 @@
 package com.team404.synco.chat.controller;
 
-import com.team404.synco.chat.dto.ChannelCreateReqDto;
-import com.team404.synco.chat.dto.ChannelInviteReqDto;
-import com.team404.synco.chat.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.chat.dto.GrantAuthorityReqDto;
+import com.team404.synco.chat.dto.*;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +27,24 @@ public class ChatController {
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto,
                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        Long id = chatService.createChannel(channelCreateReqDto, memberSeq);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+        ChannelCreateResDto channelCreateResDto = chatService.createChannel(channelCreateReqDto, memberSeq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelCreateResDto, HttpStatus.CREATED));
+    }
+
+    // 채널 수정
+    @PatchMapping("/rename")
+    public ResponseEntity<ResponseDto<?>> renameChannel(@RequestBody ChannelEditReqDto channelEditReqDto,
+                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        ChannelEditResDto channelEditResDto = chatService.renameChannel(channelEditReqDto, memberSeq);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelEditResDto, HttpStatus.CREATED));
+    }
+
+    // 채널 삭제
+    @DeleteMapping("/{channelSeq}")
+    public ResponseEntity<ResponseDto<?>> deleteChannel(@PathVariable("channelSeq") Long channelSeq,
+                                                    @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        chatService.deleteChannel(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("채널이 삭제되었습니다.", HttpStatus.OK));
     }
 
     // 채널에 멤버 추가
@@ -46,12 +59,12 @@ public class ChatController {
     @PostMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        chatService.grantToMember(grantAuthorityReqDto, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
+        ChannelGrantResDto channelGrantResDto = chatService.grantToMember(grantAuthorityReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(channelGrantResDto, HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         chatService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
