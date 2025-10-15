@@ -49,7 +49,6 @@ public class TaskService {
 
     // 채널 권한 설정
     public void grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
-        log.info("taskFeign 호출 시작");
         checkInviteAndCreateChannelAuthority(grantAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
@@ -59,12 +58,13 @@ public class TaskService {
         switch (authority) {
             case "MANAGER":
                 changeAuthorityMember.updateAuthority(Authority.MANAGER);
+                break;
             case "PARTICIPANT":
                 changeAuthorityMember.updateAuthority(Authority.PARTICIPANT);
+                break;
             default:
                 break;
         }
-        log.info("taskFeign 호출 종료");
     }
 
     // 초대, 채널 생성 권한 검증

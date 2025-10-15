@@ -120,7 +120,7 @@ public class ChatService {
 
     // 채널 권한 설정
     public ChannelGrantResDto grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
-        // 기본 채널이 있는지 검증
+        // 유효한 워크스페이스인지 기본채널 여부를 통해 검증
         ChatChannel basicChannel = checkBasicChannel(grantAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
         ChatChannelMember superMember = checkAuthorityIsSuper(basicChannel.getChatChannelSeq(), memberSeq);
@@ -147,7 +147,6 @@ public class ChatService {
     // 채널 SUPER 권한 위임
     public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq)
             throws AccessDeniedException {
-        log.info("chatFeign 호출 시작");
         // 기본 채널이 있는지 검증
         ChatChannel basicChannel = chatChannelRepository.
                 findFirstByWorkSpaceSeqOrderByChatChannelSeqAsc(delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(() ->
@@ -162,7 +161,6 @@ public class ChatService {
         changeAuthorityMember.updateAuthority(Authority.SUPER);
         // 현재 사용자의 권한을 참여자로 변경
         superAuthorityMember.updateAuthority(Authority.PARTICIPANT);
-        log.info("chatFeign 호출 완료");
     }
 
     // 모든 채널에 멤버 추가(WorkSpace에 처음 초대되었을때)

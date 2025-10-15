@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -53,18 +54,6 @@ public class VirtualMeetingService {
         return virtualMeetingChannel.getVirtualMeetingChannelSeq();
     }
 
-    // 채널 이름 수정
-    public ChannelEditResDto renameChannel(ChannelEditReqDto channelEditReqDto, Long memberSeq) throws AccessDeniedException {
-        // 수정 대상 채널 검증
-         VirtualMeetingChannel editChannel = virtualMeetingChannelRepository.findById(channelEditReqDto.getChannelSeq()).orElseThrow(()->
-                new EntityNotFoundException("없는 채널입니다."));
-        // 권한 검증
-        checkChannelAuthority(editChannel.getVirtualMeetingChannelSeq(), memberSeq);
-        // 채널 수정
-        editChannel.updateChannelName(channelEditReqDto.getChannelName());
-        return ChannelEditResDto.fromEntity(editChannel);
-    }
-
     // 채널 생성
     public ChannelCreateResDto createChannel(ChannelCreateReqDto channelCreateReqDto, Long memberSeq) throws AccessDeniedException {
         // 기본 채널 검증
@@ -85,7 +74,17 @@ public class VirtualMeetingService {
         return ChannelCreateResDto.fromEntity(virtualMeetingChannel);
     }
 
-
+    // 채널 이름 수정
+    public ChannelEditResDto renameChannel(ChannelEditReqDto channelEditReqDto, Long memberSeq) throws AccessDeniedException {
+        // 수정 대상 채널 검증
+        VirtualMeetingChannel editChannel = virtualMeetingChannelRepository.findById(channelEditReqDto.getChannelSeq()).orElseThrow(() ->
+                new EntityNotFoundException("없는 채널입니다."));
+        // 권한 검증
+        checkChannelAuthority(editChannel.getVirtualMeetingChannelSeq(), memberSeq);
+        // 채널 수정
+        editChannel.updateChannelName(channelEditReqDto.getChannelName());
+        return ChannelEditResDto.fromEntity(editChannel);
+    }
 
     // 채널 삭제
     public void deleteChannel(Long channelSeq, Long memberSeq) throws AccessDeniedException {
@@ -109,8 +108,10 @@ public class VirtualMeetingService {
 
     // 채널 권한 설정
     public ChannelGrantResDto grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
+        // 유효한 워크스페이스인지 기본채널 여부를 통해 검증
+        VirtualMeetingChannel basicChannel = checkBasicChannel(grantAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
-        VirtualMeetingChannelMember superMember = checkAuthorityIsSuper(grantAuthorityReqDto.getChannelSeq(), memberSeq);
+        VirtualMeetingChannelMember superMember = checkAuthorityIsSuper(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
         // 대상 멤버 조회
         VirtualMeetingChannelMember grantMember = virtualMeetingChannelMemberRepository.findByChannelAndMember
                 (grantAuthorityReqDto.getChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
@@ -133,7 +134,6 @@ public class VirtualMeetingService {
     // SUPER 권한 위임
     public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq)
             throws AccessDeniedException {
-        log.info("virtualFeign 호출 시작");
         // 기본 채널이 있는지 검증
         VirtualMeetingChannel basicChannel = checkBasicChannel(delegateSuperAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
@@ -147,50 +147,32 @@ public class VirtualMeetingService {
         changeAuthorityMember.updateAuthority(Authority.SUPER);
         // 현재 사용자의 권한을 참여자로 변경
         superAuthorityMember.updateAuthority(Authority.PARTICIPANT);
-        log.info("virtualFeign 호출 종료");
     }
 
-    // 멤버 추가
+    // 모든 채널에 멤버 추가(WorkSpace에 처음 초대되었을때)
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto, Long memberSeq) throws AccessDeniedException {
-        VirtualMeetingChannel checkIsFirstChannel = virtualMeetingChannelRepository
-                .findFirstByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq())
-                .orElseThrow(() -> new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
-
-        // 권한 검증
-        checkChannelAuthority(checkIsFirstChannel.getVirtualMeetingChannelSeq(), memberSeq);
-
-        VirtualMeetingChannel virtualMeetingChannel;
-        Long channelSeq = channelInviteReqDto.getChannelSeq();
-
-        // 채널 번호가 있으면 해당 채널로 설정
-        if (channelSeq != null && channelSeq > 0) {
-            virtualMeetingChannel = virtualMeetingChannelRepository
-                    .findByVirtualMeetingChannelSeqAndWorkSpaceSeq(
-                            channelInviteReqDto.getChannelSeq(),
-                            channelInviteReqDto.getWorkSpaceSeq()
-                    )
-                    .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 채널입니다."));
-        } else {
-            // 없으면 기본 채널로 설정
-            virtualMeetingChannel = checkIsFirstChannel;
-        }
-
+        // 기본 채널 조회 (권한 검증용)
+        VirtualMeetingChannel basicChannel = checkBasicChannel(channelInviteReqDto.getWorkSpaceSeq());        // 초대한 사람 권한 검증
+        checkChannelAuthority(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
+        // 워크스페이스 내 모든 채널 조회 (기본 채널 포함)
+        List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
+                .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
+        // 초대할 멤버들을 모든 채널에 추가
         return Optional.ofNullable(channelInviteReqDto.getFriendList())
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)
-                .peek(teamMateSeq -> {
-                    // 🔥 중복 멤버 예외 처리
-                    if (virtualMeetingChannelMemberRepository.existsMember(virtualMeetingChannel.getVirtualMeetingChannelSeq(),
-                            teamMateSeq)) {
-                        throw new IllegalStateException("이미 채널에 존재하는 멤버입니다: " + teamMateSeq);
-                    }
-                })
-                .map(teamMateSeq -> VirtualMeetingChannelMember.builder()
-                        .memberSeq(teamMateSeq)
-                        .authority(Authority.PARTICIPANT)
-                        .virtualMeetingChannel(virtualMeetingChannel)
-                        .build())
+                .flatMap(teamMateSeq ->
+                        allChannels.stream()
+                                // 이미 채널에 존재하는 멤버는 건너뜀
+                                .filter(channel -> !virtualMeetingChannelMemberRepository
+                                        .existsMember(channel.getVirtualMeetingChannelSeq(), teamMateSeq))
+                                .map(channel -> VirtualMeetingChannelMember.builder()
+                                        .memberSeq(teamMateSeq)
+                                        .authority(Authority.PARTICIPANT)
+                                        .virtualMeetingChannel(channel)
+                                        .build())
+                )
                 .map(virtualMeetingChannelMemberRepository::save)
                 .count();
     }
@@ -207,12 +189,12 @@ public class VirtualMeetingService {
                 new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
     }
 
-    // 기본 채널 검증
+    // 채널 권한 검증
     private void checkChannelAuthority(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         VirtualMeetingChannelMember virtualMeetingChannelMember = virtualMeetingChannelMemberRepository.findByChannelAndMember(channelSeq,
                 memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
 
-        if (!virtualMeetingChannelMember.getAuthority().equals(Authority.SUPER) && virtualMeetingChannelMember
+        if (!virtualMeetingChannelMember.getAuthority().equals(Authority.SUPER) && !virtualMeetingChannelMember
                 .getAuthority().equals(Authority.MANAGER)) {
             throw new AccessDeniedException("초대 권한이 없습니다.");
         }

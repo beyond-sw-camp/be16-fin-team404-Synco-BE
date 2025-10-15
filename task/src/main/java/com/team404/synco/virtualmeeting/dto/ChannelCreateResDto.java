@@ -15,6 +15,7 @@ public class ChannelCreateResDto {
         return ChannelCreateResDto.builder()
                 .channelSeq(virtualMeetingChannel.getVirtualMeetingChannelSeq())
                 .workSpaceSeq(virtualMeetingChannel.getWorkSpaceSeq())
+                .channelName(virtualMeetingChannel.getVirtualMeetingChannelName())
                 .build();
     }
 }
