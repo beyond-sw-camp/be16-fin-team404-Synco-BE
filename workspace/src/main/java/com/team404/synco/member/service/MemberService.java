@@ -1,6 +1,7 @@
 package com.team404.synco.member.service;
 
 import com.team404.synco.common.auth.JwtTokenProvider;
+import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
@@ -78,6 +79,9 @@ public class MemberService {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
+        // 로그인 시 이전 활성 상태로 복원
+        member.restoreLastActiveStatus();
+
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
@@ -100,8 +104,8 @@ public class MemberService {
 
         member.updateMember(memberUpdateDto);
 
-        MultipartFile profileImage = memberUpdateDto.getProfileImage();
-        if (profileImage != null && !profileImage.isEmpty()) {
+        // 프로필 이미지 삭제 요청 처리
+        if (Boolean.TRUE.equals(memberUpdateDto.getDeleteProfileImage())) {
             if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
                 try {
                     s3Uploader.delete(member.getProfileImageUrl());
@@ -109,8 +113,22 @@ public class MemberService {
                     log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
                 }
             }
-            String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
-            member.updateImageUrl(newProfileImageUrl);
+            member.updateImageUrl(null);
+        }
+        // 프로필 이미지 변경 처리
+        else {
+            MultipartFile profileImage = memberUpdateDto.getProfileImage();
+            if (profileImage != null && !profileImage.isEmpty()) {
+                if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
+                    try {
+                        s3Uploader.delete(member.getProfileImageUrl());
+                    } catch (Exception e) {
+                        log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
+                    }
+                }
+                String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
+                member.updateImageUrl(newProfileImageUrl);
+            }
         }
         return MemberResDto.fromEntity(member);
     }
@@ -177,6 +195,9 @@ public class MemberService {
                             .build();
                     return memberRepository.save(newMember);
                 });
+
+        // 로그인 시 이전 활성 상태로 복원
+        member.restoreLastActiveStatus();
 
         boolean needMemberId = member.getMemberId() == null || member.getMemberId().isBlank();
 
@@ -245,6 +266,13 @@ public class MemberService {
     }
 
     public void logout(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        // 로그아웃 시 현재 상태를 저장하고 OFFLINE으로 변경
+        member.saveLastActiveStatus();
+        member.updateActiveStatus(ActiveStatus.OFFLINE);
+
         jwtTokenProvider.deleteRt(memberSeq);
     }
 
@@ -269,6 +297,13 @@ public class MemberService {
 
         Page<Member> memberList = memberRepository.findAll(spec, pageable);
         return memberList.map(MemberSearchResDto::fromEntity);
+    }
+
+    public void updateActiveStatus(Long memberSeq, ActiveStatusUpdateReqDto reqDto) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        member.updateActiveStatus(reqDto.getActiveStatus());
     }
 
 }

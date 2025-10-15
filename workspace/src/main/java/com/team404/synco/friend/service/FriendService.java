@@ -182,7 +182,28 @@ public class FriendService {
     }
 
     /**
-     * 7. 친구 삭제 (친구 끊기)
+     * 7. 보낸 친구 요청 취소하기
+     */
+    public void cancelFriendRequest(Long friendSeq, Long memberSeq) {
+        Friend sentRequest = friendRepository.findById(friendSeq)
+                .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
+
+        // 요청 보낸 사람이 맞는지 확인
+        if (!sentRequest.getMember().getMemberSeq().equals(memberSeq)) {
+            throw new IllegalArgumentException("권한이 없는 요청입니다.");
+        }
+
+        // PENDING 상태만 취소 가능
+        if (sentRequest.getFriendStatus() != FriendStatus.PENDING) {
+            throw new IllegalArgumentException("대기 중인 요청만 취소할 수 있습니다.");
+        }
+
+        // 요청 삭제
+        friendRepository.delete(sentRequest);
+    }
+
+    /**
+     * 8. 친구 삭제 (친구 끊기)
      */
     public void deleteFriend(Long friendMemberSeq, Long memberSeq) {
         Member me = memberRepository.findById(memberSeq)

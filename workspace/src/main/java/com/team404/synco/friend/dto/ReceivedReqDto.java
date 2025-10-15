@@ -18,6 +18,7 @@ public class ReceivedReqDto {
     private Long requesterSeq;
     private String requesterId;
     private String requesterName;
+    private String requesterProfileImageUrl;
 
     public static ReceivedReqDto fromEntity(Friend friend) {
         Member requester = friend.getMember();
@@ -26,6 +27,7 @@ public class ReceivedReqDto {
                 .requesterSeq(requester.getMemberSeq())
                 .requesterId(requester.getMemberId())
                 .requesterName(requester.getName())
+                .requesterProfileImageUrl(requester.getProfileImageUrl())
                 .build();
     }
 }

@@ -15,6 +15,7 @@ public class FriendResDto {
     private Long memberSeq;
     private String memberId;
     private String name;
+    private String profileImageUrl;
     private ActiveStatus activeStatus;
 
     public static FriendResDto fromEntity(Member member) {
@@ -22,6 +23,7 @@ public class FriendResDto {
                 .memberSeq(member.getMemberSeq())
                 .memberId(member.getMemberId())
                 .name(member.getName())
+                .profileImageUrl(member.getProfileImageUrl())
                 .activeStatus(member.getActiveStatus())
                 .build();
     }

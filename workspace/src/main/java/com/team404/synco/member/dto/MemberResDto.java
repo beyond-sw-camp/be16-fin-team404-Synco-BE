@@ -1,5 +1,6 @@
 package com.team404.synco.member.dto;
 
+import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.member.entity.Member;
 import lombok.*;
 
@@ -16,6 +17,7 @@ public class MemberResDto {
     private String statusMessage;
     private String profileImageUrl;
     private String telNo;
+    private ActiveStatus activeStatus;
     private LocalDate birthDate;
 
     public static MemberResDto fromEntity(Member member) {
@@ -26,6 +28,7 @@ public class MemberResDto {
                 .profileImageUrl(member.getProfileImageUrl())
                 .statusMessage(member.getStatusMessage())
                 .telNo(member.getTelNo())
+                .activeStatus(member.getActiveStatus())
                 .birthDate(member.getBirthDate())
                 .build();
     }

@@ -87,7 +87,18 @@ public class FriendController {
     }
 
     /**
-     * 7. 친구 삭제 (친구 끊기)
+     * 7. 보낸 친구 요청 취소
+     */
+    @DeleteMapping("/cancel/{friendSeq}")
+    public ResponseEntity<ResponseDto<?>> cancelFriendRequest(
+            @RequestHeader("X-Member-Seq") Long memberSeq,
+            @PathVariable Long friendSeq) {
+        friendService.cancelFriendRequest(friendSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("친구 요청을 취소했습니다.", HttpStatus.OK));
+    }
+
+    /**
+     * 8. 친구 삭제 (친구 끊기)
      */
     @DeleteMapping("/{friendMemberSeq}")
     public ResponseEntity<ResponseDto<?>> deleteFriend(
