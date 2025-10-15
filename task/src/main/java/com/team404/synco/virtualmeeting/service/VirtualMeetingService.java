@@ -44,15 +44,14 @@ public class VirtualMeetingService {
         virtualMeetingChannelMemberRepository.save(creator);
 
         // 멤버 채널에 추가
-        if(!channelCreateReqDto.getFriendList().isEmpty() && channelCreateReqDto.getFriendList() != null){
-            Optional.of(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
-                    .stream().filter(Objects::nonNull).map(memberSeq -> VirtualMeetingChannelMember.builder()
-                            .memberSeq(memberSeq)
-                            .authority(Authority.PARTICIPANT)
-                            .virtualMeetingChannel(virtualMeetingChannel)
-                            .build())
-                    .forEach(virtualMeetingChannelMemberRepository::save);
-        }
+        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+                .stream().filter(Objects::nonNull).map(memberSeq -> VirtualMeetingChannelMember.builder()
+                        .memberSeq(memberSeq)
+                        .authority(Authority.PARTICIPANT)
+                        .virtualMeetingChannel(virtualMeetingChannel)
+                        .build())
+                .forEach(virtualMeetingChannelMemberRepository::save);
+
         return virtualMeetingChannel.getVirtualMeetingChannelSeq();
     }
 

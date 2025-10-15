@@ -38,15 +38,16 @@ public class TaskService {
                 .build();
         scheduleManagementChannelMemberRepository.save(creator);
 
-        if(!taskChannelMemberCreateReqDto.getFriendList().isEmpty() && taskChannelMemberCreateReqDto.getFriendList() != null){
-            Optional.of(taskChannelMemberCreateReqDto.getFriendList()).orElse(Collections.emptyList())
-                    .stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
-                            .memberSeq(memberSeq)
-                            .authority(Authority.PARTICIPANT)
-                            .workSpaceSeq(taskChannelMemberCreateReqDto.getWorkSpaceReq())
-                            .build())
-                    .forEach(scheduleManagementChannelMemberRepository::save);
-        }
+        Optional.ofNullable(taskChannelMemberCreateReqDto.getFriendList())
+                .orElse(Collections.emptyList()) // null이면 빈 리스트로 대체
+                .stream()
+                .filter(Objects::nonNull)
+                .map(memberSeq -> ScheduleManagementChannelMember.builder()
+                        .memberSeq(memberSeq)
+                        .authority(Authority.PARTICIPANT)
+                        .workSpaceSeq(taskChannelMemberCreateReqDto.getWorkSpaceReq())
+                        .build())
+                .forEach(scheduleManagementChannelMemberRepository::save);
     }
 
     // 채널 권한 설정

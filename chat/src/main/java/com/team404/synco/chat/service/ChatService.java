@@ -40,21 +40,19 @@ public class ChatService {
                 .chatChannel(chatChannel)
                 .build();
         chatChannelMemberRepository.save(creator);
-        if (!channelCreateReqDto.getFriendList().isEmpty() && channelCreateReqDto.getFriendList() != null) {
-            Optional.of(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
-                    .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
-                            .memberSeq(memberSeq)
-                            .authority(Authority.PARTICIPANT)
-                            .chatChannel(chatChannel)
-                            .build())
-                    .forEach(chatChannelMemberRepository::save);
-        }
+        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+                .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
+                        .memberSeq(memberSeq)
+                        .authority(Authority.PARTICIPANT)
+                        .chatChannel(chatChannel)
+                        .build())
+                .forEach(chatChannelMemberRepository::save);
         return chatChannel.getChatChannelSeq();
     }
 
     // 채널 생성(1:1 채팅 채널)
     // ToDo : 채팅 담당자는 1:1 채팅 시작할때 이 로직으로 채팅 채널 생성하시면 됩니다.
-    public Long createIndividualChatChannel(ChannelCreateReqDto channelCreateReqDto){
+    public Long createIndividualChatChannel(ChannelCreateReqDto channelCreateReqDto) {
         ChatChannel chatChannel = chatChannelRepository.save(channelCreateReqDto.toEntity());
 
         // 채팅 대상 list에 추가
@@ -93,7 +91,7 @@ public class ChatService {
     // 채널 이름 수정
     public ChannelEditResDto renameChannel(ChannelEditReqDto channelEditReqDto, Long memberSeq) throws AccessDeniedException {
         // 수정 대상 채널 검증
-        ChatChannel editChannel = chatChannelRepository.findById(channelEditReqDto.getChannelSeq()).orElseThrow(()->
+        ChatChannel editChannel = chatChannelRepository.findById(channelEditReqDto.getChannelSeq()).orElseThrow(() ->
                 new EntityNotFoundException("없는 채널입니다."));
         // 권한 검증
         checkChannelAuthority(editChannel.getChatChannelSeq(), memberSeq);
@@ -105,12 +103,12 @@ public class ChatService {
     // 채널 삭제
     public void deleteChannel(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         // 삭제 대상 채널 검증
-        ChatChannel deleteChannel = chatChannelRepository.findById(channelSeq).orElseThrow(()->
+        ChatChannel deleteChannel = chatChannelRepository.findById(channelSeq).orElseThrow(() ->
                 new EntityNotFoundException("없는 채널입니다."));
         // 기본 채널이 있는지 검증
         ChatChannel basicChannel = checkBasicChannel(deleteChannel.getWorkSpaceSeq());
         // 삭제하려는 채널이 기본 채널인지 확인
-        if(deleteChannel.equals(basicChannel)){
+        if (deleteChannel.equals(basicChannel)) {
             throw new IllegalStateException("기본 채널은 삭제할 수 없습니다.");
         }
         // 권한 검증
