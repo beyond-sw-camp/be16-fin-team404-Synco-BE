@@ -1,6 +1,7 @@
 package com.team404.synco.member.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -16,10 +17,11 @@ public class NaverProfileDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Response{
+    public static class Response {
         private String id;
         private String name;
         private String email;
-        private String profile_image;
+        @JsonProperty("profile_image")
+        private String profileImage;
     }
 }

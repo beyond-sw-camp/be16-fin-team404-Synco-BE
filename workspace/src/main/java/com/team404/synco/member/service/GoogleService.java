@@ -2,7 +2,6 @@ package com.team404.synco.member.service;
 
 import com.team404.synco.member.dto.AccessTokenDto;
 import com.team404.synco.member.dto.GoogleProfileDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 @Service
-@Slf4j
 public class GoogleService {
 
     @Value("${oauth.google.client-id}")
@@ -44,7 +42,6 @@ public class GoogleService {
 
             return response.getBody();
         } catch (Exception e) {
-            log.error("구글 액세스 토큰 발급 실패: {}", e.getMessage());
             throw new IllegalStateException("구글 로그인 중 오류가 발생했습니다.", e);
         }
     }
@@ -60,7 +57,6 @@ public class GoogleService {
             
             return response.getBody();
         } catch (Exception e) {
-            log.error("구글 프로필 조회 실패: {}", e.getMessage());
             throw new IllegalStateException("구글 사용자 정보를 가져오는 중 오류가 발생했습니다.", e);
         }
     }
