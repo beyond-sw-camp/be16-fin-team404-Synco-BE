@@ -109,7 +109,7 @@ public class ChatService {
         // 기본 채널이 있는지 검증
         ChatChannel basicChannel = checkBasicChannel(deleteChannel.getWorkSpaceSeq());
         // 삭제하려는 채널이 기본 채널인지 확인
-        if(!deleteChannel.equals(basicChannel)){
+        if(deleteChannel.equals(basicChannel)){
             throw new IllegalStateException("기본 채널은 삭제할 수 없습니다.");
         }
         // 권한 검증
@@ -194,7 +194,9 @@ public class ChatService {
 
     // 채널 전체 삭제(Team WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
+        log.info("chatFeign 호출");
         chatChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
+        log.info("chatFeign 종료");
     }
 
     // 기본 채널 검증

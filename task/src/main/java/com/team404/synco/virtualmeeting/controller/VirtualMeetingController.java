@@ -41,7 +41,7 @@ public class VirtualMeetingController {
     }
 
     // 채널 삭제
-    @DeleteMapping("/{channelSeq}")
+    @DeleteMapping("/channel/{channelSeq}")
     public ResponseEntity<ResponseDto<?>> deleteChannel(@PathVariable("channelSeq") Long channelSeq,
                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         virtualMeetingService.deleteChannel(channelSeq, memberSeq);
@@ -75,7 +75,7 @@ public class VirtualMeetingController {
 
     // 전체 채널 삭제(워크스페이스 삭제시)
     @DeleteMapping("/{workSpaceSeq}")
-    public void deleteAllChannel(@PathVariable Long workSpaceSeq){
+    public void deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         virtualMeetingService.deleteAllChannel(workSpaceSeq);
     }
 }

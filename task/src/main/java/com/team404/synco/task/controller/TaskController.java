@@ -51,7 +51,7 @@ public class TaskController {
 
     // 팀 테스크 전체 삭제
     @DeleteMapping("/{workSpaceSeq}")
-    public void deleteTeamTaskChannel(@PathVariable Long workSpaceSeq){
+    public void deleteTeamTaskChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         taskService.deleteAllTask(workSpaceSeq);
     }
 }

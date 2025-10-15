@@ -36,7 +36,7 @@ public class WorkSpaceController {
 
     // 프로젝트 워크스페이스 삭제
     @DeleteMapping("/{workSpaceSeq}")
-    public ResponseEntity<ResponseDto<?>> deleteWorkSpace(@PathVariable Long workSpaceSeq,
+    public ResponseEntity<ResponseDto<?>> deleteWorkSpace(@PathVariable("workSpaceSeq") Long workSpaceSeq,
                                                           @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
         workSpaceService.deleteWorkSpace(workSpaceSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("팀 워크스페이스가 성공적으로 삭제되었습니다.", HttpStatus.OK));

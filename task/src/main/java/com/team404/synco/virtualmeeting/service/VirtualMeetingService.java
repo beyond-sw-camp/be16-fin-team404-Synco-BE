@@ -179,7 +179,9 @@ public class VirtualMeetingService {
 
     // 채널 전체 삭제(WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
+        log.info("virtualMeetFeign 호출");
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
+        log.info("virtualMeetFeign 종료");
     }
 
 
