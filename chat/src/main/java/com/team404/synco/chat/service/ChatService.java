@@ -40,14 +40,15 @@ public class ChatService {
                 .chatChannel(chatChannel)
                 .build();
         chatChannelMemberRepository.save(creator);
-
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
-                .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
-                        .memberSeq(memberSeq)
-                        .authority(Authority.PARTICIPANT)
-                        .chatChannel(chatChannel)
-                        .build())
-                .forEach(chatChannelMemberRepository::save);
+        if (!channelCreateReqDto.getFriendList().isEmpty() && channelCreateReqDto.getFriendList() != null) {
+            Optional.of(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+                    .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
+                            .memberSeq(memberSeq)
+                            .authority(Authority.PARTICIPANT)
+                            .chatChannel(chatChannel)
+                            .build())
+                    .forEach(chatChannelMemberRepository::save);
+        }
         return chatChannel.getChatChannelSeq();
     }
 

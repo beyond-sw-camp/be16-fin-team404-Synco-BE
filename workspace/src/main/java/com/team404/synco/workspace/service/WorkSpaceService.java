@@ -105,7 +105,7 @@ public class WorkSpaceService {
 
         // 워크스페이스에 초대된 member정보 redis에 저장
         List<Long> invitefriendList = teamWorkSpaceCreateReqDto.getFriendList();
-        if(!invitefriendList.isEmpty()){
+        if(!invitefriendList.isEmpty() && invitefriendList != null){
             invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                     .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
                 workSpaceRedisService.addMemberInfo(inviteMember);
