@@ -10,8 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long>, JpaSpecificationExecutor<Member> {
-    Optional<Member> findByEmailAndSocialType(String email, SocialType socialType);
-public interface MemberRepository extends JpaRepository<Member, Long> {
+
     Optional<Member> findBySocialId(String socialId);
 
     Optional<Member> findByMemberId(String memberId);
