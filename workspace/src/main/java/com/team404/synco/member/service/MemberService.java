@@ -248,7 +248,6 @@ public class MemberService {
         jwtTokenProvider.deleteRt(memberSeq);
     }
 
-    //회원 검색 (memberId로 시작 문자 검색)
     @Transactional(readOnly = true)
     public Page<MemberSearchResDto> searchMembers(Long memberSeq, String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
@@ -258,14 +257,11 @@ public class MemberService {
         Specification<Member> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // memberId로 시작하는 회원 검색 (LIKE 'keyword%')
             String keywordPattern = keyword + "%";
             predicates.add(cb.like(root.get("memberId"), keywordPattern));
 
-            // 자기 자신 제외
             predicates.add(cb.notEqual(root.get("memberSeq"), memberSeq));
 
-            // 탈퇴 회원 제외
             predicates.add(cb.equal(root.get("ynDel"), YnColumn.IS_FALSE));
 
             return cb.and(predicates.toArray(new Predicate[0]));
