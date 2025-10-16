@@ -1,5 +1,6 @@
 package com.team404.synco.common.config;
 
+import com.team404.synco.alarm.service.SseNotificationSubscriber;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +9,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -88,5 +92,56 @@ public class RedisConfig {
         redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
         redisTemplate.setConnectionFactory(workSpaceConnectionFactory);
         return redisTemplate;
+    }
+
+    // ========== SSE 전용 Redis 설정 ==========
+    
+    /**
+     * SSE Pub/Sub 전용 Redis 연결 팩토리
+     */
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisConnectionFactory sseConnectionFactory() {
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        configuration.setDatabase(3); // SSE 전용 DB
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    /**
+     * SSE Pub/Sub 전용 Redis 템플릿
+     */
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisTemplate<String, String> sseRedisTemplate(
+            @Qualifier("ssePubSub") RedisConnectionFactory sseConnectionFactory) {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setConnectionFactory(sseConnectionFactory);
+        return redisTemplate;
+    }
+
+    /**
+     * Redis 메시지 리스너 컨테이너 (SSE 전용)
+     */
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisMessageListenerContainer sseMessageListenerContainer(
+            @Qualifier("ssePubSub") RedisConnectionFactory sseConnectionFactory,
+            MessageListenerAdapter sseMessageListenerAdapter) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(sseConnectionFactory);
+        container.addMessageListener(sseMessageListenerAdapter, new PatternTopic("status-update"));
+        return container;
+    }
+
+    /**
+     * SSE 메시지 리스너 어댑터
+     */
+    @Bean
+    public MessageListenerAdapter sseMessageListenerAdapter(SseNotificationSubscriber sseNotificationSubscriber) {
+        return new MessageListenerAdapter(sseNotificationSubscriber, "onMessage");
     }
 }

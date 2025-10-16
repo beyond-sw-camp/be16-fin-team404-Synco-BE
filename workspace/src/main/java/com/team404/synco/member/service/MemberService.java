@@ -2,10 +2,14 @@ package com.team404.synco.member.service;
 
 import com.team404.synco.common.auth.JwtTokenProvider;
 import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.common.service.EmailService;
+import com.team404.synco.alarm.service.SseNotificationService;
+import com.team404.synco.friend.entity.Friend;
+import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
@@ -24,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Transactional
 @Service
@@ -41,6 +46,8 @@ public class MemberService {
     private final GoogleService googleService;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final FriendRepository friendRepository;
+    private final SseNotificationService sseNotificationService;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
@@ -303,7 +310,32 @@ public class MemberService {
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
+        // 이전 상태 저장
+        ActiveStatus previousStatus = member.getActiveStatus();
+        
+        // 상태 변경
         member.updateActiveStatus(reqDto.getActiveStatus());
+        
+        // 상태가 실제로 변경된 경우에만 친구들에게 알림 발송
+        if (!previousStatus.equals(reqDto.getActiveStatus())) {
+            // 승인된 친구 목록 조회 (Pageable.unpaged()로 전체 조회)
+            Page<Friend> friendPage = friendRepository.findAllByMemberAndFriendStatus(
+                member, 
+                FriendStatus.APPROVE, 
+                Pageable.unpaged()
+            );
+            
+            List<Member> friendList = friendPage.getContent().stream()
+                    .map(Friend::getFriendMember)
+                    .collect(Collectors.toList());
+            
+            // 친구들에게 실시간 알림 발송
+            if (!friendList.isEmpty()) {
+                sseNotificationService.notifyStatusChangeToFriends(member, previousStatus, reqDto.getActiveStatus(), friendList);
+                log.info("상태 변경 알림 발송: memberSeq={}, {} → {}, 친구 수={}", 
+                        memberSeq, previousStatus, reqDto.getActiveStatus(), friendList.size());
+            }
+        }
     }
 
 }
