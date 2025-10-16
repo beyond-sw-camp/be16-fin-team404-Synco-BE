@@ -1,6 +1,7 @@
 package com.team404.synco.drive.repository;
 
 import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

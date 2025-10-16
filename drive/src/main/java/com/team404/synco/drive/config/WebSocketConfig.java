@@ -22,7 +22,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/connect")
-                .setAllowedOriginPatterns("http://localhost:3000") // CORS 설정
+                .setAllowedOriginPatterns("*") // CORS 설정 - allowCredentials와 호환
                 .withSockJS(); // SockJS를 사용하여 WebSocket 연결을 지원
     }
 

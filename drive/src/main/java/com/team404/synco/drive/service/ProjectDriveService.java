@@ -6,6 +6,7 @@ import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
+import com.team404.synco.drive.entity.DocumentMessageMethod;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.repository.DocumentLineRepository;
 import com.team404.synco.drive.repository.DocumentRepository;
@@ -21,12 +22,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,9 +35,8 @@ public class ProjectDriveService {
 
     private final CommonDriveService commonDriveService;
     private final DocumentRepository documentRepository;
-    private final DocumentLineRepository documentLineRepository;
     private final DriveChannelRepository driveChannelRepository;
-    private final DocumentSyncService documentSyncService;
+    private final DocumentLineRepository documentLineRepository;
     private final S3Uploader s3Uploader;
 
     // 드라이브 생성
@@ -50,12 +48,12 @@ public class ProjectDriveService {
     @Transactional(readOnly = true)
     public DriveChannel getProjectDriveChannel(Long driveChannelSeq) {
         DriveChannel channel = driveChannelRepository.findById(driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("드라이브 채널을 찾을 수 없습니다: " + driveChannelSeq));
-        
+
         // 프로젝트 드라이브 채널인지 확인
         if (channel.getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + driveChannelSeq);
         }
-        
+
         return channel;
     }
 
@@ -100,7 +98,7 @@ public class ProjectDriveService {
     public ResponseEntity<byte[]> downloadProjectFile(Long driveChannelSeq, Long documentSeq) {
         Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
             .orElseThrow(() -> new EntityNotFoundException("파일을 찾을 수 없습니다."));
-        
+
         // 프로젝트 드라이브 채널인지 확인
         if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
             throw new IllegalArgumentException("프로젝트 드라이브 파일이 아닙니다: " + documentSeq);
@@ -110,11 +108,11 @@ public class ProjectDriveService {
             byte[] fileContent = s3Uploader.download(document.getDocumentUrl());
 
             HttpHeaders headers = new HttpHeaders();
-            
+
             // 파일 확장자에 따른 Content-Type 설정
             String contentType = ContentTypeUtil.getContentType(document.getDocumentName());
             headers.setContentType(MediaType.parseMediaType(contentType));
-            
+
             // 파일명 인코딩 처리
             String encodedFileName = URLEncoder.encode(document.getDocumentName(), StandardCharsets.UTF_8);
             headers.setContentDispositionFormData("attachment", encodedFileName);
@@ -140,37 +138,145 @@ public class ProjectDriveService {
         commonDriveService.deleteItem(driveChannel, userId, itemType, itemId);
     }
 
-    // 프로젝트 드라이브 공유문서 상세 조회
+    // 프로젝트 드라이브 공유문서 목록 조회
     @Transactional(readOnly = true)
-    public DocumentDetailDto getProjectDocument(Long driveChannelSeq, Long documentSeq) {
-        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+    public List<DocDetailListResDto> getProjectSharedDocuments(Long driveChannelSeq, Long document) {
+        log.info("프로젝트 공유문서 목록 조회 시작 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannelSeq, document);
         
-        // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
-            throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
+        // 프로젝트 드라이브 채널 조회 및 검증
+        DriveChannel driveChannel = getProjectDriveChannel(driveChannelSeq);
+        
+        // 문서가 해당 드라이브 채널에 속하는지 확인
+        Document targetDocument = documentRepository.findById(document)
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + document));
+        
+        if (!targetDocument.getDriveChannel().getDriveChannelSeq().equals(driveChannelSeq)) {
+            throw new IllegalArgumentException("문서가 해당 드라이브 채널에 속하지 않습니다.");
         }
         
-        // 1. Redis 캐시 확인
-        String cachedContent = documentSyncService.getDocumentContentFromCache(documentSeq);
+        // 공유문서 목록 조회
+        List<DocDetailListResDto> result = commonDriveService.getSharedDoc(driveChannel, document);
         
-        if (cachedContent != null) {
-            // 캐시 HIT: Redis에서 바로 반환
-            return DocumentDetailDto.fromEntityWithContent(document, cachedContent);
-        }
-        
-        // 2. 캐시 MISS: DB에서 조회
-        List<DocumentLine> documentLines = documentLineRepository
-            .findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-        
-        // 3. 라인들을 텍스트로 변환
-        String textContent = documentSyncService.loadDocumentLinesAsText(documentLines);
-        
-        // 4. Redis에 캐시
-        documentSyncService.cacheDocumentContent(documentSeq, textContent);
-        
-        // 5. 응답 (기존 방식과 동일한 형태로)
-        return DocumentDetailDto.fromEntity(document, documentLines);
+        log.info("프로젝트 공유문서 목록 조회 완료 - DriveChannelSeq: {}, DocumentSeq: {}, 라인 수: {}", 
+                driveChannelSeq, document, result.size());
+        return result;
     }
+
+    // 프로젝트 드라이브 공유문서 라인 생성
+    public void createBlock(UpdateDocumentReqDto updateDocumentReqDto) {
+
+        Document document = documentRepository.findById(updateDocumentReqDto.getDocumentId()).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentId()));
+
+        DocumentLine checkLine = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId()).orElse(null);
+        if (checkLine != null) {
+            throw new IllegalArgumentException("이미 존재하는 FE ID입니다: " + updateDocumentReqDto.getDocumentFeId());
+        }
+
+        // 부모 라인 조회 (prevFeId가 부모 라인의 feId)
+        DocumentLine parentLine = null;
+        if (updateDocumentReqDto.getParentDocumentLineSeq() != null && !updateDocumentReqDto.getParentDocumentLineSeq().isEmpty()) {
+            parentLine = documentLineRepository.findByFeId(updateDocumentReqDto.getParentDocumentLineSeq())
+                    .orElseThrow(() -> new EntityNotFoundException("부모 라인을 찾을 수 없습니다: " + updateDocumentReqDto.getParentDocumentLineSeq()));
+        }
+
+        // 새 블록 생성
+        DocumentLine newLine = DocumentLine.builder()
+                .document(document)
+                .feId(updateDocumentReqDto.getDocumentFeId())
+                .documentContent(updateDocumentReqDto.getContent())
+                .prevFeId(updateDocumentReqDto.getParentDocumentLineSeq()) // 부모 라인의 feId를 prevFeId에 저장
+                .type(updateDocumentReqDto.getBlockType())
+                .level(updateDocumentReqDto.getBlockLevel())
+                .indent(updateDocumentReqDto.getBlockIndent())
+                .build();
+
+        documentLineRepository.save(newLine);
+
+        // 🔥 중요: 중간 삽입 시 기존 블록들의 연결 재구성
+        if (parentLine != null) {
+            // 부모 라인의 다음 블록이 새 블록을 참조하도록 변경
+            documentLineRepository.findByPrevFeId(parentLine.getFeId())
+                    .ifPresent(nextBlock -> nextBlock.updatePrevFeId(updateDocumentReqDto.getDocumentFeId()));
+        }
+    }
+
+    // 프로젝트 드라이브 공유문서 라인 수정
+    public void updateBlock(UpdateDocumentReqDto updateDocumentReqDto) {
+        // 수정할 블록 조회
+        DocumentLine blockToUpdate = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId())
+                .orElseThrow(() -> new EntityNotFoundException("수정할 블록을 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentFeId()));
+
+        blockToUpdate.updateAllInfo(
+                updateDocumentReqDto.getContent(),
+                updateDocumentReqDto.getBlockType(),
+                updateDocumentReqDto.getBlockLevel(),
+                updateDocumentReqDto.getBlockIndent()
+        );
+    }
+
+    // 프로젝트 드라이브 공유문서 라인 세부사항 수정
+    public void patchBlockDetails(UpdateDocumentReqDto updateDocumentReqDto) {
+        // 수정할 블록 조회
+        DocumentLine blockToUpdate = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId())
+                .orElseThrow(() -> new EntityNotFoundException("수정할 블록을 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentFeId()));
+
+        // 세부사항에 따라 업데이트 수행
+        if(updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.UPDATE_INDENT_BLOCK)){
+            blockToUpdate.updateIndent(updateDocumentReqDto.getBlockIndent());
+        } else if(updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.HOT_UPDATE_CONTENTS_BLOCK)){
+            blockToUpdate.updateDocumentContent(updateDocumentReqDto.getContent());
+        }
+    }
+
+    // 프로젝트 드라이브 공유문서 라인 순서 변경 (성능 최적화)
+    public void changeOrderBlock(UpdateDocumentReqDto updateDocumentReqDto) {
+        String movingFeId = updateDocumentReqDto.getDocumentFeId();
+        String newPrevFeId = updateDocumentReqDto.getParentDocumentLineSeq(); // 새로운 이전 블록의 feId
+
+        // 1. 이동할 블록 조회
+        DocumentLine movingBlock = documentLineRepository.findByFeId(movingFeId)
+                .orElseThrow(() -> new EntityNotFoundException("이동할 블록을 찾을 수 없습니다: " + movingFeId));
+
+        // 2. 기존 위치에서 제거 (이동할 블록의 다음 블록이 이동할 블록의 이전 블록을 참조하도록)
+        DocumentLine nextBlock = documentLineRepository.findByPrevFeId(movingFeId).orElse(null);
+        if (nextBlock != null) {
+            nextBlock.updatePrevFeId(movingBlock.getPrevFeId());
+        }
+
+        // 3. 새로운 위치에 삽입
+        if (newPrevFeId != null && !newPrevFeId.isEmpty()) {
+            // 새로운 이전 블록의 다음 블록이 이동할 블록을 참조하도록
+            DocumentLine newNextBlock = documentLineRepository.findByPrevFeId(newPrevFeId).orElse(null);
+            if (newNextBlock != null) {
+                newNextBlock.updatePrevFeId(movingFeId);
+            }
+        }
+
+        // 4. 이동할 블록의 prevFeId 업데이트
+        movingBlock.updatePrevFeId(newPrevFeId);
+    }
+
+    // 프로젝트 드라이브 공유문서 라인 삭제 (성능 최적화)
+    public void deleteBlock(UpdateDocumentReqDto updateDocumentReqDto) {
+        String blockFeId = updateDocumentReqDto.getDocumentFeId();
+
+        // 1. 삭제할 블록 조회
+        DocumentLine blockToDelete = documentLineRepository.findByFeId(blockFeId)
+                .orElseThrow(() -> new IllegalArgumentException("삭제할 블록을 찾을 수 없습니다: " + blockFeId));
+
+        // 2. 연결 리스트 재구성 (성능 최적화: 한 번의 쿼리로 처리)
+        DocumentLine nextBlock = documentLineRepository.findByPrevFeId(blockFeId).orElse(null);
+        if (nextBlock != null) {
+            // 다음 블록이 존재하는 경우에만 연결 재구성
+            nextBlock.updatePrevFeId(blockToDelete.getPrevFeId());
+        }
+        // 다음 블록이 없으면 마지막 블록이므로 아무것도 안 함
+
+        // 3. 블록 삭제
+        documentLineRepository.delete(blockToDelete);
+    }
+
+
 
     // 프로젝트 드라이브 공유문서 잠금/해제 토글
     public DriveItemDto toggleProjectDocumentLock(ToggleReqDto toggleReqDto) {
@@ -187,50 +293,6 @@ public class ProjectDriveService {
         document.updateLockStatus(newLockStatus);
 
         return DriveItemDto.fromDocument(document);
-    }
-
-    // 프로젝트 드라이브 공유문서 다운로드
-    public ResponseEntity<byte[]> downloadProjectDocument(Long driveChannelSeq, Long documentSeq) {
-        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
-            .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-
-        // 프로젝트 드라이브 채널인지 확인
-        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.PROJECT) {
-            throw new IllegalArgumentException("프로젝트 드라이브 문서가 아닙니다: " + documentSeq);
-        }
-
-        try {
-            String content = getDocumentContent(document);
-            byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", document.getDocumentName() + ".txt");
-
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(contentBytes);
-
-        } catch (Exception e) {
-            throw new MultipartException("문서 다운로드에 실패했습니다: " + document.getDocumentName(), e);
-        }
-    }
-
-    // 문서 내용 조회 (내부 메서드)
-    private String getDocumentContent(Document document) {
-        try {
-            List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-
-            if (documentLines.isEmpty()) {
-                return "문서 내용이 없습니다.";
-            }
-
-            return documentLines.stream()
-                .map(DocumentLine::getDocumentContent)
-                .collect(Collectors.joining("\n"));
-        } catch (Exception e) {
-            return "문서 내용을 불러올 수 없습니다.";
-        }
     }
 
     // 프로젝트 드라이브 폴더 트리 조회

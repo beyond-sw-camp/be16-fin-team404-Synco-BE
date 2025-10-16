@@ -82,11 +82,8 @@ public class RedisConfig {
         container.setConnectionFactory(redisConnectionFactory);
 
         // 문서 편집 관련 패턴들 구독
-        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/yjs-update"));
-        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/content"));
-        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/cursor"));
+        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/document-update"));
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/online-users"));
-
         return container;
     }
 
@@ -96,45 +93,11 @@ public class RedisConfig {
     }
 
     // ================================
-    // 문서 내용 캐시 (텍스트 변환본, 5분마다 DB 동기화)
-    // ================================
-    @Bean
-    @Qualifier("documentContents")
-    public RedisTemplate<String, String> documentContentsRedisTemplate(
-            @Qualifier("documentFactory") RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, String> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new StringRedisSerializer());
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    // ================================
     // 온라인 사용자 관리 (Hash 구조: userId -> userName)
     // ================================
     @Bean
     @Qualifier("documentOnlineUsers")
     public RedisTemplate<String, String> documentOnlineUsersRedisTemplate(
-            @Qualifier("documentFactory") RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, String> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new StringRedisSerializer());
-        template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new StringRedisSerializer());
-        template.afterPropertiesSet();
-        return template;
-    }
-
-    // ================================
-    // 사용자별 커서 위치 관리 (Hash 구조: userId -> position)
-    // ================================
-    @Bean
-    @Qualifier("documentCursors")
-    public RedisTemplate<String, String> documentCursorsRedisTemplate(
             @Qualifier("documentFactory") RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);

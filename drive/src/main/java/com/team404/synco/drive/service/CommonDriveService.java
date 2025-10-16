@@ -4,11 +4,14 @@ import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.drive.dto.DocDetailListResDto;
 import com.team404.synco.drive.dto.DriveItemDto;
 import com.team404.synco.drive.dto.FolderTreeDto;
 import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.entity.Folder;
+import com.team404.synco.drive.repository.DocumentLineRepository;
 import com.team404.synco.drive.repository.DocumentRepository;
 import com.team404.synco.drive.repository.FolderRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,10 +25,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,6 +41,7 @@ public class CommonDriveService {
 
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentLineRepository documentLineRepository;
     private final S3Uploader s3Uploader;
     private final String folderNamePrefix = "drive/";
 
@@ -488,7 +492,82 @@ public class CommonDriveService {
             documentRepository.delete(document);
         }
     }
-    
+
+    // 공유문서 목록 조회
+    @Transactional(readOnly = true)
+    public List<DocDetailListResDto> getSharedDoc(DriveChannel driveChannel, Long document) {
+        log.info("공유문서 목록 조회 시작 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannel.getDriveChannelSeq(), document);
+        
+        // 특정 문서의 모든 DocumentLine들을 조회
+        List<DocumentLine> allDocumentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document);
+        
+        // 계층 구조로 변환
+        return buildHierarchicalStructure(allDocumentLines);
+    }
+
+    /**
+     * DocumentLine 리스트를 연결 리스트 순서대로 정렬 (O(n) 시간복잡도)
+     */
+    private List<DocDetailListResDto> buildHierarchicalStructure(List<DocumentLine> documentLines) {
+        if (documentLines.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // O(n): DocumentLine을 DocDetailListResDto로 변환하면서 Map 생성
+        Map<String, DocDetailListResDto> dtoMap = new HashMap<>();
+        Map<String, String> nextBlockMap = new HashMap<>(); // prevFeId -> feId 매핑
+        
+        for (DocumentLine documentLine : documentLines) {
+            DocDetailListResDto dto = convertToDocDetailListResDto(documentLine);
+            dtoMap.put(documentLine.getFeId(), dto);
+            
+            // 다음 블록 매핑 생성 (prevFeId -> feId)
+            if (documentLine.getPrevFeId() != null && !documentLine.getPrevFeId().isEmpty()) {
+                nextBlockMap.put(documentLine.getPrevFeId(), documentLine.getFeId());
+            }
+        }
+        
+        List<DocDetailListResDto> orderedList = new ArrayList<>(documentLines.size());
+        
+        // O(n): 첫 번째 블록 찾기 (prevFeId가 null인 블록)
+        String firstFeId = null;
+        for (DocumentLine documentLine : documentLines) {
+            if (documentLine.getPrevFeId() == null || documentLine.getPrevFeId().isEmpty()) {
+                firstFeId = documentLine.getFeId();
+                break;
+            }
+        }
+        
+        // O(n): 연결 리스트 순서대로 순회
+        String currentFeId = firstFeId;
+        while (currentFeId != null) {
+            DocDetailListResDto currentDto = dtoMap.get(currentFeId);
+            if (currentDto != null) {
+                orderedList.add(currentDto);
+                currentFeId = nextBlockMap.get(currentFeId);
+            } else {
+                break;
+            }
+        }
+        
+        return orderedList;
+    }
+
+    /**
+     * DocumentLine을 DocDetailListResDto로 변환
+     */
+    private DocDetailListResDto convertToDocDetailListResDto(DocumentLine documentLine) {
+        return DocDetailListResDto.builder()
+                .id(documentLine.getDocumentLineSeq())
+                .parentId(documentLine.getPrevFeId())
+                .content(documentLine.getDocumentContent())
+                .feId(documentLine.getFeId())
+                .indent(documentLine.getIndent())
+                .level(documentLine.getLevel())
+                .type(documentLine.getType())
+                .build();
+    }
+
     // 폴더 삭제 권한 검증
     private void validateFolderDeletePermission(DriveChannel driveChannel, Long userId, Long folderId) {
         Set<Long> visitedFolders = new HashSet<>();

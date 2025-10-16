@@ -28,7 +28,9 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/refreshAt",
             "/member/findId",
             "/member/findPassword",
-            "/drive/**"
+            "/drive/**",
+            "/document/**",
+            "/connect/**"
     );
 
     @Override

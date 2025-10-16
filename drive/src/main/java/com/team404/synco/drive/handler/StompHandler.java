@@ -1,9 +1,5 @@
 package com.team404.synco.drive.handler;
 
-import com.team404.synco.drive.service.ProjectDocumentRedisService;
-import com.team404.synco.drive.service.ProjectDriveService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,13 +18,13 @@ public class StompHandler implements ChannelInterceptor {
     @Value("${jwt.secretKeyAt}")
     private String secretKey;
 
-    private final ProjectDocumentRedisService projectDocumentRedisService;
+//    private final ProjectDocumentRedisService projectDocumentRedisService;
 
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         final StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
         if(StompCommand.CONNECT == accessor.getCommand()){
-            log.info("WebSocket 연결 요청 - 토큰 검증 시작");
+//            log.info("WebSocket 연결 요청 - 토큰 검증 시작");
 //            String bearerToken = accessor.getFirstNativeHeader("Authorization");
 //
 //            if (bearerToken == null || !bearerToken.startsWith("Bearer ")) {
@@ -44,9 +40,9 @@ public class StompHandler implements ChannelInterceptor {
 //                    .getBody();
 //            log.info("토큰 유효성 검증 성공");
         }
-        
+
         if(StompCommand.SUBSCRIBE == accessor.getCommand()){
-            log.info("문서 구독 요청 - 권한 검증 시작");
+//            log.info("문서 구독 요청 - 권한 검증 시작");
 //            String bearerToken = accessor.getFirstNativeHeader("Authorization");
 //            String token = bearerToken.substring(7);
 //            Claims claims = Jwts.parserBuilder()
@@ -59,12 +55,6 @@ public class StompHandler implements ChannelInterceptor {
 //            if(!projectDocumentRedisService.isMemberOfWorkspace(userId, documentId)){
 //                throw new RuntimeException("해당 문서에 접근 권한이 없습니다.");
 //            }
-//
-//            // DISCONNECT 시 자동 이탈 처리를 위해 세션에 저장
-//            accessor.getSessionAttributes().put("documentId", documentId);
-//            accessor.getSessionAttributes().put("userId", userId);
-//            log.info("세션에 사용자 정보 저장 - SessionId: {}, DocumentId: {}, UserId: {}",
-//                accessor.getSessionId(), documentId, userId);
         }
         return message;
     }
