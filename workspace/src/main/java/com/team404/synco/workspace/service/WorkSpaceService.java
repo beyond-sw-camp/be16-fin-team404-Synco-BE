@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -104,15 +106,18 @@ public class WorkSpaceService {
         workSpaceRedisService.addMemberToWorkSpace(workSpace, member.getMemberSeq());
 
         // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = teamWorkSpaceCreateReqDto.getFriendList();
-        if(!invitefriendList.isEmpty() && invitefriendList != null){
-            invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
-                    .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
-                workSpaceRedisService.addMemberInfo(inviteMember);
-                workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
-                workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
-            });
-        }
+        List<Long> invitefriendList = Optional.ofNullable(teamWorkSpaceCreateReqDto.getFriendList())
+                .orElse(Collections.emptyList());
+
+        invitefriendList.stream()
+                .map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
+                        .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다.")))
+                .forEach(inviteMember -> {
+                    workSpaceRedisService.addMemberInfo(inviteMember);
+                    workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
+                    workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
+                });
+
 
         return WorkSpaceResDto.fromEntity(workSpace);
     }

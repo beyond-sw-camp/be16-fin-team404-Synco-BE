@@ -113,9 +113,7 @@ public class TaskService {
 
     // 팀 Task 전체 삭제(WorkSpace 삭제시)
     public void deleteAllTask(Long workSpaceSeq) {
-        log.info("taskFeign 호출");
         scheduleManagementChannelMemberRepository.deleteByWorkSpaceSeq(workSpaceSeq);
-        log.info("taskFeign 종료");
     }
 
     // SUPER 권한 검증

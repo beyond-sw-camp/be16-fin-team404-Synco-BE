@@ -193,9 +193,7 @@ public class ChatService {
 
     // 채널 전체 삭제(Team WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
-        log.info("chatFeign 호출");
         chatChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
-        log.info("chatFeign 종료");
     }
 
     // 기본 채널 검증

@@ -4,7 +4,6 @@ import com.team404.synco.chat.dto.*;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +13,6 @@ import java.nio.file.AccessDeniedException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat")
-@Slf4j
 public class ChatController {
     private final ChatService chatService;
 
@@ -76,9 +74,7 @@ public class ChatController {
     // 전체 채널 삭제(워크스페이스 삭제시)
     @DeleteMapping("/{workSpaceSeq}")
     public ResponseEntity<ResponseDto<?>> deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq) {
-        log.info("feign 호출");
         chatService.deleteAllChannel(workSpaceSeq);
-        log.info("feign 종료");
         return ResponseEntity.ok(ResponseDto.ok("삭제 완료", HttpStatus.OK));
     }
 }
