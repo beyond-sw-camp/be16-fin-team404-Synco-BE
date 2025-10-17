@@ -22,9 +22,7 @@ public class JwtAuthFilter implements GlobalFilter {
     private static final List<String> ALLOWED_PATHS = List.of(
             "/member/create",
             "/member/doLogin",
-            "/member/refreshAt",
-            "/member/findId",
-            "/member/findPassword"
+            "/member/refreshAt"
     );
 
     @Override

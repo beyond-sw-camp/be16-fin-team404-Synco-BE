@@ -20,7 +20,7 @@ public class ChatMessage extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String chatMessageFileUrls;
 
-    private long chatMessageParentSeq;
+    private Long chatMessageParentSeq; // 답장아닌일반메시지=null 처리를 위한 nullable
 
     @Column(nullable = false)
     @Builder.Default
