@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DriveChannelRepository extends JpaRepository<DriveChannel, Long> {
+    void deleteByWorkspaceSeq(Long workSpaceSeq);
 }
