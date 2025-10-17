@@ -4,7 +4,6 @@ import com.team404.synco.common.dto.ResponseDto;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -50,14 +49,5 @@ public class CommonExceptionHandler {
         e.printStackTrace(); // 디버깅 시 스택 확인용 (운영에서는 log.error로 교체)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다."));
-    }
-
-    /**
-     * ✅ 5. 인증 실패 (예: 토큰 누락, 권한 없음 등)
-     */
-    @ExceptionHandler(AuthenticationServiceException.class)
-    public ResponseEntity<ResponseDto<?>> handleAuthentication(AuthenticationServiceException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ResponseDto.fail(HttpStatus.UNAUTHORIZED, e.getMessage()));
     }
 }

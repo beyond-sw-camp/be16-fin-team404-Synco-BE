@@ -19,7 +19,8 @@ public class StompWebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/connect")    //클라이언트는 이 URL로 WebSocket 핸드셰이크(최초 연결 요청)를 보냄
-                .setAllowedOrigins("*") //Gateway나 FE 주소 허용
+                .setAllowedOriginPatterns("*")
+//                .setAllowedOrigins("http://localhost:3000")
                 .withSockJS(); //SockJS라이브러리(ws://가 아닌 http:// 엔드포인트를 사용할 수 있게 해줌)를 통한 요청을 허용하는 설정.
     }
 

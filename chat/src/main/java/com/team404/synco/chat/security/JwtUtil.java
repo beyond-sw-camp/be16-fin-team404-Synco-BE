@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Base64;
+
 @Slf4j
 @Component
 public class JwtUtil {
@@ -19,15 +21,15 @@ public class JwtUtil {
             if (token.startsWith("Bearer ")) {
                 token = token.substring(7);
             }
-
-            Claims claims = Jwts
-                    .parserBuilder()
-                    .setSigningKey(secretKey.getBytes()) // ✅ String → byte[]
-                    .build()                             // ✅ build() 필수
+            System.out.println("token : " + token);
+            System.out.println("secretkey : " + secretKey);
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(Base64.getDecoder().decode(secretKey)) // 변경!
+                    .build()
                     .parseClaimsJws(token)
                     .getBody();
 
-            return Long.parseLong(claims.get("memberSeq").toString());
+            return Long.parseLong(claims.getSubject().toString());
 
         } catch (SignatureException e) {
             log.error("JWT 서명 검증 실패");

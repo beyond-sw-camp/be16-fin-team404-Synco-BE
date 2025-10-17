@@ -28,7 +28,9 @@ public class RedisPubSubService implements MessageListener {
     @Override
 //    pattern에는 topic의 이름의 패턴이 담겨있고, 이 패턴을 기반으로 다이나믹한 코딩
     public void onMessage(Message message, byte[] pattern) {
+        System.out.println("meessage : " + message);
         String payload = new String(message.getBody()); // byte[] -> String으로 변환
+        System.out.println("payload : " + payload);
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             ChatMessageResDto chatMessageResDto = objectMapper.readValue(payload, ChatMessageResDto.class);  // String -> dto 역직렬화

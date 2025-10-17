@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 public class ChatMessageReqDto {
     private Long channelSeq;
-    private Long senderSeq;          // ✅ Redis key로 조회용
+    private Long senderSeq;               // ✅ Redis key로 조회용
     private MessageType messageType;      // TEXT, FILE, REPLY 등
     private String chatMessageText;       // 메시지 내용
     private Long replyToSeq;              // 답장 대상 메시지 ID (nullable)

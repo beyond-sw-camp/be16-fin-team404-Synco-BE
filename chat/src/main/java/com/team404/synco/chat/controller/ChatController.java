@@ -17,6 +17,13 @@ import java.util.List;
 public class ChatController {
     private final ChatService chatService;
 
+
+    // 채팅서버 테스트
+    @GetMapping("/test")
+    public String test() {
+        return "OK";
+    }
+
     // 채널 생성
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto) {
