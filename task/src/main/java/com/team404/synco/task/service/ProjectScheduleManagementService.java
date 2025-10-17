@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,7 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class TeamScheduleManagementService {
+public class ProjectScheduleManagementService {
     private final BoardRepository boardRepository;
     private final TaskRepository taskRepository;
     private final MemberRedisComponent memberRedisComponent;
@@ -56,7 +55,7 @@ public class TeamScheduleManagementService {
     }
 
     @Transactional
-    public long createTeamTask(final long memberSeq, final TaskCreateRequestDto taskCreateRequestDto) {
+    public long createProjectTaskAfterAuthorityCheck(final long memberSeq, final TaskCreateRequestDto taskCreateRequestDto) {
         final ScheduleManagementChannelMember picMember = scheduleManagementChannelMemberRepository
                 .findById(taskCreateRequestDto.getPicMemberSeq()).orElseThrow(() -> new EntityNotFoundException("일정관리 채널 업무 담당자 회원을 찾을 수 없습니다."));
         final ScheduleManagementChannelMember createMember = scheduleManagementChannelMemberRepository.findByMemberSeqAndWorkSpaceSeq(memberSeq, picMember.getWorkSpaceSeq())
@@ -71,7 +70,7 @@ public class TeamScheduleManagementService {
                 throw new EntityNotFoundException("일정관리 채널 보드를 찾을 수 없습니다.");
             }
         }
-        return taskCreateRequestDto.toEntity(picMember, board).getTaskSeq();
+        return taskRepository.save(taskCreateRequestDto.toEntity(picMember, board)).getTaskSeq();
     }
 
     @Transactional(readOnly = true)
@@ -86,7 +85,7 @@ public class TeamScheduleManagementService {
     }
 
     @Transactional
-    public long createBoard(final BoardCreateRequestDto boardCreateRequestDto) {
+    public long createProjectBoard(final BoardCreateRequestDto boardCreateRequestDto) {
         final ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository
                 .findById(boardCreateRequestDto.getScheduleManagementChannelMemberSeq())
                 .orElseThrow(() -> new EntityNotFoundException("일정관리 채널 회원을 찾을수 없습니다."));

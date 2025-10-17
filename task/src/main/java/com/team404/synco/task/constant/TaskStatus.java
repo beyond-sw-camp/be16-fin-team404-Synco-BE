@@ -1,4 +1,4 @@
-package com.team404.synco.common.constant;
+package com.team404.synco.task.constant;
 
 import lombok.Getter;
 
