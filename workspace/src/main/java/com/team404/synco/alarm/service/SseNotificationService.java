@@ -26,6 +26,7 @@ public class SseNotificationService {
     // ActiveStatus 변경 알림을 친구들에게 발송
     public void notifyStatusChangeToFriends(Member member, ActiveStatus previousStatus, ActiveStatus newStatus, List<Member> friendList) {
         ActiveStatusNotificationDto message = ActiveStatusNotificationDto.create(
+                member.getMemberSeq(),
                 member.getName(),
                 previousStatus.toString(),
                 newStatus.toString()

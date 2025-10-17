@@ -14,13 +14,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ActiveStatusNotificationDto {
     
-    private String memberName;
+    private Long memberSeq;        // 사용자 고유 식별자 (동명이인 구분용)
+    private String memberName;     // 사용자 이름 (표시용)
     private String previousStatus;
     private String currentStatus;
     private LocalDateTime timestamp;
     
-    public static ActiveStatusNotificationDto create(String memberName, String previousStatus, String currentStatus) {
+    public static ActiveStatusNotificationDto create(Long memberSeq, String memberName, String previousStatus, String currentStatus) {
         return ActiveStatusNotificationDto.builder()
+                .memberSeq(memberSeq)
                 .memberName(memberName)
                 .previousStatus(previousStatus)
                 .currentStatus(currentStatus)

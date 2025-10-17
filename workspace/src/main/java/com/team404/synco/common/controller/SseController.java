@@ -44,13 +44,4 @@ public class SseController {
         return ResponseEntity.ok("SSE 연결이 해제되었습니다.");
     }
     
-    // 현재 연결 상태 확인 (개발/디버깅용)
-    @GetMapping("/status")
-    public ResponseEntity<Object> getConnectionStatus() {
-        return ResponseEntity.ok()
-                .body(java.util.Map.of(
-                        "connectedUsers", sseEmitterRegistry.getConnectedUserCount(),
-                        "connectedMembers", sseEmitterRegistry.getConnectedMembers()
-                ));
-    }
 }

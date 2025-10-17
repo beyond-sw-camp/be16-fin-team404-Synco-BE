@@ -280,6 +280,28 @@ public class MemberService {
         member.saveLastActiveStatus();
         member.updateActiveStatus(ActiveStatus.OFFLINE);
 
+        // 저장된 이전 상태와 OFFLINE 상태를 비교하여 알림 발송
+        ActiveStatus lastActiveStatus = member.getLastActiveStatus();
+        if (!lastActiveStatus.equals(ActiveStatus.OFFLINE)) {
+            // 승인된 친구 목록 조회 (Pageable.unpaged()로 전체 조회)
+            Page<Friend> friendPage = friendRepository.findAllByMemberAndFriendStatus(
+                member, 
+                FriendStatus.APPROVE, 
+                Pageable.unpaged()
+            );
+            
+            List<Member> friendList = friendPage.getContent().stream()
+                    .map(Friend::getFriendMember)
+                    .collect(Collectors.toList());
+            
+            // 친구들에게 실시간 알림 발송
+            if (!friendList.isEmpty()) {
+                sseNotificationService.notifyStatusChangeToFriends(member, lastActiveStatus, ActiveStatus.OFFLINE, friendList);
+                log.info("로그아웃 상태 변경 알림 발송: memberSeq={}, {} → OFFLINE, 친구 수={}", 
+                        memberSeq, lastActiveStatus, friendList.size());
+            }
+        }
+
         jwtTokenProvider.deleteRt(memberSeq);
     }
 
