@@ -1,8 +1,8 @@
 package com.team404.synco.chat.config;
 
+import com.team404.synco.chat.security.JwtUtil;
 import com.team404.synco.chat.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -16,49 +16,55 @@ import org.springframework.stereotype.Component;
 public class StompHandler implements ChannelInterceptor {
 
     private final ChatService chatService;
+    private final JwtUtil jwtUtil;
 
-    public StompHandler(ChatService chatService) {
+    public StompHandler(ChatService chatService, JwtUtil jwtUtil) {
         this.chatService = chatService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        final StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message); // STOMP 메시지 헤더 추출
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
-        if (StompCommand.CONNECT == accessor.getCommand()) {
-            log.info("CONNECT 요청 수신 - Gateway 인증 헤더 확인");
-
-            String memberSeqHeader = accessor.getFirstNativeHeader("X-Member-Seq");
-            if (memberSeqHeader == null) {
-                throw new AuthenticationServiceException("인증 정보(X-Member-Seq)가 없습니다.");
+        // ✅ CONNECT 시 토큰 검증 (Gateway 안 탐)
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String token = accessor.getFirstNativeHeader("Authorization");
+            if (token == null) {
+                throw new AuthenticationServiceException("토큰이 없습니다.");
             }
 
-            log.info("인증 완료 - memberSeq: {}", memberSeqHeader);
+            Long memberSeq = jwtUtil.extractMemberSeq(token);
+            if (memberSeq == null) {
+                throw new AuthenticationServiceException("JWT 토큰이 유효하지 않습니다.");
+            }
+
+            // 세션에 memberSeq 저장
+            accessor.getSessionAttributes().put("memberSeq", memberSeq);
+            log.info("STOMP CONNECT 성공 - memberSeq={}", memberSeq);
         }
 
-        if (StompCommand.SUBSCRIBE == accessor.getCommand()) {
-            String memberSeqHeader = accessor.getFirstNativeHeader("X-Member-Seq");
-            if (memberSeqHeader == null) {
-                throw new AuthenticationServiceException("인증 정보(X-Member-Seq)가 없습니다.");
+        // ✅ SUBSCRIBE 시 채널 접근 권한 검증
+        if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            Long memberSeq = (Long) accessor.getSessionAttributes().get("memberSeq");
+            if (memberSeq == null) {
+                throw new AuthenticationServiceException("세션에 사용자 정보가 없습니다.");
             }
 
-            Long memberSeq = Long.parseLong(memberSeqHeader);
-
-            // "/sub/channel/{channelId}" 형태라고 가정
             String destination = accessor.getDestination();
-            if (destination == null || !destination.contains("/channel/")) {
-                throw new AuthenticationServiceException("잘못된 채널 구독 요청입니다. destination=" + destination);
+            if (destination == null || !destination.contains("/topic/")) {
+                throw new AuthenticationServiceException("잘못된 구독 요청입니다. destination=" + destination);
             }
 
-            String channelId = destination.split("/channel/")[1];
+            String channelId = destination.substring(destination.lastIndexOf("/") + 1);
             log.info("SUBSCRIBE 요청 - memberSeq={}, channelId={}", memberSeq, channelId);
 
-            // ✅채널 참여 여부 검증
-            if (!chatService.isChannelParticipant(memberSeq, Long.parseLong(channelId))) {  //채널 참여여부 확인
+            if (!chatService.isChannelParticipant(memberSeq, Long.parseLong(channelId))) {
                 log.error("채널 접근 권한 없음 - memberSeq={}, channelId={}", memberSeq, channelId);
                 throw new AuthenticationServiceException("해당 채널에 접근 권한이 없습니다.");
             }
         }
+
         return message;
     }
 }
