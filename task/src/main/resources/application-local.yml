@@ -9,6 +9,9 @@ eureka:
 spring:
   application:
     name: task-service
+  redis:
+    host: localhost
+    port: 6379
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
     url: jdbc:mariadb://localhost:3308/synco
@@ -19,5 +22,5 @@ spring:
     database-platform: org.hibernate.dialect.MariaDBDialect
     generate-ddl: true
     hibernate:
-      ddl-auto: create
-    show__sql: true
+      ddl-auto: update
+    show-sql: true
