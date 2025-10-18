@@ -51,9 +51,9 @@ public class VirtualMeetingService {
                         .virtualMeetingChannel(virtualMeetingChannel)
                         .build())
                 .forEach(virtualMeetingChannelMemberRepository::save);
-
         return virtualMeetingChannel.getVirtualMeetingChannelSeq();
     }
+
 
     // 채널 생성
     public ChannelCreateResDto createChannel(ChannelCreateReqDto channelCreateReqDto, Long memberSeq) throws AccessDeniedException {
@@ -63,15 +63,26 @@ public class VirtualMeetingService {
         checkChannelAuthority(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
         // 새 채널 생성
         VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.save(channelCreateReqDto.toEntity());
-        // 기존 채널 멤버를 새 채널에 추가
-        virtualMeetingChannelMemberRepository.saveAll(
-                basicChannel.getVirtualMeetingChannelfriendList().stream()
-                        .map(member -> VirtualMeetingChannelMember.builder()
-                                .memberSeq(member.getMemberSeq())
-                                .authority(member.getMemberSeq() == memberSeq ? Authority.MANAGER : Authority.PARTICIPANT)
-                                .virtualMeetingChannel(virtualMeetingChannel)
-                                .build())
-                        .toList());
+        // 초대된 멤버 추가
+        List<VirtualMeetingChannelMember> newMembers = basicChannel.getVirtualMeetingChannelfriendList().stream()
+                .map(member -> {
+                    Authority authority;
+                    if (member.getAuthority() == Authority.SUPER) {
+                        authority = Authority.SUPER;
+                    } else if (member.getMemberSeq() == memberSeq) {
+                        authority = Authority.MANAGER;
+                    } else {
+                        authority = Authority.PARTICIPANT;
+                    }
+
+                    return VirtualMeetingChannelMember.builder()
+                            .memberSeq(member.getMemberSeq())
+                            .authority(authority)
+                            .virtualMeetingChannel(virtualMeetingChannel)
+                            .build();
+                })
+                .toList();
+        virtualMeetingChannelMemberRepository.saveAll(newMembers);
         return ChannelCreateResDto.fromEntity(virtualMeetingChannel);
     }
 
@@ -180,9 +191,7 @@ public class VirtualMeetingService {
 
     // 채널 전체 삭제(WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
-        log.info("virtualMeetFeign 호출");
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
-        log.info("virtualMeetFeign 종료");
     }
 
 
