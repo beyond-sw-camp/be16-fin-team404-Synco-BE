@@ -41,11 +41,18 @@ public class WorkSpaceController {
         return ResponseEntity.ok(ResponseDto.ok(workSpaceMemberListResDto, HttpStatus.OK));
     }
 
-    // 워크스페이스 대시보드
-    @GetMapping("/{workSpaceSeq}")
-    public ResponseEntity<ResponseDto<?>> dashBoard(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
+    // 내 워크스페이스 대시보드
+    @GetMapping("/personal/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> personalDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
         List<WorkSpaceInfoResDto> myWorkSpaceListResDto = workSpaceService.findMyWorkSpaceList(workSpaceSeq);
         return ResponseEntity.ok(ResponseDto.ok(myWorkSpaceListResDto, HttpStatus.OK));
+    }
+
+    // 팀 워크스페이스 대시보드
+    @GetMapping("/teams/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> teamDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
+        TeamDashBoardResDto teamDashBoardResDto = workSpaceService.findTeamDashBoard(workSpaceSeq);
+        return ResponseEntity.ok(ResponseDto.ok(teamDashBoardResDto, HttpStatus.OK));
     }
 
     // 프로젝트 워크스페이스 수정
