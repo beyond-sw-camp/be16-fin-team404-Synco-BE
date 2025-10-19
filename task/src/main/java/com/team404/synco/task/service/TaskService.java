@@ -38,7 +38,7 @@ public class TaskService {
                 .build();
         scheduleManagementChannelMemberRepository.save(creator);
 
-        Optional.ofNullable(taskChannelMemberCreateReqDto.getFriendList())
+        Optional.ofNullable(taskChannelMemberCreateReqDto.getMemberList())
                 .orElse(Collections.emptyList()) // null이면 빈 리스트로 대체
                 .stream()
                 .filter(Objects::nonNull)
@@ -99,7 +99,7 @@ public class TaskService {
 
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto) {
-        List<Long> friendList = Optional.ofNullable(channelInviteReqDto.getFriendList())
+        List<Long> friendList = Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
         return friendList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
@@ -109,6 +109,18 @@ public class TaskService {
                         .build())
                 .map(scheduleManagementChannelMemberRepository::save) // save된 객체 반환
                 .count();
+    }
+
+    // 내 워크스페이스 목록
+    public List<Long> myWorkSpaceList(Long memberSeq) {
+        List<ScheduleManagementChannelMember> myWorkSpaceList =
+                scheduleManagementChannelMemberRepository.findAllByMemberSeq(memberSeq)
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+
+        return myWorkSpaceList.stream()
+                .map(ScheduleManagementChannelMember::getWorkSpaceSeq)
+                .distinct() // 중복 제거를 원할 경우
+                .toList();
     }
 
     // 팀 Task 전체 삭제(WorkSpace 삭제시)

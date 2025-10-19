@@ -1,11 +1,10 @@
 package com.team404.synco.workspace.service;
 
-import com.team404.synco.workspace.dto.ChannelCreateReqDto;
-import com.team404.synco.workspace.dto.ChannelInviteReqDto;
-import com.team404.synco.workspace.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.workspace.dto.TaskChannelMemberCreateReqDto;
+import com.team404.synco.workspace.dto.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @FeignClient(name = "task-service")
 public interface TaskFeign {
@@ -21,6 +20,9 @@ public interface TaskFeign {
 
     @PostMapping("/task/addMember")
     void addMemberToTaskChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
+
+    @GetMapping("/task/memberList")
+    List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq);
 
     @PostMapping("/virtual-meeting/createBasicChannel")
     void createVirtualMeetBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,6 +48,12 @@ public class TaskController {
     {
         taskService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
+    }
+
+    // 내 워크스페이스 목록
+    @GetMapping("/memberList")
+    List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){
+        return taskService.myWorkSpaceList(memberSeq);
     }
 
     // 팀 테스크 전체 삭제

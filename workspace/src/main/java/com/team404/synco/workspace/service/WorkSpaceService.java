@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -85,7 +86,7 @@ public class WorkSpaceService {
 
         // 기본 채팅 채널 생성
         chatFeign.createChatBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(workSpace.getWorkSpaceSeq())
-                .memberSeq(workSpace.getMember().getMemberSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                .memberSeq(workSpace.getMember().getMemberSeq()).memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 기본 드라이브 생성
         driveFeign.createTeamDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.PROJECT).workSpaceName(
@@ -94,11 +95,11 @@ public class WorkSpaceService {
         // 기본 화상회의 채널 생성
         taskFeign.createVirtualMeetBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(
                         workSpace.getWorkSpaceSeq()).memberSeq(workSpace.getMember().getMemberSeq()).
-                friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 기본 task 생성
         taskFeign.createTask(TaskChannelMemberCreateReqDto.builder().memberSeq(memberSeq).
-                workSpaceReq(workSpace.getWorkSpaceSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                workSpaceReq(workSpace.getWorkSpaceSeq()).memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 워크스페이스 생성한 member정보 redis에 저장
         workSpaceRedisService.addMemberInfo(member);
@@ -106,7 +107,7 @@ public class WorkSpaceService {
         workSpaceRedisService.addMemberToWorkSpace(workSpace, member.getMemberSeq());
 
         // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = Optional.ofNullable(teamWorkSpaceCreateReqDto.getFriendList())
+        List<Long> invitefriendList = Optional.ofNullable(teamWorkSpaceCreateReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
         invitefriendList.stream()
@@ -120,6 +121,50 @@ public class WorkSpaceService {
 
 
         return WorkSpaceResDto.fromEntity(workSpace);
+    }
+
+    // 내 워크스페이스 목록 조회
+    public List<WorkSpaceInfoDto> findMyWorkSpaceList(Long memberSeq) {
+        List<?> redisResult = workSpaceRedisService.findMyWorkSpaceList(memberSeq);
+
+        // Redis 성공 케이스 (정상 DTO 조회)
+        if (!redisResult.isEmpty() && redisResult.get(0) instanceof WorkSpaceInfoDto) {
+            log.info("Redis 정상 조회 성공 (memberSeq={})", memberSeq);
+            return (List<WorkSpaceInfoDto>) redisResult;
+        }
+
+        // Redis 실패 케이스 (Fallback → Long 리스트)
+        log.info("Redis 실패, Fallback 진입 (memberSeq={})", memberSeq);
+
+        List<Long> seqList = redisResult.stream()
+                .filter(Objects::nonNull)
+                .map(obj -> {
+                    if (obj instanceof Long l) return l;
+                    else if (obj instanceof Integer i) return i.longValue();
+                    else return Long.parseLong(obj.toString());
+                })
+                .toList();
+
+        // DB에서 개별 조회하여 DTO로 변환
+        List<WorkSpaceInfoDto> result = seqList.stream()
+                .map(workSpaceRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(ws -> ws.getWorkSpaceType() != WorkSpaceType.INDIVIDUAL)
+                .map(WorkSpaceInfoDto::fromEntity)
+                .toList();
+
+        if (result.isEmpty()) {
+            log.info("Fallback 결과: DB에서 조회된 워크스페이스가 없습니다. (memberSeq={})", memberSeq);
+        } else {
+            log.info("Fallback 결과 (memberSeq={}): {}", memberSeq,
+                    result.stream()
+                            .map(dto -> String.format("{seq=%d, name=%s, thumb=%s}",
+                                    dto.getWorkSpaceSeq(), dto.getWorkSpaceName(), dto.getThumbnailImageUrl()))
+                            .toList());
+        }
+
+        return result;
     }
 
     // 프로젝트 워크스페이스 수정
@@ -177,7 +222,7 @@ public class WorkSpaceService {
         checkAuthority(workSpace, memberSeq);
 
         // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = channelInviteReqDto.getFriendList();
+        List<Long> invitefriendList = channelInviteReqDto.getMemberList();
         invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
             workSpaceRedisService.addMemberInfo(inviteMember);
@@ -209,11 +254,6 @@ public class WorkSpaceService {
             throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
         }
     }
-
-//    // 내 워크스페이스 목록 조회
-//    public Page<WorkSpaceListResDto> myWorkSpaceList(){
-//        return null;
-//    }
 
 //    // 워크스페이스 상세 조회(대시보드)
 //    public WorkSpaceDetailResDto workSpaceDetail(){

@@ -14,5 +14,5 @@ public class TaskChannelMemberCreateReqDto {
     private Long memberSeq;
     private Authority authority;
     private Long workSpaceReq;
-    private List<Long> friendList;
+    private List<Long> memberList;
 }

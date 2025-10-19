@@ -16,7 +16,7 @@ public class ChannelCreateReqDto {
     private String channelName;
     private Long workSpaceSeq;
     private Long memberSeq;
-    private List<Long> friendList;
+    private List<Long> memberList;
 
     public VirtualMeetingChannel toEntity(){
         return VirtualMeetingChannel.builder()

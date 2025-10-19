@@ -40,7 +40,7 @@ public class ChatService {
                 .chatChannel(chatChannel)
                 .build();
         chatChannelMemberRepository.save(creator);
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -56,7 +56,7 @@ public class ChatService {
         ChatChannel chatChannel = chatChannelRepository.save(channelCreateReqDto.toEntity());
 
         // 채팅 대상 list에 추가
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)
                 .map(friendSeq -> ChatChannelMember.builder()
@@ -172,7 +172,7 @@ public class ChatService {
         List<ChatChannel> allChannels = chatChannelRepository
                 .findByWorkSpaceSeqOrderByChatChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
-        return Optional.ofNullable(channelInviteReqDto.getFriendList())
+        return Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)

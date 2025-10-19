@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -58,6 +59,11 @@ public class WorkSpaceController {
     }
 
     // 내 워크스페이스 목록 조회
+    @GetMapping("/me")
+    public ResponseEntity<ResponseDto<?>> myWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        List<WorkSpaceInfoDto> myWorkSpaceListResDto = workSpaceService.findMyWorkSpaceList(memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(myWorkSpaceListResDto, HttpStatus.OK));
+    }
 
     // 채널 삭제
 }

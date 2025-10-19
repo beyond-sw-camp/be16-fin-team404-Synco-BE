@@ -44,7 +44,7 @@ public class VirtualMeetingService {
         virtualMeetingChannelMemberRepository.save(creator);
 
         // 멤버 채널에 추가
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream().filter(Objects::nonNull).map(memberSeq -> VirtualMeetingChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -97,7 +97,7 @@ public class VirtualMeetingService {
         VirtualMeetingChannel basicChannel = checkBasicChannel(deleteChannel.getWorkSpaceSeq());
 
         // 삭제하려는 채널이 기본 채널인지 확인
-        if (!deleteChannel.equals(basicChannel)) {
+        if (deleteChannel.equals(basicChannel)) {
             throw new IllegalStateException("기본 채널은 삭제할 수 없습니다.");
         }
         // 권한 검증
@@ -159,7 +159,7 @@ public class VirtualMeetingService {
         List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
                 .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
-        return Optional.ofNullable(channelInviteReqDto.getFriendList())
+        return Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)
