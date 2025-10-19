@@ -20,6 +20,7 @@ public class ChatChannelMember extends BaseEntity {
     @Column(nullable = false)
     private long memberSeq;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private Authority authority = Authority.SUPER;

@@ -27,7 +27,7 @@ public class StompController {
     public void sendMessage(@DestinationVariable Long channelReq, ChatMessageReqDto chatMessageReqDto) throws JsonProcessingException {
         log.info("메시지 본문 : {}", chatMessageReqDto.getChatMessageText());
 
-//        chatService.saveMessage(channelReq, chatMessageReqDto); //메시지 저장
+        chatService.saveMessage(channelReq, chatMessageReqDto); //메시지 저장
 
         chatMessageReqDto.setChannelSeq(channelReq);
         System.out.println("chatMessageReqDto : " + chatMessageReqDto);

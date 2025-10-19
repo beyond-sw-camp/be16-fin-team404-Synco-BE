@@ -24,7 +24,7 @@ public class JwtUtil {
             System.out.println("token : " + token);
             System.out.println("secretkey : " + secretKey);
             Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(Base64.getDecoder().decode(secretKey)) // 변경!
+                    .setSigningKey(Base64.getDecoder().decode(secretKey))
                     .build()
                     .parseClaimsJws(token)
                     .getBody();

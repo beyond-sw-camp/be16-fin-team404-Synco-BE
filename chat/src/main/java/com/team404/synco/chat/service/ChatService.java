@@ -13,6 +13,7 @@ import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.chat.repository.ChatMessageRepository;
 import com.team404.synco.common.constant.Authority;
+import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,13 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Transactional
@@ -42,6 +41,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final S3Uploader s3Uploader;
     private final ChatRedisService chatRedisService;
+    private final String folderNamePrefix = "chat/";
 
     public ChatService(RedisTemplate<String, Object> memberRedisTemplate, ChatChannelRepository chatChannelRepository, ChatChannelMemberRepository chatChannelMemberRepository, ChatMessageRepository chatMessageRepository, S3Uploader s3Uploader, ChatRedisService chatRedisService) {
         this.memberRedisTemplate = memberRedisTemplate;
@@ -215,7 +215,7 @@ public class ChatService {
         return chatChannelMember;
     }
 
-
+    ///////////////////////////////////////////채팅기능////////////////////////////////////////////////
     // 채팅참여자여부 확인 - stomphandler
     @Transactional(readOnly = true)
     public boolean isChannelParticipant(Long memberSeq, Long channelSeq) {
@@ -225,53 +225,84 @@ public class ChatService {
         return chatChannelMemberRepository.existsByChatChannelAndMemberSeq(channel, memberSeq);
     }
 
-//    // 메시지 저장 - stompcontroller
-//    public void saveMessage(Long channelSeq, ChatMessageReqDto dto) {
-//        // 1️⃣ 채널 존재 여부 검증
-//        ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
-//                .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
-//
-//        // 2️⃣ 발신자 존재 여부 검증 (Redis에서 조회)
-//        String memberKey = "memberSeq:" + dto.getSenderSeq();
-//        String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
-//        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
-//
-//        if (memberName == null) {
-//            throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
-//        }
-//
-//        // 3️⃣ 해당 채팅 채널의 참여자 여부 검증
-//        ChatChannelMember sender = chatChannelMemberRepository
-//                .findByChatChannelAndMemberSeq(chatChannel, dto.getSenderSeq())
-//                .orElseThrow(() -> new EntityNotFoundException("해당 채널에 참여하지 않은 사용자입니다. memberSeq=" + dto.getSenderSeq()));
-//
-//        // 4️⃣ 파일 업로드 처리 (optional)
-//        String fileUrls = null;
-//        if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
-//            if (dto.getFiles().size() > 20) {
-//                throw new IllegalArgumentException("최대 20개의 파일만 전송할 수 있습니다.");
-//            }
-//
+    // 메시지 저장 - stompcontroller
+    public void saveMessage(Long channelSeq, ChatMessageReqDto dto) {
+        // 1️⃣ 채널 존재 여부 검증
+        log.info("===========채널존재여부검증===========");
+        ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 2️⃣ 발신자 존재 여부 검증 (Redis에서 조회)
+        log.info("===========발신자존재여부검증===========");
+        String memberKey = "memberSeq:" + dto.getSenderSeq();
+        String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
+
+        if (memberName == null) {
+            throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
+        }
+
+        // 3️⃣ 해당 채팅 채널의 참여자 여부 검증
+        log.info("===========채팅채널의참여자여부검증===========");
+        ChatChannelMember sender = chatChannelMemberRepository
+                .findByChatChannelAndMemberSeq(chatChannel, dto.getSenderSeq())
+                .orElseThrow(() -> new EntityNotFoundException("해당 채널에 참여하지 않은 사용자입니다. memberSeq=" + dto.getSenderSeq()));
+
+        // 4️⃣ 파일 업로드 처리 (optional)
+        // TODO: s3업로드는 api로 하고 이거는 db에 url 저장하는 로직으로 바꿔야함
+        log.info("===========파일업로드처리===========");
+        String fileUrls = null;
+        if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
+            if (dto.getFiles().size() > 20) {
+                throw new IllegalArgumentException("최대 20개의 파일만 전송할 수 있습니다.");
+            }
+
 //            List<String> uploadedUrls = s3Uploader.upload(dto.getFiles(), "chat");
 //            fileUrls = String.join(",", uploadedUrls);
-//        }
-//
-//        // 5️⃣ 메시지 엔티티 생성
-//        ChatMessage chatMessage = ChatMessage.builder()
-//                .chatChannelMember(sender)
-//                .chatMessageText(dto.getChatMessageText())
-//                .chatMessageFileUrls(fileUrls)
-//                .chatMessageParentSeq(dto.getReplyToSeq() != null ? dto.getReplyToSeq() : 0L)
-//                .build();
-//
-//        chatMessageRepository.save(chatMessage);
-//
-//        // 6️⃣ 로그
-////        log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={})",
-////                channelSeq, dto.getSenderSeq(), memberName);
-//        log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={})",
-//                channelSeq, dto.getSenderSeq());
-//    }
+        }
+
+        // 5️⃣ 메시지 엔티티 생성
+        log.info("===========메시지 엔티티 생성===========");
+        ChatMessage chatMessage = ChatMessage.builder()
+                .chatChannelMember(sender)
+                .chatMessageText(dto.getChatMessageText())
+                .chatMessageFileUrls(fileUrls)
+                .chatMessageParentSeq(dto.getReplyToSeq() != null ? dto.getReplyToSeq() : 0L)
+                .build();
+
+        chatMessageRepository.save(chatMessage);
+
+        // 6️⃣ 로그
+        log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={})",
+                channelSeq, dto.getSenderSeq(), memberName);
+    }
+
+    // 채팅 파일 업로드 (폴더 자동 생성 + 중복 검증)
+    public List<String> uploadFiles(List<MultipartFile> files, Long chatChannelSeq) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
+
+        List<String> uploadedUrls = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                // 예: chat/15
+                String uploadPath = folderNamePrefix + chatChannelSeq;
+                String fileUrl = s3Uploader.upload(file, uploadPath);
+                uploadedUrls.add(fileUrl);
+            } catch (Exception e) {
+                log.error("❌ 채팅 파일 업로드 실패: {}", file.getOriginalFilename(), e);
+            }
+        }
+
+        log.info("💬 ChatService - 업로드 완료 (channelSeq={}): {}", chatChannelSeq, uploadedUrls);
+        return uploadedUrls;
+    }
+
+    // Presigned URL 생성 (다운로드용)
+    public String generateDownloadUrl(String key) {
+        return s3Uploader.createPresignedUrl(key);
+    }
 
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)
@@ -284,12 +315,12 @@ public class ChatService {
     // 채팅목록 조회 (프로젝트워크스페이스)
     @Transactional(readOnly = true)
     public List<MyChatListResDto> getMyChatChannelsByProjectWorkspace(Long memberSeq, Long workspaceSeq) {
-        List<ChatChannelMember> memberships =
+        List<ChatChannelMember> chatChannelMembers =
                 chatChannelMemberRepository.findByMemberSeqAndChatChannel_WorkSpaceSeq(memberSeq, workspaceSeq);
-        return mapToDtoList(memberships);
+        return mapToDtoList(chatChannelMembers);
     }
 
-    // 공통 DTO 매핑
+    // 채널목록 조회용 공통 DTO 매핑
     private List<MyChatListResDto> mapToDtoList(List<ChatChannelMember> chatChannelMembers) {
         List<MyChatListResDto> dtos = new ArrayList<>();
 
@@ -315,7 +346,6 @@ public class ChatService {
     }
 }
 
-    // 내 채팅목록 조회
     // 이전 메시지 조회
     // 채팅메시지 읽음처리
     // 채널 나가기

@@ -25,7 +25,6 @@ public class StompHandler implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-        System.out.println("heeer");
         // ✅ CONNECT 시 토큰 검증 (Gateway 안 탐)
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = accessor.getFirstNativeHeader("Authorization");
@@ -59,10 +58,10 @@ public class StompHandler implements ChannelInterceptor {
             String channelSeq = destination.substring(destination.lastIndexOf("/") + 1);
             log.info("SUBSCRIBE 요청 - memberSeq={}, channelSeq={}", memberSeq, channelSeq);
 
-//            if (!chatService.isChannelParticipant(memberSeq, Long.parseLong(channelSeq))) {
-//                log.error("채널 접근 권한 없음 - memberSeq={}, channelSeq={}", memberSeq, channelSeq);
-//                throw new IllegalArgumentException("해당 채널에 접근 권한이 없습니다.");
-//            }
+            if (!chatService.isChannelParticipant(memberSeq, Long.parseLong(channelSeq))) {
+                log.error("채널 접근 권한 없음 - memberSeq={}, channelSeq={}", memberSeq, channelSeq);
+                throw new IllegalArgumentException("해당 채널에 접근 권한이 없습니다.");
+            }
         }
 
         return message;

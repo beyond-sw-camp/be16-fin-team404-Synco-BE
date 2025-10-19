@@ -9,18 +9,23 @@ import com.team404.synco.chat.entity.WorkSpaceType;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat")
+@Slf4j
 public class ChatController {
     private final ChatService chatService;
 
@@ -31,17 +36,10 @@ public class ChatController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
 
-
-    // 채팅서버 테스트
-    @GetMapping("/test")
-    public String test() {
-        return "OK";
-    }
-
     // 채널 생성
     @PostMapping("/createChannel")
     public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto,
-                                                        @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         Long id = chatService.createChannel(channelCreateReqDto, memberSeq);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
@@ -49,7 +47,7 @@ public class ChatController {
     // 채널에 멤버 추가
     @PostMapping("/addMember")
     public ResponseEntity<ResponseDto<?>> addMember(@RequestBody ChannelInviteReqDto channelInviteReqDto,
-                                                    @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                    @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         Long id = chatService.addMemberToChannel(channelInviteReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
     }
@@ -57,7 +55,7 @@ public class ChatController {
     // 채널 권한 설정
     @PostMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
-                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         chatService.grantToMember(grantAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
     }
@@ -65,7 +63,7 @@ public class ChatController {
     // 채널 SUPER 권한 위임
     @PatchMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         chatService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
@@ -74,6 +72,33 @@ public class ChatController {
     @DeleteMapping("/{workSpaceSeq}")
     public void deleteAllChannel(@PathVariable Long workSpaceSeq) {
         chatService.deleteAllChannel(workSpaceSeq);
+    }
+
+    ///////////////////////////////////////////채팅기능////////////////////////////////////////////////
+    /**
+     * ✅ 채팅 파일 업로드 (채널별 업로드)
+     */
+    @PostMapping("/files/upload/{channelSeq}")
+    public Map<String, Object> uploadFiles(@PathVariable Long channelSeq,
+                                           @RequestParam("files") List<MultipartFile> files) {
+        List<String> uploadedUrls = chatService.uploadFiles(files, channelSeq);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("uploadedUrls", uploadedUrls);
+
+        log.info("💾 채팅 파일 업로드 완료 - channelSeq={}, files={}", channelSeq, uploadedUrls);
+        return response;
+    }
+
+    /**
+     * ✅ Presigned URL 방식 파일 다운로드
+     */
+    @GetMapping("/files/download")
+    public Map<String, Object> downloadFile(@RequestParam("key") String key) {
+        String presignedUrl = chatService.generateDownloadUrl(key);
+        Map<String, Object> response = new HashMap<>();
+        response.put("downloadUrl", presignedUrl);
+        return response;
     }
 
     // 채팅목록 조회 (개인워크스페이스)
@@ -90,8 +115,6 @@ public class ChatController {
         List<MyChatListResDto> result = chatService.getMyChatChannelsByProjectWorkspace(memberSeq, workspaceSeq);
         return ResponseEntity.ok(result);
     }
-
-    //
 
     // 채팅 메시지 삭제 (hard-delete)
 
