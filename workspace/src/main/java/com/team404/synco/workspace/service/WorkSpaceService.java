@@ -128,6 +128,7 @@ public class WorkSpaceService {
         // ToDo : 담당 개발자님이 개발(가져온 다음에 PersonalDashBoardResDto에 추가) or 개발되면 제가 API 가져와서 쓰겠습니다.
         // 1. 상단 통계 부분 개발
         // 진행중인 업무
+        // 친구 요청
         // 읽지않은 메시지
         // ToDo : 이 부분은 알람 기능 개발하면서 제가 같이 개발하도록 하겠습니다.
         // 다가오는 일정(개인)
@@ -136,7 +137,7 @@ public class WorkSpaceService {
         // ToDo : 빠른 작업은 이동 또는 기능 호출이므로 프론트에서 모두 처리하겠습니다.
 
         // 3. 최근 활동
-        // ToDo : 이 부분은 알람 기능 개발하면서 제가 같이 개발하도록 하겠습니다.
+        // ToDo : 이 부분은 알람 기능 개발하면서 제가 같이 개발하도록 하겠습니다.dkff
 
         // 4. 내가 참여중인 워크스페이스 목록
         List<WorkSpaceInfoResDto> myWorkSpaceList = findMyWorkSpaceList(memberSeq);
