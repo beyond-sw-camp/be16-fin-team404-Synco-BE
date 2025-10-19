@@ -15,6 +15,7 @@ public class ChannelCreateResDto {
         return ChannelCreateResDto.builder()
                 .channelSeq(chatChannel.getChatChannelSeq())
                 .workSpaceSeq(chatChannel.getWorkSpaceSeq())
+                .channelName(chatChannel.getChatChannelName())
                 .build();
     }
 }

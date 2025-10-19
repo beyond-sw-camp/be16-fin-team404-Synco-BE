@@ -38,7 +38,7 @@ public class TaskService {
                 .build();
         scheduleManagementChannelMemberRepository.save(creator);
 
-        Optional.ofNullable(taskChannelMemberCreateReqDto.getFriendList())
+        Optional.ofNullable(taskChannelMemberCreateReqDto.getMemberList())
                 .orElse(Collections.emptyList()) // null이면 빈 리스트로 대체
                 .stream()
                 .filter(Objects::nonNull)
@@ -99,10 +99,10 @@ public class TaskService {
 
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto) {
-        List<Long> friendList = Optional.ofNullable(channelInviteReqDto.getFriendList())
+        List<Long> memberList = Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
-        return friendList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
+        return memberList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
                         .workSpaceSeq(channelInviteReqDto.getWorkSpaceSeq())

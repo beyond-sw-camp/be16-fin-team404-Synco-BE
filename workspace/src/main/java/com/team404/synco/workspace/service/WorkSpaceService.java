@@ -85,7 +85,7 @@ public class WorkSpaceService {
 
         // 기본 채팅 채널 생성
         chatFeign.createChatBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(workSpace.getWorkSpaceSeq())
-                .memberSeq(workSpace.getMember().getMemberSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                .memberSeq(workSpace.getMember().getMemberSeq()).memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 기본 드라이브 생성
         driveFeign.createTeamDrive(DriveCreateReqDto.builder().workSpaceType(WorkSpaceType.PROJECT).workSpaceName(
@@ -94,11 +94,11 @@ public class WorkSpaceService {
         // 기본 화상회의 채널 생성
         taskFeign.createVirtualMeetBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(
                         workSpace.getWorkSpaceSeq()).memberSeq(workSpace.getMember().getMemberSeq()).
-                friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 기본 task 생성
         taskFeign.createTask(TaskChannelMemberCreateReqDto.builder().memberSeq(memberSeq).
-                workSpaceReq(workSpace.getWorkSpaceSeq()).friendList(teamWorkSpaceCreateReqDto.getFriendList()).build());
+                workSpaceReq(workSpace.getWorkSpaceSeq()).memberList(teamWorkSpaceCreateReqDto.getMemberList()).build());
 
         // 워크스페이스 생성한 member정보 redis에 저장
         workSpaceRedisService.addMemberInfo(member);
@@ -106,10 +106,10 @@ public class WorkSpaceService {
         workSpaceRedisService.addMemberToWorkSpace(workSpace, member.getMemberSeq());
 
         // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = Optional.ofNullable(teamWorkSpaceCreateReqDto.getFriendList())
+        List<Long> invitememberList = Optional.ofNullable(teamWorkSpaceCreateReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
-        invitefriendList.stream()
+        invitememberList.stream()
                 .map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                         .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다.")))
                 .forEach(inviteMember -> {
@@ -158,7 +158,7 @@ public class WorkSpaceService {
         workSpaceRepository.deleteById(workSpaceSeq);
 
         // 워크스페이스 정보 레디스에서 삭제
-        workSpaceRedisService.removeWorkspaceFromMember(memberSeq, workSpaceSeq);
+        workSpaceRedisService.removeWorkspaceFromMember(workSpaceSeq);
         workSpaceRedisService.removeWorkspace(workSpaceSeq);
 
         // 기본 채널 포함 채널 모두 삭제
@@ -177,8 +177,8 @@ public class WorkSpaceService {
         checkAuthority(workSpace, memberSeq);
 
         // 워크스페이스에 초대된 member정보 redis에 저장
-        List<Long> invitefriendList = channelInviteReqDto.getFriendList();
-        invitefriendList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
+        List<Long> invitememberList = channelInviteReqDto.getMemberList();
+        invitememberList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
             workSpaceRedisService.addMemberInfo(inviteMember);
             workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());

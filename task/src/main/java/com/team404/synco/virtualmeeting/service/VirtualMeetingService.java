@@ -44,7 +44,7 @@ public class VirtualMeetingService {
         virtualMeetingChannelMemberRepository.save(creator);
 
         // 멤버 채널에 추가
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream().filter(Objects::nonNull).map(memberSeq -> VirtualMeetingChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -64,7 +64,7 @@ public class VirtualMeetingService {
         // 새 채널 생성
         VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.save(channelCreateReqDto.toEntity());
         // 초대된 멤버 추가
-        List<VirtualMeetingChannelMember> newMembers = basicChannel.getVirtualMeetingChannelfriendList().stream()
+        List<VirtualMeetingChannelMember> newMembers = basicChannel.getVirtualMeetingChannelmemberList().stream()
                 .map(member -> {
                     Authority authority;
                     if (member.getAuthority() == Authority.SUPER) {
@@ -108,7 +108,7 @@ public class VirtualMeetingService {
         VirtualMeetingChannel basicChannel = checkBasicChannel(deleteChannel.getWorkSpaceSeq());
 
         // 삭제하려는 채널이 기본 채널인지 확인
-        if (!deleteChannel.equals(basicChannel)) {
+        if (deleteChannel.equals(basicChannel)) {
             throw new IllegalStateException("기본 채널은 삭제할 수 없습니다.");
         }
         // 권한 검증
@@ -126,7 +126,7 @@ public class VirtualMeetingService {
         VirtualMeetingChannelMember superMember = checkAuthorityIsSuper(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
         // 대상 멤버 조회
         VirtualMeetingChannelMember grantMember = virtualMeetingChannelMemberRepository.findByChannelAndMember
-                (grantAuthorityReqDto.getChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
+                (basicChannel.getVirtualMeetingChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
                 -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
         // 권한 변경
         String authority = grantAuthorityReqDto.getAuthority();
@@ -170,7 +170,7 @@ public class VirtualMeetingService {
         List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
                 .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
-        return Optional.ofNullable(channelInviteReqDto.getFriendList())
+        return Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)

@@ -41,7 +41,7 @@ public class ChatService {
                 .build();
         chatChannelMemberRepository.save(creator);
 
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
@@ -57,7 +57,7 @@ public class ChatService {
         ChatChannel chatChannel = chatChannelRepository.save(channelCreateReqDto.toEntity());
 
         // 채팅 대상 list에 추가
-        Optional.ofNullable(channelCreateReqDto.getFriendList()).orElse(Collections.emptyList())
+        Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)
                 .map(friendSeq -> ChatChannelMember.builder()
@@ -78,14 +78,25 @@ public class ChatService {
         // 새 채널 생성
         ChatChannel chatChannel = chatChannelRepository.save(channelCreateReqDto.toEntity());
         // 기존 채널 멤버를 새 채널에 추가
-        chatChannelMemberRepository.saveAll(
-                basicChannel.getChatChannelfriendList().stream()
-                        .map(member -> ChatChannelMember.builder()
-                                .memberSeq(member.getMemberSeq())
-                                .authority(member.getMemberSeq() == memberSeq ? Authority.MANAGER : Authority.PARTICIPANT)
-                                .chatChannel(chatChannel)
-                                .build())
-                        .toList());
+        List<ChatChannelMember> newMembers = basicChannel.getChatChannelmemberList().stream()
+                .map(member -> {
+                    Authority authority;
+                    if (member.getAuthority() == Authority.SUPER) {
+                        authority = Authority.SUPER;
+                    } else if (member.getMemberSeq() == memberSeq) {
+                        authority = Authority.MANAGER;
+                    } else {
+                        authority = Authority.PARTICIPANT;
+                    }
+
+                    return ChatChannelMember.builder()
+                            .memberSeq(member.getMemberSeq())
+                            .authority(authority)
+                            .chatChannel(chatChannel)
+                            .build();
+                })
+                .toList();
+        chatChannelMemberRepository.saveAll(newMembers);
         return ChannelCreateResDto.fromEntity(chatChannel);
     }
 
@@ -107,34 +118,48 @@ public class ChatService {
         ChatChannel deleteChannel = chatChannelRepository.findById(channelSeq).orElseThrow(() ->
                 new EntityNotFoundException("없는 채널입니다."));
         // 기본 채널이 있는지 검증
-        ChatChannel basicChannel = chatChannelRepository.
-                findFirstByWorkSpaceSeqOrderByChatChannelSeqAsc(grantAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(() ->
-                        new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
+        ChatChannel basicChannel = checkBasicChannel(deleteChannel.getWorkSpaceSeq());
+        // 삭제하려는 채널이 기본 채널인지 확인
+        if (deleteChannel.equals(basicChannel)) {
+            throw new IllegalStateException("기본 채널은 삭제할 수 없습니다.");
+        }
+        // 권한 검증
+        checkChannelAuthority(channelSeq, memberSeq);
+        // 채널 삭제
+        chatChannelRepository.deleteById(deleteChannel.getChatChannelSeq());
+    }
+
+    // 채널 권한 설정
+    public ChannelGrantResDto grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
+        // 유효한 워크스페이스인지 기본채널 여부를 통해 검증
+        ChatChannel basicChannel = checkBasicChannel(grantAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
-        checkAuthorityIsSuper(basicChannel.getChatChannelSeq(), memberSeq);
+        ChatChannelMember superMember = checkAuthorityIsSuper(basicChannel.getChatChannelSeq(), memberSeq);
         // 대상 멤버 조회
-        ChatChannelMember changeAuthorityMember = chatChannelMemberRepository.findByChannelAndMember
-                (grantAuthorityReqDto.getChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
+        ChatChannelMember grantMember = chatChannelMemberRepository.findByChannelAndMember
+                (basicChannel.getChatChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
                 -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
         // 권한 변경
-        String authority = String.valueOf(changeAuthorityMember.getAuthority());
+        String authority = grantAuthorityReqDto.getAuthority();
         switch (authority) {
             case "MANAGER":
-                changeAuthorityMember.updateAuthority(Authority.MANAGER);
+                grantMember.updateAuthority(Authority.MANAGER);
+                break;
             case "PARTICIPANT":
-                changeAuthorityMember.updateAuthority(Authority.PARTICIPANT);
+                grantMember.updateAuthority(Authority.PARTICIPANT);
+                break;
             default:
                 break;
         }
+
+        return ChannelGrantResDto.fromEntity(superMember, grantMember);
     }
 
     // 채널 SUPER 권한 위임
     public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq)
             throws AccessDeniedException {
         // 기본 채널이 있는지 검증
-        ChatChannel basicChannel = chatChannelRepository.
-                findFirstByWorkSpaceSeqOrderByChatChannelSeqAsc(delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(() ->
-                        new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
+        ChatChannel basicChannel = checkBasicChannel(delegateSuperAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
         ChatChannelMember superAuthorityMember = checkAuthorityIsSuper(basicChannel.getChatChannelSeq(), memberSeq);
         // 대상 멤버 조회
@@ -157,7 +182,7 @@ public class ChatService {
         List<ChatChannel> allChannels = chatChannelRepository
                 .findByWorkSpaceSeqOrderByChatChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
-        return Optional.ofNullable(channelInviteReqDto.getFriendList())
+        return Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(Objects::nonNull)
@@ -188,7 +213,7 @@ public class ChatService {
     }
 
     // 초대, 채널 생성 권한 검증
-    private void checkAuthority(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+    private void checkChannelAuthority(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         ChatChannelMember chatChannelMember = chatChannelMemberRepository.findByChannelAndMember(channelSeq,
                 memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
 

@@ -36,7 +36,7 @@ public class ChatController {
     public ResponseEntity<ResponseDto<?>> renameChannel(@RequestBody ChannelEditReqDto channelEditReqDto,
                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         ChannelEditResDto channelEditResDto = chatService.renameChannel(channelEditReqDto, memberSeq);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelEditResDto, HttpStatus.CREATED));
+        return ResponseEntity.ok(ResponseDto.ok(channelEditResDto, HttpStatus.OK));
     }
 
     // 채널 삭제
