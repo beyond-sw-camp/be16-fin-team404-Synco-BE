@@ -123,20 +123,19 @@ public class WorkSpaceService {
         return WorkSpaceResDto.fromEntity(workSpace);
     }
 
+    // 워크스페이스 대시보드 조회
+
     // 내 워크스페이스 목록 조회
-    public List<WorkSpaceInfoDto> findMyWorkSpaceList(Long memberSeq) {
-        List<?> redisResult = workSpaceRedisService.findMyWorkSpaceList(memberSeq);
+    public List<WorkSpaceInfoResDto> findMyWorkSpaceList(Long memberSeq) {
+        List<?> myWorkSpaceList = workSpaceRedisService.findMyWorkSpaceList(memberSeq);
 
         // Redis 성공 케이스 (정상 DTO 조회)
-        if (!redisResult.isEmpty() && redisResult.get(0) instanceof WorkSpaceInfoDto) {
-            log.info("Redis 정상 조회 성공 (memberSeq={})", memberSeq);
-            return (List<WorkSpaceInfoDto>) redisResult;
+        if (!myWorkSpaceList.isEmpty() && myWorkSpaceList.get(0) instanceof WorkSpaceInfoResDto) {
+            return (List<WorkSpaceInfoResDto>) myWorkSpaceList;
         }
 
         // Redis 실패 케이스 (Fallback → Long 리스트)
-        log.info("Redis 실패, Fallback 진입 (memberSeq={})", memberSeq);
-
-        List<Long> seqList = redisResult.stream()
+        List<Long> seqList = myWorkSpaceList.stream()
                 .filter(Objects::nonNull)
                 .map(obj -> {
                     if (obj instanceof Long l) return l;
@@ -146,25 +145,42 @@ public class WorkSpaceService {
                 .toList();
 
         // DB에서 개별 조회하여 DTO로 변환
-        List<WorkSpaceInfoDto> result = seqList.stream()
+        return seqList.stream()
                 .map(workSpaceRepository::findById)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .filter(ws -> ws.getWorkSpaceType() != WorkSpaceType.INDIVIDUAL)
-                .map(WorkSpaceInfoDto::fromEntity)
+                .map(WorkSpaceInfoResDto::fromEntity)
                 .toList();
+    }
 
-        if (result.isEmpty()) {
-            log.info("Fallback 결과: DB에서 조회된 워크스페이스가 없습니다. (memberSeq={})", memberSeq);
-        } else {
-            log.info("Fallback 결과 (memberSeq={}): {}", memberSeq,
-                    result.stream()
-                            .map(dto -> String.format("{seq=%d, name=%s, thumb=%s}",
-                                    dto.getWorkSpaceSeq(), dto.getWorkSpaceName(), dto.getThumbnailImageUrl()))
-                            .toList());
+    // 워크스페이스별 멤버 목록 조회
+    public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq){
+        List<?> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpaceSeq);
+
+        // Redis 성공 케이스 (정상 DTO 조회)
+        if (!workSpaceMemberList.isEmpty() && workSpaceMemberList.get(0) instanceof WorkSpaceMemberInfoResDto) {
+            return (List<WorkSpaceMemberInfoResDto>) workSpaceMemberList;
         }
 
-        return result;
+        // Redis 실패 케이스 (Fallback → Long 리스트)
+        List<Long> seqList = workSpaceMemberList.stream()
+                .filter(Objects::nonNull)
+                .map(obj -> {
+                    if (obj instanceof Long l) return l;
+                    else if (obj instanceof Integer i) return i.longValue();
+                    else return Long.parseLong(obj.toString());
+                })
+                .toList();
+
+        // DB에서 개별 조회하여 DTO로 변환
+        return seqList.stream()
+                .map(memberRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(WorkSpaceMemberInfoResDto::fromEntity)
+                .toList();
+
     }
 
     // 프로젝트 워크스페이스 수정

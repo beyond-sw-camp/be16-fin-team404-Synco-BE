@@ -12,4 +12,5 @@ public interface ScheduleManagementChannelMemberRepository extends JpaRepository
     void deleteByWorkSpaceSeq(Long workSpaceSeq);
     Optional<ScheduleManagementChannelMember> findByWorkSpaceSeqAndMemberSeq(Long workSpaceSeq, Long memberSeq);
     Optional<List<ScheduleManagementChannelMember>> findAllByMemberSeq(Long memberSeq);
+    Optional<List<ScheduleManagementChannelMember>> findAllByWorkSpaceSeq(Long workSpaceSeq);
 }

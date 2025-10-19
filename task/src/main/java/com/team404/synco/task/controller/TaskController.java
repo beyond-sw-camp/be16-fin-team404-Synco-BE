@@ -52,8 +52,14 @@ public class TaskController {
 
     // 내 워크스페이스 목록
     @GetMapping("/memberList")
-    List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){
+    public List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){
         return taskService.myWorkSpaceList(memberSeq);
+    }
+
+    // 워크스페이스 멤버 목록
+    @GetMapping("/{workSpaceSeq}/members")
+    public List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq){
+        return taskService.workSpaceMemberList(workSpaceSeq);
     }
 
     // 팀 테스크 전체 삭제

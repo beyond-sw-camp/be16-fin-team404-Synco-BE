@@ -55,7 +55,8 @@ public class TaskService {
         checkInviteAndCreateChannelAuthority(grantAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
-                findByWorkSpaceSeqAndMemberSeq(grantAuthorityReqDto.getWorkSpaceSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
+                findByWorkSpaceSeqAndMemberSeq(grantAuthorityReqDto.getWorkSpaceSeq(), grantAuthorityReqDto.getGrantMemberSeq())
+                .orElseThrow(()
                         -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         String authority = grantAuthorityReqDto.getAuthority();
         switch (authority) {
@@ -72,8 +73,9 @@ public class TaskService {
 
     // 초대, 채널 생성 권한 검증
     private void checkInviteAndCreateChannelAuthority(Long workSpaceSeq, Long memberSeq) throws AccessDeniedException {
-        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
-                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository
+                .findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
+                        memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
 
         if (!scheduleManagementChannelMember.getAuthority().equals(Authority.SUPER) &&
                 !scheduleManagementChannelMember.getAuthority().equals(Authority.MANAGER)) {
@@ -89,7 +91,8 @@ public class TaskService {
                 checkAuthorityIsSuper(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
-                findByWorkSpaceSeqAndMemberSeq(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
+                findByWorkSpaceSeqAndMemberSeq(delegateSuperAuthorityReqDto.getWorkSpaceSeq(),
+                        delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
                         -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         // 위임할 사용자의 권한을 SUPER로 변경
         changeAuthorityMember.updateAuthority(Authority.SUPER);
@@ -119,6 +122,18 @@ public class TaskService {
 
         return myWorkSpaceList.stream()
                 .map(ScheduleManagementChannelMember::getWorkSpaceSeq)
+                .distinct() // 중복 제거를 원할 경우
+                .toList();
+    }
+
+    // 워크스페이스 멤버 목록
+    public List<Long> workSpaceMemberList(Long workSpaceSeq) {
+        List<ScheduleManagementChannelMember> myWorkSpaceList =
+                scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+
+        return myWorkSpaceList.stream()
+                .map(ScheduleManagementChannelMember::getMemberSeq)
                 .distinct() // 중복 제거를 원할 경우
                 .toList();
     }

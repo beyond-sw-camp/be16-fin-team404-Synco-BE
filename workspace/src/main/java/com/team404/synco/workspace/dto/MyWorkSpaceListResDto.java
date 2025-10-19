@@ -9,5 +9,5 @@ import java.util.List;
 @Builder
 public class MyWorkSpaceListResDto {
     private Long memberSeq;
-    private List<WorkSpaceInfoDto> workSpaceInfoDtoList;
+    private List<WorkSpaceInfoResDto> workSpaceInfoResDtoList;
 }

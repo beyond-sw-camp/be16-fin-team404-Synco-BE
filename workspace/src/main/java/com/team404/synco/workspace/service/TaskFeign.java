@@ -24,6 +24,9 @@ public interface TaskFeign {
     @GetMapping("/task/memberList")
     List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq);
 
+    @GetMapping("/task/{workSpaceSeq}/members")
+    List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq);
+
     @PostMapping("/virtual-meeting/createBasicChannel")
     void createVirtualMeetBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
 

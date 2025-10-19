@@ -6,13 +6,13 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class WorkSpaceInfoDto {
+public class WorkSpaceInfoResDto {
     private Long workSpaceSeq;
     private String workSpaceName;
     private String thumbnailImageUrl;
 
-    public static WorkSpaceInfoDto fromEntity(WorkSpace workSpace) {
-        return WorkSpaceInfoDto.builder()
+    public static WorkSpaceInfoResDto fromEntity(WorkSpace workSpace) {
+        return WorkSpaceInfoResDto.builder()
                 .workSpaceSeq(workSpace.getWorkSpaceSeq())
                 .workSpaceName(workSpace.getWorkSpaceName())
                 .thumbnailImageUrl(workSpace.getWorkSpaceThumbnailImageUrl())

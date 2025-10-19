@@ -125,7 +125,7 @@ public class ChatService {
         ChatChannelMember superMember = checkAuthorityIsSuper(basicChannel.getChatChannelSeq(), memberSeq);
         // 대상 멤버 조회
         ChatChannelMember grantMember = chatChannelMemberRepository.findByChannelAndMember
-                (grantAuthorityReqDto.getChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
+                (basicChannel.getChatChannelSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
                 -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
         // 권한 변경
         String authority = grantAuthorityReqDto.getAuthority();

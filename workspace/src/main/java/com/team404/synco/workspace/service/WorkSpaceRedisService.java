@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.common.service.RedisFallback;
 import com.team404.synco.member.entity.Member;
-import com.team404.synco.workspace.dto.WorkSpaceInfoDto;
+import com.team404.synco.workspace.dto.WorkSpaceInfoResDto;
+import com.team404.synco.workspace.dto.WorkSpaceMemberInfoResDto;
 import com.team404.synco.workspace.entity.WorkSpace;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -96,9 +97,6 @@ public class WorkSpaceRedisService {
             // JSON 문자열로 저장
             String json = objectMapper.writeValueAsString(memberList);
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, MEMBER_LIST, json);
-
-            log.debug("워크스페이스 [{}] 정보 저장 완료 (name, thumbnail, memberList)", workSpace.getWorkSpaceSeq());
-
         } catch (Exception e) {
             throw new SerializationException("워크스페이스 Redis 저장 중 오류 발생", e);
         }
@@ -106,24 +104,22 @@ public class WorkSpaceRedisService {
 
     // 워크스페이스 목록 조회
     @RedisFallback
-    public List<WorkSpaceInfoDto> findMyWorkSpaceList(Long memberSeq) {
-        if (memberSeq == null) throw new IllegalArgumentException("memberSeq가 null입니다.");
-
+    public List<WorkSpaceInfoResDto> findMyWorkSpaceList(Long memberSeq) {
         try {
             String memberKey = MEMBER_KEY_PREFIX + memberSeq;
             Object cachedValue = memberRedisTemplate.opsForHash().get(memberKey, WORKSPACE_LIST);
             if (cachedValue == null) return Collections.emptyList();
 
-            List<Long> workSpaceSeqList = objectMapper.readValue(cachedValue.toString(), new TypeReference<>() {});
-            if (workSpaceSeqList.isEmpty()) return Collections.emptyList();
+            List<Long> workSpaceList = objectMapper.readValue(cachedValue.toString(), new TypeReference<>() {});
+            if (workSpaceList.isEmpty()) return Collections.emptyList();
 
-            return workSpaceSeqList.stream()
+            return workSpaceList.stream()
                     .map(seq -> {
                         String workSpaceKey = WORKSPACE_KEY_PREFIX + seq;
                         Map<Object, Object> info = workSpaceRedisTemplate.opsForHash().entries(workSpaceKey);
                         if (info.isEmpty()) return null;
 
-                        return WorkSpaceInfoDto.builder()
+                        return WorkSpaceInfoResDto.builder()
                                 .workSpaceSeq(seq)
                                 .workSpaceName((String) info.get("name"))
                                 .thumbnailImageUrl((String) info.get("thumbnailImage"))
@@ -137,6 +133,40 @@ public class WorkSpaceRedisService {
             throw e;
         } catch (Exception e) {
             log.warn("Redis 조회 예외 (memberSeq={}): {}", memberSeq, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    // 워크스페이스 멤버 목록 조회
+    @RedisFallback
+    public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq) {
+        try {
+            String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpaceSeq;
+            Object cachedValue = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, MEMBER_LIST);
+            if (cachedValue == null) return Collections.emptyList();
+
+            List<Long> memberList = objectMapper.readValue(cachedValue.toString(), new TypeReference<>() {});
+            if (memberList.isEmpty()) return Collections.emptyList();
+            return memberList.stream()
+                    .map(seq -> {
+                        String memberKey = MEMBER_KEY_PREFIX + seq;
+                        Map<Object, Object> info = memberRedisTemplate.opsForHash().entries(memberKey);
+                        if (info.isEmpty()) return null;
+
+                        return WorkSpaceMemberInfoResDto.builder()
+                                .memberSeq(seq)
+                                .name((String) info.get("memberName"))
+                                .profileImageUrl((String) info.get("memberProfileUrl"))
+                                .build();
+                    })
+                    .filter(Objects::nonNull)
+                    .toList();
+
+        } catch (DataAccessException e) {
+            log.warn("Redis 접근 실패 (workSpaceSeq={})", workSpaceSeq);
+            throw e;
+        } catch (Exception e) {
+            log.warn("Redis 조회 예외 (workSpaceSeq={}): {}", workSpaceSeq, e.getMessage());
             return Collections.emptyList();
         }
     }
