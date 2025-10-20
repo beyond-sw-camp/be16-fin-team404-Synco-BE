@@ -133,7 +133,7 @@ public class ProjectDriveController {
     // 프로젝트 드라이브 공유문서 참여자 목록 조회
     @GetMapping("/documents/{documentId}/participants")
     public ResponseEntity<ResponseDto<?>> getDocumentParticipants(@PathVariable Long documentId) {
-        Map<String, String> participants = projectDocumentRedisService.getOnlineUsers(documentId);
+        ParticipantsResponseDto participants = projectDocumentRedisService.getDocumentParticipants(documentId);
         return ResponseEntity.ok(ResponseDto.ok(participants, HttpStatus.OK));
     }
 
@@ -173,9 +173,8 @@ public class ProjectDriveController {
             @PathVariable Long documentSeq) {
         log.info("🔍 라인 락 조회 요청 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannelSeq, documentSeq);
         
-        Map<String, Map<String, String>> locks = projectDocumentRedisService.getAllLineLocks(documentSeq);
+        LineLocksResponseDto locks = projectDocumentRedisService.getAllLineLocksAsDto(documentSeq);
         
-        log.info("✅ 라인 락 조회 완료 - 잠긴 라인 수: {}", locks.size());
         return ResponseEntity.ok(ResponseDto.ok(locks, HttpStatus.OK));
     }
 

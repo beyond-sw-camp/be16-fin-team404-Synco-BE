@@ -20,7 +20,8 @@ public class EditorMessageDto {
         BATCH_UPDATE, // 여러 라인 수정
         BATCH_DELETE, // 여러 라인 삭제
         CURSOR_UPDATE, // 커서 위치 업데이트
-        JOIN,
+        USER_JOIN,   // 사용자 입장
+        USER_LEAVE,  // 사용자 퇴장
         LOCK,   // 라인 잠금
         UNLOCK  // 라인 잠금 해제
     }

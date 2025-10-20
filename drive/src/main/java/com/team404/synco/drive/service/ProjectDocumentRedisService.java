@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -81,22 +82,34 @@ public class ProjectDocumentRedisService implements MessageListener {
             documentId, joinDto.getUserId(), joinDto.getUserName());
 
         try {
-            // 1. Redis에 온라인 사용자 추가
+            // 1. Redis에 온라인 사용자 추가 (중복 체크)
             String onlineKey = ONLINE_USERS_KEY + documentId;
+            String userIdStr = joinDto.getUserId().toString();
+            
+            // 이미 해당 사용자가 온라인인지 확인
+            if (documentOnlineUsersTemplate.opsForHash().hasKey(onlineKey, userIdStr)) {
+                log.info("⚠️ 사용자 이미 온라인 - DocumentId: {}, UserId: {}", documentId, joinDto.getUserId());
+                return; // 이미 온라인이면 추가하지 않음
+            }
+            
+            // 새로운 사용자만 추가
             documentOnlineUsersTemplate.opsForHash().put(
                 onlineKey,
-                joinDto.getUserId().toString(),
+                userIdStr,
                 joinDto.getUserName()
             );
             // TTL 설정 (비정상 종료 대비)
             documentOnlineUsersTemplate.expire(onlineKey, ONLINE_USERS_TTL_MINUTES, TimeUnit.MINUTES);
 
-            // 2. 현재 온라인 사용자 목록 조회
-            Map<String, String> onlineUsers = getOnlineUsers(documentId);
+            // 2. USER_JOIN 메시지 생성 (간단하게)
+            Map<String, Object> joinMessage = new HashMap<>();
+            joinMessage.put("messageType", "USER_JOIN");
+            joinMessage.put("userId", joinDto.getUserId());
+            joinMessage.put("userName", joinDto.getUserName());
 
             // 3. Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
             String channel = TOPIC_PREFIX + documentId + SUFFIX_ONLINE_USERS;
-            String message = objectMapper.writeValueAsString(onlineUsers);
+            String message = objectMapper.writeValueAsString(joinMessage);
             documentPubSubTemplate.convertAndSend(channel, message);
 
         } catch (Exception e) {
@@ -117,11 +130,15 @@ public class ProjectDocumentRedisService implements MessageListener {
             String onlineKey = ONLINE_USERS_KEY + documentId;
             documentOnlineUsersTemplate.opsForHash().delete(onlineKey, leaveDto.getUserId().toString());
 
-            // 2. 현재 온라인 사용자 목록 조회
-            Map<String, String> onlineUsers = getOnlineUsers(documentId);
+            // 2. USER_LEAVE 메시지 생성 (간단하게)
+            Map<String, Object> leaveMessage = new HashMap<>();
+            leaveMessage.put("messageType", "USER_LEAVE");
+            leaveMessage.put("userId", leaveDto.getUserId());
+            leaveMessage.put("userName", leaveDto.getUserName());
+
             // 3. Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
             String channel = TOPIC_PREFIX + documentId + SUFFIX_ONLINE_USERS;
-            String message = objectMapper.writeValueAsString(onlineUsers);
+            String message = objectMapper.writeValueAsString(leaveMessage);
             documentPubSubTemplate.convertAndSend(channel, message);
 
         } catch (Exception e) {
@@ -230,18 +247,22 @@ public class ProjectDocumentRedisService implements MessageListener {
     // ==================== Redis 데이터 조회 메서드들 ====================
 
     /**
-     * 온라인 사용자 목록 조회
+     * 참여자 목록 조회 (DTO 형태)
      */
-    public Map<String, String> getOnlineUsers(Long documentId) {
+    public ParticipantsResponseDto getDocumentParticipants(Long documentId) {
         String onlineKey = ONLINE_USERS_KEY + documentId;
         Map<Object, Object> rawEntries = documentOnlineUsersTemplate.opsForHash().entries(onlineKey);
 
-        Map<String, String> result = new HashMap<>();
-        for (Map.Entry<Object, Object> entry : rawEntries.entrySet()) {
-            result.put(entry.getKey().toString(), entry.getValue().toString());
-        }
+        List<ParticipantDto> participants = rawEntries.entrySet().stream()
+            .map(entry -> ParticipantDto.builder()
+                .userId(Long.parseLong(entry.getKey().toString()))
+                .userName(entry.getValue().toString())
+                .build())
+            .collect(Collectors.toList());
 
-        return result;
+        return ParticipantsResponseDto.builder()
+            .participants(participants)
+            .build();
     }
 
     // ==================== 라인 락 관리 ====================
@@ -316,30 +337,41 @@ public class ProjectDocumentRedisService implements MessageListener {
     }
 
     /**
-     * 문서의 모든 라인 락 정보 조회
+     * 문서의 모든 라인 락 정보 조회 (DTO 형태)
      */
-    public Map<String, Map<String, String>> getAllLineLocks(Long documentId) {
+    public LineLocksResponseDto getAllLineLocksAsDto(Long documentId) {
         try {
             String lockPattern = LINE_LOCKS_KEY + documentId + ":*";
             Set<String> lockKeys = documentOnlineUsersTemplate.keys(lockPattern);
 
-            Map<String, Map<String, String>> result = new HashMap<>();
+            List<LineLockDto> locks = new ArrayList<>();
             if (lockKeys != null) {
                 for (String key : lockKeys) {
                     String lineId = key.substring((LINE_LOCKS_KEY + documentId + ":").length());
                     String lockValue = documentOnlineUsersTemplate.opsForValue().get(key);
                     if (lockValue != null) {
                         Map<String, String> lockInfo = objectMapper.readValue(lockValue, new TypeReference<Map<String, String>>() {});
-                        result.put(lineId, lockInfo);
+                        locks.add(LineLockDto.builder()
+                            .lineId(lineId)
+                            .userId(Long.parseLong(lockInfo.get("userId")))
+                            .userName(lockInfo.get("userName"))
+                            .timestamp(Long.parseLong(lockInfo.get("timestamp")))
+                            .build());
                     }
                 }
             }
 
-            return result;
+            return LineLocksResponseDto.builder()
+                .documentId(documentId)
+                .locks(locks)
+                .build();
 
         } catch (Exception e) {
             log.error("❌ 라인 락 목록 조회 실패 - DocumentId: {}", documentId, e);
-            return new HashMap<>();
+            return LineLocksResponseDto.builder()
+                .documentId(documentId)
+                .locks(new ArrayList<>())
+                .build();
         }
     }
 
