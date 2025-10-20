@@ -1,13 +1,14 @@
 package com.team404.synco.workspace.dto;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
 @Getter
-@Builder
+@Setter
 public class ChannelInviteReqDto {
-    private Long ChannelSeq;
+    private Long channelSeq;
     private Long workSpaceSeq;
-    private List<Long> friendList;
+    private List<Long> memberList;
 }

@@ -7,7 +7,6 @@ import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DriveChannel;
 import com.team404.synco.drive.repository.DocumentRepository;
-import com.team404.synco.drive.dto.DriveCreateReqDto;
 import com.team404.synco.drive.repository.DriveChannelRepository;
 import com.team404.synco.drive.util.ContentTypeUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -39,7 +38,7 @@ public class PersonalDriveService {
     private final S3Uploader s3Uploader;
 
     // 드라이브 생성
-    public Long createChannel(DriveCreateReqDto driveCreateReqDto){
+    public Long createChannel(DriveCreateReqDto driveCreateReqDto) {
         return driveChannelRepository.save(driveCreateReqDto.toEntity()).getDriveChannelSeq();
     }
 

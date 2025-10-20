@@ -287,4 +287,9 @@ public class ProjectDriveService {
         DriveChannel driveChannel = getProjectDriveChannel(renameDocumentReqDto.getDriveChannelSeq());
         commonDriveService.renameDocument(driveChannel, renameDocumentReqDto.getDocumentSeq(), renameDocumentReqDto.getNewDocumentName());
     }
+
+    // 드라이브 삭제(WorkSpace 삭제시)
+    public void deleteDrive(Long workSpaceSeq){
+        driveChannelRepository.deleteByWorkspaceSeq(workSpaceSeq);
+    }
 }

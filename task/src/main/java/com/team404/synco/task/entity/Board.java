@@ -27,6 +27,6 @@ public class Board extends BaseEntity {
     @JoinColumn(name = "schedule_management_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ScheduleManagementChannelMember scheduleManagementChannelMember;
     @Builder.Default
-    @OneToMany(mappedBy = "board")
+    @OneToMany(mappedBy = "board", orphanRemoval = true)
     private List<Task> taskList = new ArrayList<>();
 }

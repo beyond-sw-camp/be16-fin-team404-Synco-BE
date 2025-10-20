@@ -26,7 +26,7 @@ public class PersonalDriveController {
 
     // 드라이브 생성
     @PostMapping("/create")
-    public ResponseEntity<ResponseDto<?>>createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto){
+    public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto) {
         Long id = personalDriveService.createChannel(driveCreateReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
     }
@@ -45,7 +45,7 @@ public class PersonalDriveController {
 
     // 개인 드라이브 폴더 생성
     @PostMapping("/folder")
-    public  ResponseEntity<ResponseDto<?>> createPersonalFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
+    public ResponseEntity<ResponseDto<?>> createPersonalFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
         DriveItemDto folder = personalDriveService.createPersonalFolder(createFolderReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(folder, HttpStatus.CREATED));
     }
@@ -55,7 +55,7 @@ public class PersonalDriveController {
     public ResponseEntity<ResponseDto<?>> createPersonalSharedDoc(
             @RequestHeader(value = "X-Member-Seq") Long userId,
             @RequestBody CreateSharedDocReqDto createSharedDocReqDto) {
-        
+
         DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, createSharedDocReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(sharedDoc, HttpStatus.CREATED));
     }
@@ -74,7 +74,7 @@ public class PersonalDriveController {
     @PatchMapping("/move")
     public ResponseEntity<ResponseDto<?>> movePersonalItem(
             @RequestBody MoveItemReqDto moveItemReqDto) {
-        
+
         personalDriveService.movePersonalItem(moveItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 이동하였습니다.", HttpStatus.OK));
     }
@@ -82,7 +82,7 @@ public class PersonalDriveController {
     // 개인 드라이브 폴더 순서 변경
     @PatchMapping("/reorder")
     public ResponseEntity<ResponseDto<?>> reorderPersonalFolder(@RequestBody ReorderItemReqDto reorderItemReqDto) {
-        
+
         personalDriveService.reorderPersonalFolder(reorderItemReqDto);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 순서를 변경하였습니다.", HttpStatus.OK));
     }
@@ -108,7 +108,7 @@ public class PersonalDriveController {
             @PathVariable Long driveChannelSeq,
             @RequestHeader(value = "X-Member-Seq") Long userId,
             @RequestBody DeleteItemReqDto deleteItemReqDto) {
-        
+
         personalDriveService.deletePersonalItem(driveChannelSeq, userId, deleteItemReqDto.getItemType(), deleteItemReqDto.getItemId());
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
