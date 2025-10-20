@@ -15,6 +15,6 @@ public interface DriveFeign {
     @PostMapping("/drive/project/create")
     void createTeamDrive(@RequestBody DriveCreateReqDto driveCreateReqDto);
 
-    @DeleteMapping("/drive/project/{workSpaceSeq}")
-    void deleteTeamDrive(@PathVariable Long workSpaceSeq);
+    @DeleteMapping("/drive/project/deleteDrive/{workSpaceSeq}")
+    void deleteTeamDrive(@PathVariable("workSpaceSeq") Long workSpaceSeq);
 }

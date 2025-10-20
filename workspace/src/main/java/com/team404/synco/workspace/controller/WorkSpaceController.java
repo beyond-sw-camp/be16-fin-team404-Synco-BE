@@ -36,15 +36,15 @@ public class WorkSpaceController {
 
     // 프로젝트 워크스페이스 삭제
     @DeleteMapping("/{workSpaceSeq}")
-    public ResponseEntity<ResponseDto<?>> deleteWorkSpace(@PathVariable Long workSpaceSeq,
+    public ResponseEntity<ResponseDto<?>> deleteWorkSpace(@PathVariable("workSpaceSeq") Long workSpaceSeq,
                                                           @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
         workSpaceService.deleteWorkSpace(workSpaceSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("팀 워크스페이스가 성공적으로 삭제되었습니다.", HttpStatus.OK));
     }
     //프로젝트 워크스페이스 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         workSpaceService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("워크스페이스의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
@@ -52,7 +52,7 @@ public class WorkSpaceController {
     // 워크스페이스 초대
     @PostMapping("/invite")
     public ResponseEntity<ResponseDto<?>> inviteWorkSpace(@RequestBody ChannelInviteReqDto channelInviteReqDto,
-                                                                 @RequestHeader("X-Member-seq") Long memberSeq) throws AccessDeniedException {
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         workSpaceService.inviteWorkSpace(channelInviteReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에 초대되었습니다.", HttpStatus.OK));
     }

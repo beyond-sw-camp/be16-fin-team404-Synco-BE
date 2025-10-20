@@ -32,18 +32,18 @@ public class TaskController {
     }
 
     // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
+    @PatchMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
-                                                                 @RequestHeader("X-member-seq")Long memberSeq) throws AccessDeniedException
+                                                                 @RequestHeader("X-Member-Seq")Long memberSeq) throws AccessDeniedException
     {
         taskService.grantToMember(grantAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                                 @RequestHeader("X-member-seq") Long memberSeq) throws AccessDeniedException
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException
     {
         taskService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
@@ -51,7 +51,7 @@ public class TaskController {
 
     // 팀 테스크 전체 삭제
     @DeleteMapping("/{workSpaceSeq}")
-    public void deleteTeamTaskChannel(@PathVariable Long workSpaceSeq){
+    public void deleteTeamTaskChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         taskService.deleteAllTask(workSpaceSeq);
     }
 }
