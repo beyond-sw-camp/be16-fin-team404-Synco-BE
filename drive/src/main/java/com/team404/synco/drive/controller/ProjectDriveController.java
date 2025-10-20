@@ -165,4 +165,17 @@ public class ProjectDriveController {
         projectDriveService.renameProjectDocument(renameDocumentReqDto);
         return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
+
+    // 문서의 모든 라인 락 정보 조회
+    @GetMapping("/{driveChannelSeq}/document/{documentSeq}/locks")
+    public ResponseEntity<ResponseDto<?>> getDocumentLineLocks(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        log.info("🔍 라인 락 조회 요청 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannelSeq, documentSeq);
+        
+        Map<String, Map<String, String>> locks = projectDocumentRedisService.getAllLineLocks(documentSeq);
+        
+        log.info("✅ 라인 락 조회 완료 - 잠긴 라인 수: {}", locks.size());
+        return ResponseEntity.ok(ResponseDto.ok(locks, HttpStatus.OK));
+    }
 }

@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -162,118 +163,97 @@ public class ProjectDriveService {
         return result;
     }
 
-    // 프로젝트 드라이브 공유문서 라인 생성
-    public void createBlock(UpdateDocumentReqDto updateDocumentReqDto) {
+    public void updateDocumentLine(EditorMessageDto message){
+        DocumentLine documentLine = documentLineRepository.findByLineId(message.getLineId())
+                .orElseThrow(()->new EntityNotFoundException("해당 라인이 존재하지 않습니다." + message.getLineId()));
+        documentLine.updateContent(message.getContent());
+    }
 
-        Document document = documentRepository.findById(updateDocumentReqDto.getDocumentId()).orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentId()));
+    public void createDocumentLine(EditorMessageDto message){
+        Document document = documentRepository.findById(Long.valueOf(message.getDocumentId()))
+                .orElseThrow(()->new EntityNotFoundException("해당 문서가 존재하지 않습니다."));
 
-        DocumentLine checkLine = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId()).orElse(null);
-        if (checkLine != null) {
-            throw new IllegalArgumentException("이미 존재하는 FE ID입니다: " + updateDocumentReqDto.getDocumentFeId());
-        }
+        // 만약 중간에 끼어들어갈 경우 순서 바꿔주기
+        Optional<DocumentLine> documentLine = documentLineRepository.findByPrevId(message.getPrevLineId());
+        documentLine.ifPresent(line -> line.updatePrevId(message.getLineId()));
 
-        // 부모 라인 조회 (prevFeId가 부모 라인의 feId)
-        DocumentLine parentLine = null;
-        if (updateDocumentReqDto.getParentDocumentLineSeq() != null && !updateDocumentReqDto.getParentDocumentLineSeq().isEmpty()) {
-            parentLine = documentLineRepository.findByFeId(updateDocumentReqDto.getParentDocumentLineSeq())
-                    .orElseThrow(() -> new EntityNotFoundException("부모 라인을 찾을 수 없습니다: " + updateDocumentReqDto.getParentDocumentLineSeq()));
-        }
-
-        // 새 블록 생성
-        DocumentLine newLine = DocumentLine.builder()
+        // 1. DTO를 Entity로 변환합니다.
+        DocumentLine newDocumentLine = null;
+        newDocumentLine = DocumentLine.builder()
+                .prevId(message.getPrevLineId())
                 .document(document)
-                .feId(updateDocumentReqDto.getDocumentFeId())
-                .documentContent(updateDocumentReqDto.getContent())
-                .prevFeId(updateDocumentReqDto.getParentDocumentLineSeq()) // 부모 라인의 feId를 prevFeId에 저장
-                .type(updateDocumentReqDto.getBlockType())
-                .level(updateDocumentReqDto.getBlockLevel())
-                .indent(updateDocumentReqDto.getBlockIndent())
+                .lineId(message.getLineId())
+                .documentContent(message.getContent())
                 .build();
 
-        documentLineRepository.save(newLine);
+        // 2. Repository를 통해 데이터베이스에 저장합니다.
+        documentLineRepository.save(newDocumentLine);
+    }
 
-        // 🔥 중요: 중간 삽입 시 기존 블록들의 연결 재구성
-        if (parentLine != null) {
-            // 부모 라인의 다음 블록이 새 블록을 참조하도록 변경
-            documentLineRepository.findByPrevFeId(parentLine.getFeId())
-                    .ifPresent(nextBlock -> nextBlock.updatePrevFeId(updateDocumentReqDto.getDocumentFeId()));
+    public void deleteDocumentLine(EditorMessageDto message){
+        // 만약 뒷 라인이 있다면 앞단과 연결 시켜주기
+        Optional<DocumentLine> documentLine = documentLineRepository.findByPrevId(message.getLineId());
+        System.out.println(message.getPrevLineId());
+        documentLine.ifPresent(line -> line.updatePrevId(message.getPrevLineId()));
+        // 현재 라인 삭제
+        documentLineRepository.delete(documentLineRepository.findByLineId(message.getLineId()).orElseThrow(()->new EntityNotFoundException("해당 라인이 존재하지 않습니다.")));
+    }
+
+    // 배치 생성
+    public void createDocumentLines(EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
+        }
+
+        Document document = documentRepository.findById(Long.valueOf(message.getDocumentId()))
+                .orElseThrow(() -> new EntityNotFoundException("해당 문서가 존재하지 않습니다."));
+
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            // 만약 중간에 끼어들어갈 경우 순서 바꿔주기
+            Optional<DocumentLine> documentLine = documentLineRepository.findByPrevId(change.getPrevLineId());
+            documentLine.ifPresent(line -> line.updatePrevId(change.getLineId()));
+
+            DocumentLine newDocumentLine = DocumentLine.builder()
+                    .prevId(change.getPrevLineId())
+                    .document(document)
+                    .lineId(change.getLineId())
+                    .documentContent(change.getContent())
+                    .build();
+
+            documentLineRepository.save(newDocumentLine);
         }
     }
 
-    // 프로젝트 드라이브 공유문서 라인 수정
-    public void updateBlock(UpdateDocumentReqDto updateDocumentReqDto) {
-        // 수정할 블록 조회
-        DocumentLine blockToUpdate = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId())
-                .orElseThrow(() -> new EntityNotFoundException("수정할 블록을 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentFeId()));
+    // 배치 수정
+    public void updateDocumentLines(EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
+        }
 
-        blockToUpdate.updateAllInfo(
-                updateDocumentReqDto.getContent(),
-                updateDocumentReqDto.getBlockType(),
-                updateDocumentReqDto.getBlockLevel(),
-                updateDocumentReqDto.getBlockIndent()
-        );
-    }
-
-    // 프로젝트 드라이브 공유문서 라인 세부사항 수정
-    public void patchBlockDetails(UpdateDocumentReqDto updateDocumentReqDto) {
-        // 수정할 블록 조회
-        DocumentLine blockToUpdate = documentLineRepository.findByFeId(updateDocumentReqDto.getDocumentFeId())
-                .orElseThrow(() -> new EntityNotFoundException("수정할 블록을 찾을 수 없습니다: " + updateDocumentReqDto.getDocumentFeId()));
-
-        // 세부사항에 따라 업데이트 수행
-        if(updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.UPDATE_INDENT_BLOCK)){
-            blockToUpdate.updateIndent(updateDocumentReqDto.getBlockIndent());
-        } else if(updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.HOT_UPDATE_CONTENTS_BLOCK)){
-            blockToUpdate.updateDocumentContent(updateDocumentReqDto.getContent());
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            DocumentLine documentLine = documentLineRepository.findByLineId(change.getLineId())
+                    .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다." + change.getLineId()));
+            documentLine.updateContent(change.getContent());
         }
     }
 
-    // 프로젝트 드라이브 공유문서 라인 순서 변경 (성능 최적화)
-    public void changeOrderBlock(UpdateDocumentReqDto updateDocumentReqDto) {
-        String movingFeId = updateDocumentReqDto.getDocumentFeId();
-        String newPrevFeId = updateDocumentReqDto.getParentDocumentLineSeq(); // 새로운 이전 블록의 feId
-
-        // 1. 이동할 블록 조회
-        DocumentLine movingBlock = documentLineRepository.findByFeId(movingFeId)
-                .orElseThrow(() -> new EntityNotFoundException("이동할 블록을 찾을 수 없습니다: " + movingFeId));
-
-        // 2. 기존 위치에서 제거 (이동할 블록의 다음 블록이 이동할 블록의 이전 블록을 참조하도록)
-        DocumentLine nextBlock = documentLineRepository.findByPrevFeId(movingFeId).orElse(null);
-        if (nextBlock != null) {
-            nextBlock.updatePrevFeId(movingBlock.getPrevFeId());
+    // 배치 삭제
+    public void deleteDocumentLines(EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
         }
 
-        // 3. 새로운 위치에 삽입
-        if (newPrevFeId != null && !newPrevFeId.isEmpty()) {
-            // 새로운 이전 블록의 다음 블록이 이동할 블록을 참조하도록
-            DocumentLine newNextBlock = documentLineRepository.findByPrevFeId(newPrevFeId).orElse(null);
-            if (newNextBlock != null) {
-                newNextBlock.updatePrevFeId(movingFeId);
-            }
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            // 만약 뒷 라인이 있다면 앞단과 연결 시켜주기
+            Optional<DocumentLine> documentLine = documentLineRepository.findByPrevId(change.getLineId());
+            documentLine.ifPresent(line -> line.updatePrevId(change.getPrevLineId()));
+            
+            // 현재 라인 삭제
+            documentLineRepository.delete(
+                documentLineRepository.findByLineId(change.getLineId())
+                    .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다."))
+            );
         }
-
-        // 4. 이동할 블록의 prevFeId 업데이트
-        movingBlock.updatePrevFeId(newPrevFeId);
-    }
-
-    // 프로젝트 드라이브 공유문서 라인 삭제 (성능 최적화)
-    public void deleteBlock(UpdateDocumentReqDto updateDocumentReqDto) {
-        String blockFeId = updateDocumentReqDto.getDocumentFeId();
-
-        // 1. 삭제할 블록 조회
-        DocumentLine blockToDelete = documentLineRepository.findByFeId(blockFeId)
-                .orElseThrow(() -> new IllegalArgumentException("삭제할 블록을 찾을 수 없습니다: " + blockFeId));
-
-        // 2. 연결 리스트 재구성 (성능 최적화: 한 번의 쿼리로 처리)
-        DocumentLine nextBlock = documentLineRepository.findByPrevFeId(blockFeId).orElse(null);
-        if (nextBlock != null) {
-            // 다음 블록이 존재하는 경우에만 연결 재구성
-            nextBlock.updatePrevFeId(blockToDelete.getPrevFeId());
-        }
-        // 다음 블록이 없으면 마지막 블록이므로 아무것도 안 함
-
-        // 3. 블록 삭제
-        documentLineRepository.delete(blockToDelete);
     }
 
 

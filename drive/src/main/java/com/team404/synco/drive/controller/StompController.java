@@ -31,23 +31,49 @@ public class StompController {
         this.projectDriveService = projectDriveService;
     }
 
+    @MessageMapping("/document/create")
+    public void handleLineCreate(EditorMessageDto editorMessageDto) {
+        projectDriveService.createDocumentLine(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
+    }
+
     @MessageMapping("/document/update")
-    public void handleLineUpdate(UpdateDocumentReqDto updateDocumentReqDto) {
-        if (updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.CREATE_BLOCK)) { // 생성블록
-            projectDriveService.createBlock(updateDocumentReqDto);
-        } else if (updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.UPDATE_BLOCK)) { // 수정블록
-            projectDriveService.updateBlock(updateDocumentReqDto);
-        } else if (updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.UPDATE_INDENT_BLOCK)
-                || updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.HOT_UPDATE_CONTENTS_BLOCK)) { // 수정블록
-            projectDriveService.patchBlockDetails(updateDocumentReqDto);
-        } else if (updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.CHANGE_ORDER_BLOCK)) { //순서 변경 블록
-            projectDriveService.changeOrderBlock(updateDocumentReqDto);
-        } else if (updateDocumentReqDto.getMethod().equals(DocumentMessageMethod.DELETE_BLOCK)) { // 삭제블록
-            projectDriveService.deleteBlock(updateDocumentReqDto);
-        } else {
-            log.error("잘못된 block method");
-        }
-        redisService.publishDocumentUpdateToRedis(updateDocumentReqDto.getDocumentId(), updateDocumentReqDto);
+    public void handleLineUpdate(EditorMessageDto editorMessageDto) {
+        projectDriveService.updateDocumentLine(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
+    }
+
+    @MessageMapping("/document/delete")
+    public void handleLineDelete(EditorMessageDto editorMessageDto) {
+        projectDriveService.deleteDocumentLine(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
+    }
+
+    @MessageMapping("/document/batch-create")
+    public void handleBatchLineCreate(EditorMessageDto editorMessageDto) {
+        log.info("📦 배치 생성 요청 - DocumentId: {}, 개수: {}", 
+            editorMessageDto.getDocumentId(), 
+            editorMessageDto.getChanges() != null ? editorMessageDto.getChanges().size() : 0);
+        projectDriveService.createDocumentLines(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
+    }
+
+    @MessageMapping("/document/batch-update")
+    public void handleBatchLineUpdate(EditorMessageDto editorMessageDto) {
+        log.info("📦 배치 수정 요청 - DocumentId: {}, 개수: {}", 
+            editorMessageDto.getDocumentId(), 
+            editorMessageDto.getChanges() != null ? editorMessageDto.getChanges().size() : 0);
+        projectDriveService.updateDocumentLines(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
+    }
+
+    @MessageMapping("/document/batch-delete")
+    public void handleBatchLineDelete(EditorMessageDto editorMessageDto) {
+        log.info("📦 배치 삭제 요청 - DocumentId: {}, 개수: {}", 
+            editorMessageDto.getDocumentId(), 
+            editorMessageDto.getChanges() != null ? editorMessageDto.getChanges().size() : 0);
+        projectDriveService.deleteDocumentLines(editorMessageDto);
+        redisService.publishDocumentUpdateToRedis(editorMessageDto);
     }
 
     @MessageMapping("/document/{documentId}/join")
@@ -58,6 +84,20 @@ public class StompController {
     @MessageMapping("/document/{documentId}/leave")
     public void handleUserLeave(@DestinationVariable Long documentId, @Payload UserJoinLeaveDto leaveDto) {
         redisService.publishUserLeaveToRedis(documentId, leaveDto);
+    }
+
+    @MessageMapping("/document/lock")
+    public void handleLineLock(EditorMessageDto lockDto) {
+        log.info("🔒 라인 잠금 요청 - DocumentId: {}, LineId: {}, UserId: {}", 
+            lockDto.getDocumentId(), lockDto.getLineId(), lockDto.getUserId());
+        redisService.publishLineLockToRedis(lockDto);
+    }
+
+    @MessageMapping("/document/unlock")
+    public void handleLineUnlock(EditorMessageDto unlockDto) {
+        log.info("🔓 라인 잠금 해제 요청 - DocumentId: {}, LineId: {}, UserId: {}", 
+            unlockDto.getDocumentId(), unlockDto.getLineId(), unlockDto.getUserId());
+        redisService.publishLineUnlockToRedis(unlockDto);
     }
 
     // TODO: 커서 위치 업데이트 처리

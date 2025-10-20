@@ -1,6 +1,5 @@
 package com.team404.synco.drive.config;
 
-import com.team404.synco.drive.handler.StompHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -13,16 +12,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final StompHandler stompHandler;
-
-    public WebSocketConfig(@Lazy StompHandler stompHandler) {
-        this.stompHandler = stompHandler;
-    }
-
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/connect")
-                .setAllowedOriginPatterns("*") // CORS 설정 - allowCredentials와 호환
+                .setAllowedOriginPatterns("http://localhost:3000", "https://synco.shop") // 허용할 출처 설정
                 .withSockJS(); // SockJS를 사용하여 WebSocket 연결을 지원
     }
 
@@ -30,10 +23,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.setApplicationDestinationPrefixes("/publish");
         registry.enableSimpleBroker("/topic");
-    }
-
-    @Override
-    public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(stompHandler);
     }
 }

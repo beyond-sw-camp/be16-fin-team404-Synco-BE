@@ -519,11 +519,11 @@ public class CommonDriveService {
         
         for (DocumentLine documentLine : documentLines) {
             DocDetailListResDto dto = convertToDocDetailListResDto(documentLine);
-            dtoMap.put(documentLine.getFeId(), dto);
+            dtoMap.put(documentLine.getLineId(), dto);
             
             // 다음 블록 매핑 생성 (prevFeId -> feId)
-            if (documentLine.getPrevFeId() != null && !documentLine.getPrevFeId().isEmpty()) {
-                nextBlockMap.put(documentLine.getPrevFeId(), documentLine.getFeId());
+            if (documentLine.getPrevId() != null && !documentLine.getPrevId().isEmpty()) {
+                nextBlockMap.put(documentLine.getPrevId(), documentLine.getLineId());
             }
         }
         
@@ -532,8 +532,8 @@ public class CommonDriveService {
         // O(n): 첫 번째 블록 찾기 (prevFeId가 null인 블록)
         String firstFeId = null;
         for (DocumentLine documentLine : documentLines) {
-            if (documentLine.getPrevFeId() == null || documentLine.getPrevFeId().isEmpty()) {
-                firstFeId = documentLine.getFeId();
+            if (documentLine.getPrevId() == null || documentLine.getPrevId().isEmpty()) {
+                firstFeId = documentLine.getLineId();
                 break;
             }
         }
@@ -559,12 +559,12 @@ public class CommonDriveService {
     private DocDetailListResDto convertToDocDetailListResDto(DocumentLine documentLine) {
         return DocDetailListResDto.builder()
                 .id(documentLine.getDocumentLineSeq())
-                .parentId(documentLine.getPrevFeId())
+                .parentId(documentLine.getPrevId())
                 .content(documentLine.getDocumentContent())
-                .feId(documentLine.getFeId())
-                .indent(documentLine.getIndent())
-                .level(documentLine.getLevel())
-                .type(documentLine.getType())
+                .feId(documentLine.getLineId())
+//                .indent(documentLine.getIndent())
+//                .level(documentLine.getLevel())
+//                .type(documentLine.getType())
                 .build();
     }
 

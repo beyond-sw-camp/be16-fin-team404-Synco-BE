@@ -28,16 +28,19 @@ public class ProjectDocumentRedisService implements MessageListener {
 
     // Redis 키 패턴
     private static final String ONLINE_USERS_KEY = "document:online-users:";
+    private static final String LINE_LOCKS_KEY = "document:locks:"; // 라인 락 키
     // 워크스페이스 멤버 확인용 (Redis DB 2)
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
     private static final String FRIEND_LIST = "friendList";
 
     // TTL 설정 (안전장치: 비정상 종료 시 자동 정리)
     private static final int ONLINE_USERS_TTL_MINUTES = 30;
+    private static final int LINE_LOCK_TTL_SECONDS = 30; // 라인 락 TTL (30초로 증가)
     // STOMP Topics
     private static final String TOPIC_PREFIX = "/topic/document/";
     private static final String SUFFIX_DOCUMENT_UPDATE = "/document-update";
     private static final String SUFFIX_ONLINE_USERS = "/online-users";
+    private static final String SUFFIX_LINE_LOCKS = "/line-locks"; // 라인 락 토픽
 
     public ProjectDocumentRedisService(
             ObjectMapper objectMapper,
@@ -57,16 +60,16 @@ public class ProjectDocumentRedisService implements MessageListener {
     /**
      * 문서 업데이트 메시지를 Redis로 발행
      */
-    public void publishDocumentUpdateToRedis(Long documentId, UpdateDocumentReqDto updateDocumentReqDto) {
+    public void publishDocumentUpdateToRedis(EditorMessageDto messageDto) {
         try {
             // Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
-            String channel = TOPIC_PREFIX + documentId + SUFFIX_DOCUMENT_UPDATE;
-            String message = objectMapper.writeValueAsString(updateDocumentReqDto);
+            String channel = TOPIC_PREFIX + messageDto.getDocumentId() + SUFFIX_DOCUMENT_UPDATE;
+            String message = objectMapper.writeValueAsString(messageDto);
             documentPubSubTemplate.convertAndSend(channel, message);
 
         } catch (Exception e) {
             log.error("❌ 문서 업데이트 발행 실패 - DocumentId: {}, ResponseDto: {}",
-                    documentId, updateDocumentReqDto, e);
+                    messageDto.getDocumentId(), messageDto, e);
         }
     }
 
@@ -131,12 +134,22 @@ public class ProjectDocumentRedisService implements MessageListener {
     public void onMessage(Message message, byte[] pattern) {
         String channel = new String(message.getChannel(), StandardCharsets.UTF_8);
         String body = new String(message.getBody(), StandardCharsets.UTF_8);
+        
+        // Redis Keyspace Notification (키 만료 이벤트)
+        if (channel.contains("__keyevent@") && channel.endsWith(":expired")) {
+            handleKeyExpiration(body);
+            return;
+        }
+        
+        // 일반 Redis Pub/Sub 메시지
         String dest = normalizeChannel(channel);
 
         if (channel.contains(SUFFIX_DOCUMENT_UPDATE)) {
             handleLineUpdateMessage(dest, body);
         } else if (channel.contains(SUFFIX_ONLINE_USERS)) {
             handleOnlineUsersMessage(dest, body);
+        } else if (channel.contains(SUFFIX_LINE_LOCKS)) {
+            handleLineLockMessage(dest, body);
         } else {
             log.warn("⚠️ 알 수 없는 채널 메시지 수신 - Channel: {}", channel);
         }
@@ -164,6 +177,56 @@ public class ProjectDocumentRedisService implements MessageListener {
         }
     }
 
+    private void handleLineLockMessage(String dest, String body) {
+        try {
+            // Redis에서 받은 라인 락 정보를 STOMP 클라이언트들에게 전달
+            messagingTemplate.convertAndSend(dest, body);
+            log.debug("✅ 라인 락 정보 브로드캐스트 완료 - Dest: {}", dest);
+        } catch (Exception e) {
+            log.error("❌ 라인 락 메시지 처리 실패", e);
+        }
+    }
+
+    /**
+     * Redis Key 만료 이벤트 처리 (TTL 자동 해제)
+     */
+    private void handleKeyExpiration(String expiredKey) {
+        log.info("⏰ Redis Key 만료 이벤트 수신: {}", expiredKey);
+
+        // "document:locks:documentId:lineId" 패턴 파싱
+        if (expiredKey.startsWith("document:locks:")) {
+            String[] parts = expiredKey.split(":");
+            if (parts.length == 4) {
+                String documentId = parts[2];
+                String lineId = parts[3];
+
+                log.info("🔓 자동 UNLOCK 브로드캐스트 - DocumentId: {}, LineId: {}", documentId, lineId);
+
+                try {
+                    // UNLOCK 메시지 생성 (senderId: SYSTEM)
+                    EditorMessageDto unlockMessage = EditorMessageDto.builder()
+                        .messageType(EditorMessageDto.MessageType.UNLOCK)
+                        .documentId(documentId)
+                        .lineId(lineId)
+                        .senderId("SYSTEM")
+                        .build();
+
+                    // Redis Pub/Sub으로 브로드캐스트
+                    String channel = TOPIC_PREFIX + documentId + SUFFIX_LINE_LOCKS;
+                    String messageBody = objectMapper.writeValueAsString(unlockMessage);
+                    publishToLineLockChannel(channel, messageBody);
+
+                    log.info("✅ 자동 락 해제 브로드캐스트 완료 - LineId: {}", lineId);
+
+                } catch (Exception e) {
+                    log.error("❌ 락 만료 처리 실패 - DocumentId: {}, LineId: {}", documentId, lineId, e);
+                }
+            } else {
+                log.warn("⚠️ 예상치 못한 Redis 락 키 형식: {}", expiredKey);
+            }
+        }
+    }
+
     // ==================== Redis 데이터 조회 메서드들 ====================
 
     /**
@@ -179,6 +242,105 @@ public class ProjectDocumentRedisService implements MessageListener {
         }
 
         return result;
+    }
+
+    // ==================== 라인 락 관리 ====================
+
+    /**
+     * 라인 잠금 처리
+     */
+    public void publishLineLockToRedis(EditorMessageDto lockDto) {
+        log.info("🔒 라인 잠금 - DocumentId: {}, LineId: {}, UserId: {}, UserName: {}",
+            lockDto.getDocumentId(), lockDto.getLineId(), lockDto.getUserId(), lockDto.getUserName());
+
+        try {
+            // 1. Redis에 락 정보 저장
+            String lockKey = LINE_LOCKS_KEY + lockDto.getDocumentId() + ":" + lockDto.getLineId();
+            Map<String, String> lockInfo = new HashMap<>();
+            lockInfo.put("userId", lockDto.getUserId().toString());
+            lockInfo.put("userName", lockDto.getUserName());
+            lockInfo.put("timestamp", String.valueOf(System.currentTimeMillis()));
+
+            String lockValue = objectMapper.writeValueAsString(lockInfo);
+            documentOnlineUsersTemplate.opsForValue().set(lockKey, lockValue, LINE_LOCK_TTL_SECONDS, TimeUnit.SECONDS);
+
+            // 2. Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
+            String channel = TOPIC_PREFIX + lockDto.getDocumentId() + SUFFIX_LINE_LOCKS;
+            String message = objectMapper.writeValueAsString(lockDto);
+            documentPubSubTemplate.convertAndSend(channel, message);
+
+            log.debug("✅ 라인 잠금 완료 - LineId: {}, TTL: {}초", lockDto.getLineId(), LINE_LOCK_TTL_SECONDS);
+
+        } catch (Exception e) {
+            log.error("❌ 라인 잠금 처리 실패 - DocumentId: {}, LineId: {}",
+                lockDto.getDocumentId(), lockDto.getLineId(), e);
+        }
+    }
+
+    /**
+     * 라인 잠금 해제 처리
+     */
+    public void publishLineUnlockToRedis(EditorMessageDto unlockDto) {
+        log.info("🔓 라인 잠금 해제 - DocumentId: {}, LineId: {}, UserId: {}",
+            unlockDto.getDocumentId(), unlockDto.getLineId(), unlockDto.getUserId());
+
+        try {
+            // 1. Redis에서 락 정보 확인 및 삭제
+            String lockKey = LINE_LOCKS_KEY + unlockDto.getDocumentId() + ":" + unlockDto.getLineId();
+            String lockValue = documentOnlineUsersTemplate.opsForValue().get(lockKey);
+
+            if (lockValue != null) {
+                // 락을 건 사용자만 해제 가능하도록 확인
+                Map<String, String> lockInfo = objectMapper.readValue(lockValue, new TypeReference<Map<String, String>>() {});
+                String lockedUserId = lockInfo.get("userId");
+
+                if (lockedUserId.equals(unlockDto.getUserId().toString())) {
+                    documentOnlineUsersTemplate.delete(lockKey);
+                    log.debug("✅ 라인 잠금 해제 완료 - LineId: {}", unlockDto.getLineId());
+                } else {
+                    log.warn("⚠️ 라인 잠금 해제 권한 없음 - LineId: {}, RequestUserId: {}, LockedUserId: {}",
+                        unlockDto.getLineId(), unlockDto.getUserId(), lockedUserId);
+                    return; // 권한 없으면 브로드캐스트 안 함
+                }
+            }
+
+            // 2. Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
+            String channel = TOPIC_PREFIX + unlockDto.getDocumentId() + SUFFIX_LINE_LOCKS;
+            String message = objectMapper.writeValueAsString(unlockDto);
+            documentPubSubTemplate.convertAndSend(channel, message);
+
+        } catch (Exception e) {
+            log.error("❌ 라인 잠금 해제 실패 - DocumentId: {}, LineId: {}",
+                unlockDto.getDocumentId(), unlockDto.getLineId(), e);
+        }
+    }
+
+    /**
+     * 문서의 모든 라인 락 정보 조회
+     */
+    public Map<String, Map<String, String>> getAllLineLocks(Long documentId) {
+        try {
+            String lockPattern = LINE_LOCKS_KEY + documentId + ":*";
+            Set<String> lockKeys = documentOnlineUsersTemplate.keys(lockPattern);
+
+            Map<String, Map<String, String>> result = new HashMap<>();
+            if (lockKeys != null) {
+                for (String key : lockKeys) {
+                    String lineId = key.substring((LINE_LOCKS_KEY + documentId + ":").length());
+                    String lockValue = documentOnlineUsersTemplate.opsForValue().get(key);
+                    if (lockValue != null) {
+                        Map<String, String> lockInfo = objectMapper.readValue(lockValue, new TypeReference<Map<String, String>>() {});
+                        result.put(lineId, lockInfo);
+                    }
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("❌ 라인 락 목록 조회 실패 - DocumentId: {}", documentId, e);
+            return new HashMap<>();
+        }
     }
 
     // ==================== 워크스페이스 멤버 확인 (Redis DB 2) ====================
@@ -212,6 +374,18 @@ public class ProjectDocumentRedisService implements MessageListener {
 
     // ==================== 유틸리티 메서드들 ====================
 
+    /**
+     * KeyExpirationListener에서 호출하는 메서드
+     * 라인 락 채널로 직접 브로드캐스트
+     */
+    public void publishToLineLockChannel(String channel, String message) {
+        try {
+            messagingTemplate.convertAndSend(channel, message);
+            log.debug("✅ 라인 락 채널 브로드캐스트 완료 - Channel: {}", channel);
+        } catch (Exception e) {
+            log.error("❌ 라인 락 채널 브로드캐스트 실패 - Channel: {}", channel, e);
+        }
+    }
 
     // 채널 문자열 정규화 (끝에 '/' 제거)
     private static String normalizeChannel(String channel) {

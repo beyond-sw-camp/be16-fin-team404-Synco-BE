@@ -11,8 +11,6 @@ import java.util.Optional;
 @Repository
 public interface DocumentLineRepository extends JpaRepository<DocumentLine, Long> {
     List<DocumentLine> findByDocumentDocumentSeqOrderByDocumentLineSeq(Long documentSeq);
-
-    Optional<DocumentLine> findByFeId(String feId);
-
-    Optional<DocumentLine> findByPrevFeId(String prevFeId);
+    Optional<DocumentLine> findByLineId(String lineId);
+    Optional<DocumentLine> findByPrevId(String prevId);
 }

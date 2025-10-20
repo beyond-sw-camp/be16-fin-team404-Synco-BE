@@ -84,12 +84,30 @@ public class RedisConfig {
         // 문서 편집 관련 패턴들 구독
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/document-update"));
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/online-users"));
+        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/line-locks"));
         return container;
     }
 
     @Bean
     public MessageListenerAdapter messageListenerAdapter(ProjectDocumentRedisService redisService) {
         return new MessageListenerAdapter(redisService, "onMessage");
+    }
+
+    // ================================
+    // Redis Keyspace Notifications (키 만료 이벤트 감지)
+    // ================================
+    @Bean
+    @Qualifier("keyExpirationListenerContainer")
+    public RedisMessageListenerContainer keyExpirationListenerContainer(
+            @Qualifier("documentFactory") RedisConnectionFactory redisConnectionFactory,
+            MessageListenerAdapter messageListenerAdapter) {
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(redisConnectionFactory);
+        
+        // DB 12번의 expired 이벤트 구독 - ProjectDocumentRedisService의 onMessage()로 통합!
+        container.addMessageListener(messageListenerAdapter, new PatternTopic("__keyevent@12__:expired"));
+        
+        return container;
     }
 
     // ================================
