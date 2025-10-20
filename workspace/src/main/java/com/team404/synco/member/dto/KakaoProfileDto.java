@@ -1,6 +1,7 @@
 package com.team404.synco.member.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -10,23 +11,27 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoProfileDto {
     private String id;
-    private KakaoAccount kakao_account;
+    @JsonProperty("kakao_account")
+    private KakaoAccount kakaoAccount;
+    
     @Getter
     @ToString
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class KakaoAccount{
+    public static class KakaoAccount {
         private String email;
         private Profile profile;
     }
+    
     @Getter
     @ToString
     @NoArgsConstructor
     @AllArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Profile{
+    public static class Profile {
         private String nickname;
-        private String profile_image_url;
+        @JsonProperty("profile_image_url")
+        private String profileImageUrl;
     }
 }

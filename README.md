@@ -151,6 +151,10 @@
 </details>
 
 <details>
+  <summary><b> <a href='https://documenter.getpostman.com/view/25640365/2sB3QQH7Gh' style="text-decoration: none; color: inherit;"> api명세 및 단위테스트</a></b></summary>
+</details>
+
+<details>
   <summary><b>시스템 아키텍처</b></summary>
 
 <!-- <img width="900" alt="시스템 아키텍처" src="https://github.com/user-attachments/assets/6a0b09ef-e692-4e70-aecf-91aa6212cca4" /> -->

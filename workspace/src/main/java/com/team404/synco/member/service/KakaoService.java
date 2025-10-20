@@ -2,7 +2,6 @@ package com.team404.synco.member.service;
 
 import com.team404.synco.member.dto.AccessTokenDto;
 import com.team404.synco.member.dto.KakaoProfileDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 @Service
-@Slf4j
 public class KakaoService {
 
     @Value("${oauth.kakao.client-id}")
@@ -40,7 +38,6 @@ public class KakaoService {
 
             return response.getBody();
         } catch (Exception e) {
-            log.error("카카오 액세스 토큰 발급 실패: {}", e.getMessage());
             throw new IllegalStateException("카카오 로그인 중 오류가 발생했습니다.", e);
         }
     }
@@ -56,7 +53,6 @@ public class KakaoService {
             
             return response.getBody();
         } catch (Exception e) {
-            log.error("카카오 프로필 조회 실패: {}", e.getMessage());
             throw new IllegalStateException("카카오 사용자 정보를 가져오는 중 오류가 발생했습니다.", e);
         }
     }

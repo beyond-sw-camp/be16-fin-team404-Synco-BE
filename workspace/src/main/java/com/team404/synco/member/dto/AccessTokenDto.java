@@ -1,6 +1,7 @@
 package com.team404.synco.member.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -9,8 +10,11 @@ import lombok.*;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AccessTokenDto {
-    private String access_token;
-    private String expires_in;
+    @JsonProperty("access_token")
+    private String accessToken;
+    @JsonProperty("expires_in")
+    private String expiresIn;
     private String scope;
-    private String id_token;
+    @JsonProperty("id_token")
+    private String idToken;
 }

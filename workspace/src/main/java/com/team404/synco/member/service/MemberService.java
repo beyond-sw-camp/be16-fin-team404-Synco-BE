@@ -145,24 +145,24 @@ public class MemberService {
 
     public LoginResDto googleLogin(RedirectDto redirectDto) {
         AccessTokenDto accessTokenDto = googleService.getAccessToken(redirectDto.getCode());
-        GoogleProfileDto googleProfile = googleService.getGoogleProfile(accessTokenDto.getAccess_token());
+        GoogleProfileDto googleProfile = googleService.getGoogleProfile(accessTokenDto.getAccessToken());
 
         return socialLoginProcess(SocialType.GOOGLE, googleProfile.getSub(), googleProfile.getEmail(), googleProfile.getName(), googleProfile.getPicture());
     }
 
     public LoginResDto kakaoLogin(RedirectDto redirectDto) {
         AccessTokenDto accessTokenDto = kakaoService.getAccessToken(redirectDto.getCode());
-        KakaoProfileDto kakaoProfile = kakaoService.getKakaoProfile(accessTokenDto.getAccess_token());
+        KakaoProfileDto kakaoProfile = kakaoService.getKakaoProfile(accessTokenDto.getAccessToken());
 
-        return socialLoginProcess(SocialType.KAKAO, kakaoProfile.getId(), kakaoProfile.getKakao_account().getEmail(), kakaoProfile.getKakao_account().getProfile().getNickname(), kakaoProfile.getKakao_account().getProfile().getProfile_image_url());
+        return socialLoginProcess(SocialType.KAKAO, kakaoProfile.getId(), kakaoProfile.getKakaoAccount().getEmail(), kakaoProfile.getKakaoAccount().getProfile().getNickname(), kakaoProfile.getKakaoAccount().getProfile().getProfileImageUrl());
     }
 
     public LoginResDto naverLogin(RedirectDto redirectDto) {
         AccessTokenDto accessTokenDto = naverService.getAccessToken(redirectDto.getCode(), redirectDto.getState());
-        NaverProfileDto naverProfile = naverService.getNaverProfile(accessTokenDto.getAccess_token());
+        NaverProfileDto naverProfile = naverService.getNaverProfile(accessTokenDto.getAccessToken());
         NaverProfileDto.Response response = naverProfile.getResponse();
 
-        return socialLoginProcess(SocialType.NAVER, response.getId(), response.getEmail(), response.getName(), response.getProfile_image());
+        return socialLoginProcess(SocialType.NAVER, response.getId(), response.getEmail(), response.getName(), response.getProfileImage());
     }
 
     private LoginResDto socialLoginProcess(SocialType socialType, String socialId, String email, String name, String profileImageUrl) {
@@ -177,6 +177,10 @@ public class MemberService {
                             .build();
                     return memberRepository.save(newMember);
                 });
+
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("이미 탈퇴한 계정입니다.");
+        }
 
         boolean needMemberId = member.getMemberId() == null || member.getMemberId().isBlank();
 
@@ -245,6 +249,13 @@ public class MemberService {
     }
 
     public void logout(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
+
         jwtTokenProvider.deleteRt(memberSeq);
     }
 
