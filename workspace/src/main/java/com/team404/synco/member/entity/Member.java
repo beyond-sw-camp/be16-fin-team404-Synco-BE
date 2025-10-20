@@ -28,9 +28,8 @@ public class Member extends BaseEntity {
     private Long memberSeq;
     @Column(nullable = false)
     private String email;
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String memberId;
-    @Column(nullable = false)
     private String password;
     @Column(nullable = false)
     private String name;
@@ -78,5 +77,9 @@ public class Member extends BaseEntity {
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void registerMemberId(String memberId) {
+        this.memberId = memberId;
     }
 }

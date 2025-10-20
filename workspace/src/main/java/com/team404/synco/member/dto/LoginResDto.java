@@ -9,4 +9,12 @@ import lombok.*;
 public class LoginResDto {
     private String accessToken;
     private String refreshToken;
+    private boolean needMemberId;
+
+    public LoginResDto withoutRefreshToken() {
+        return LoginResDto.builder()
+                .accessToken(this.accessToken)
+                .needMemberId(this.needMemberId)
+                .build();
+    }
 }

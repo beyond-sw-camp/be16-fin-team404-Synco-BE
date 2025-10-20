@@ -103,4 +103,8 @@ public class JwtTokenProvider {
 
         return member;
     }
+
+    public void deleteRt(Long memberSeq) {
+        redisTemplate.delete(String.valueOf(memberSeq));
+    }
 }
