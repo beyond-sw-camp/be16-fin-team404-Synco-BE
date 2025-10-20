@@ -42,6 +42,7 @@ public class ProjectDocumentRedisService implements MessageListener {
     private static final String SUFFIX_DOCUMENT_UPDATE = "/document-update";
     private static final String SUFFIX_ONLINE_USERS = "/online-users";
     private static final String SUFFIX_LINE_LOCKS = "/line-locks"; // 라인 락 토픽
+    private static final String SUFFIX_CURSOR_UPDATE = "/cursor-update"; // 커서 업데이트 토픽
 
     public ProjectDocumentRedisService(
             ObjectMapper objectMapper,
@@ -71,6 +72,25 @@ public class ProjectDocumentRedisService implements MessageListener {
         } catch (Exception e) {
             log.error("❌ 문서 업데이트 발행 실패 - DocumentId: {}, ResponseDto: {}",
                     messageDto.getDocumentId(), messageDto, e);
+        }
+    }
+
+    /**
+     * 커서 위치 업데이트를 Redis로 발행
+     */
+    public void publishCursorUpdateToRedis(Long documentId, EditorMessageDto cursorDto) {
+        try {
+            log.info("🖱️ 커서 위치 업데이트 발행 - DocumentId: {}, UserId: {}, LineId: {}", 
+                documentId, cursorDto.getUserId(), cursorDto.getLineId());
+            
+            // Redis Pub/Sub으로 다른 서버들에게 브로드캐스트
+            String channel = TOPIC_PREFIX + documentId + SUFFIX_CURSOR_UPDATE;
+            String message = objectMapper.writeValueAsString(cursorDto);
+            documentPubSubTemplate.convertAndSend(channel, message);
+
+        } catch (Exception e) {
+            log.error("❌ 커서 업데이트 발행 실패 - DocumentId: {}, UserId: {}",
+                    documentId, cursorDto.getUserId(), e);
         }
     }
 
@@ -167,6 +187,8 @@ public class ProjectDocumentRedisService implements MessageListener {
             handleOnlineUsersMessage(dest, body);
         } else if (channel.contains(SUFFIX_LINE_LOCKS)) {
             handleLineLockMessage(dest, body);
+        } else if (channel.contains(SUFFIX_CURSOR_UPDATE)) {
+            handleCursorUpdateMessage(dest, body);
         } else {
             log.warn("⚠️ 알 수 없는 채널 메시지 수신 - Channel: {}", channel);
         }
@@ -201,6 +223,16 @@ public class ProjectDocumentRedisService implements MessageListener {
             log.debug("✅ 라인 락 정보 브로드캐스트 완료 - Dest: {}", dest);
         } catch (Exception e) {
             log.error("❌ 라인 락 메시지 처리 실패", e);
+        }
+    }
+
+    private void handleCursorUpdateMessage(String dest, String body) {
+        try {
+            // Redis에서 받은 커서 업데이트를 STOMP 클라이언트들에게 전달
+            messagingTemplate.convertAndSend(dest, body);
+            log.debug("✅ 커서 업데이트 브로드캐스트 완료 - Dest: {}", dest);
+        } catch (Exception e) {
+            log.error("❌ 커서 업데이트 메시지 처리 실패", e);
         }
     }
 

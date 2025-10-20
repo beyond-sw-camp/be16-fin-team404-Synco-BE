@@ -85,6 +85,7 @@ public class RedisConfig {
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/document-update"));
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/online-users"));
         container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/line-locks"));
+        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*/cursor-update"));
         return container;
     }
 
