@@ -1,6 +1,5 @@
 package com.team404.synco.common.service;
 
-import com.team404.synco.workspace.dto.MyWorkSpaceListResDto;
 import com.team404.synco.workspace.service.TaskFeign;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,13 +39,6 @@ public class RedisFallbackAspect {
             // Redis 결과가 null이거나 비어 있으면 fallback
             if (result == null || (result instanceof List<?> list && list.isEmpty())) {
                 log.warn("Redis 결과 없음 → Fallback 실행 [{}]", method);
-                return executeFallback(method, identifier);
-            }
-
-            // MyWorkSpaceListResDto 형태일 때 내부 리스트 검사
-            if (result instanceof MyWorkSpaceListResDto dto &&
-                    (dto.getWorkSpaceInfoResDtoList() == null || dto.getWorkSpaceInfoResDtoList().isEmpty())) {
-                log.warn("Redis DTO 내부 비어 있음 → Fallback 실행 [{}]", method);
                 return executeFallback(method, identifier);
             }
 

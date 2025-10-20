@@ -182,52 +182,49 @@ public class WorkSpaceService {
             return (List<WorkSpaceInfoResDto>) myWorkSpaceList;
         }
 
-        // Redis 실패 케이스 (Fallback → Long 리스트)
-        List<Long> seqList = myWorkSpaceList.stream()
-                .filter(Objects::nonNull)
-                .map(obj -> {
-                    if (obj instanceof Long l) return l;
-                    else if (obj instanceof Integer i) return i.longValue();
-                    else return Long.parseLong(obj.toString());
-                })
-                .toList();
-
         // DB에서 개별 조회하여 DTO로 변환
-        return seqList.stream()
-                .map(workSpaceRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .filter(ws -> ws.getWorkSpaceType() != WorkSpaceType.INDIVIDUAL)
-                .map(WorkSpaceInfoResDto::fromEntity)
-                .toList();
+        if (!myWorkSpaceList.isEmpty() && myWorkSpaceList.get(0) instanceof Long) {
+            log.info("Redis 조회 실패 → Feign fallback 결과(Long 리스트)");
+            List<Long> seqList = (List<Long>) myWorkSpaceList;
+
+            return seqList.stream()
+                    .map(workSpaceRepository::findById)
+                    .flatMap(Optional::stream)
+                    .map(WorkSpaceInfoResDto::fromEntity)
+                    .toList();
+        }
+
+        // 기타 예외 상황 (비어있거나 예측 불가 타입)
+        log.warn("Redis 조회 결과가 비어있거나 예측 불가한 타입입니다. (type={})",
+                myWorkSpaceList.isEmpty() ? "EMPTY" : myWorkSpaceList.get(0).getClass().getName());
+        return Collections.emptyList();
     }
 
     // 워크스페이스별 멤버 목록 조회
     public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq){
         List<?> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpaceSeq);
 
-        // Redis 성공 케이스 (정상 DTO 조회)
-        if (!workSpaceMemberList.isEmpty() && workSpaceMemberList.get(0) instanceof WorkSpaceMemberInfoResDto) {
+        // Redis 성공 (DTO 타입)
+        if (!workSpaceMemberList.isEmpty() && workSpaceMemberList.get(0) instanceof WorkSpaceMemberInfoResDto dto) {
             return (List<WorkSpaceMemberInfoResDto>) workSpaceMemberList;
         }
 
-        // Redis 실패 케이스 (Fallback → Long 리스트)
-        List<Long> seqList = workSpaceMemberList.stream()
-                .filter(Objects::nonNull)
-                .map(obj -> {
-                    if (obj instanceof Long l) return l;
-                    else if (obj instanceof Integer i) return i.longValue();
-                    else return Long.parseLong(obj.toString());
-                })
-                .toList();
+        // Redis 실패 (Fallback으로 Long 타입 리스트)
+        if (!workSpaceMemberList.isEmpty() && workSpaceMemberList.get(0) instanceof Long) {
+            log.info("Redis 조회 실패 → Feign fallback 결과(Long 리스트)");
+            List<Long> seqList = (List<Long>) workSpaceMemberList;
 
-        // DB에서 개별 조회하여 DTO로 변환
-        return seqList.stream()
-                .map(memberRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(WorkSpaceMemberInfoResDto::fromEntity)
-                .toList();
+            return seqList.stream()
+                    .map(memberRepository::findById)
+                    .flatMap(Optional::stream)
+                    .map(WorkSpaceMemberInfoResDto::fromEntity)
+                    .toList();
+        }
+
+        // 기타 예외 상황 (비어있거나 예측 불가 타입)
+        log.warn("Redis 조회 결과가 비어있거나 예측 불가한 타입입니다. (type={})",
+                workSpaceMemberList.isEmpty() ? "EMPTY" : workSpaceMemberList.get(0).getClass().getName());
+        return Collections.emptyList();
     }
 
     // 프로젝트 워크스페이스 수정
