@@ -20,6 +20,7 @@ public class JwtAuthFilter implements GlobalFilter {
     @Value("${jwt.secretKey}")
     private String secretKey;
 
+
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     // TODO: oauth 로그인 url 추가 에정
     private static final List<String> ALLOWED_PATHS = List.of(
@@ -28,9 +29,13 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/refreshAt",
             "/member/findId",
             "/member/findPassword",
+            "/member/refreshAt",
+            "/member/google/doLogin",
+            "/member/kakao/doLogin",
+            "/member/naver/doLogin",
             "/drive/**",
             "/document/**",
-        "/connect/**"
+            "/connect/**"
     );
 
         @Override
