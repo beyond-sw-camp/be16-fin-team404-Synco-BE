@@ -29,9 +29,8 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
 
-    /**
-     * 1. 친구 요청 보내기
-     */
+
+    // 1. 친구 요청 보내기
     public void requestFriend(Long memberSeq, FriendReqDto friendReqDto) {
         Member requester = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
@@ -64,9 +63,7 @@ public class FriendService {
         friendRepository.save(newRequest);
     }
 
-    /**
-     * 2. 친구 요청 수락하기
-     */
+    // 2. 친구 요청 수락하기
     public void acceptFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
@@ -102,9 +99,7 @@ public class FriendService {
         friendRepository.save(acceptedRelationship);
     }
 
-    /**
-     * 3. 친구 요청 거절하기
-     */
+    // 3. 친구 요청 거절하기
     public void rejectFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
@@ -123,9 +118,7 @@ public class FriendService {
         friendRepository.delete(pendingRequest);
     }
 
-    /**
-     * 4. 친구 목록 조회 및 검색 (ACCEPTED)
-     */
+    // 4. 친구 목록 조회 및 검색 (ACCEPTED)
     @Transactional(readOnly = true)
     public Page<FriendResDto> getFriendList(Long memberSeq, Pageable pageable, String keyword) {
         Member member = memberRepository.findById(memberSeq)
@@ -155,9 +148,8 @@ public class FriendService {
         return friendList.map(friend -> FriendResDto.fromEntity(friend.getFriendMember()));
     }
 
-    /**
-     * 5. 보낸 요청 목록 조회 (PENDING)
-     */
+
+    // 5. 보낸 요청 목록 조회 (PENDING)
     @Transactional(readOnly = true)
     public Page<FriendResDto> getSentRequestList(Long memberSeq, Pageable pageable) {
         Member member = memberRepository.findById(memberSeq)
@@ -168,9 +160,8 @@ public class FriendService {
         return sentRequestList.map(request -> FriendResDto.fromEntity(request.getFriendMember()));
     }
 
-    /**
-     * 6. 받은 요청 목록 조회 (PENDING)
-     */
+
+    // 6. 받은 요청 목록 조회 (PENDING)
     @Transactional(readOnly = true)
     public Page<ReceivedReqDto> getReceivedRequestList(Long memberSeq, Pageable pageable) {
         Member member = memberRepository.findById(memberSeq)
@@ -181,9 +172,7 @@ public class FriendService {
         return receivedRequestList.map(ReceivedReqDto::fromEntity);
     }
 
-    /**
-     * 7. 친구 삭제 (친구 끊기)
-     */
+    // 7. 친구 삭제 (친구 끊기)
     public void deleteFriend(Long friendMemberSeq, Long memberSeq) {
         Member me = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));

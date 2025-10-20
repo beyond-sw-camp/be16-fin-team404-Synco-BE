@@ -19,9 +19,7 @@ public class FriendController {
 
     private final FriendService friendService;
 
-    /**
-     * 1. 친구 요청 보내기
-     */
+    // 1. 친구 요청 보내기
     @PostMapping("/request")
     public ResponseEntity<ResponseDto<?>> requestFriend(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -30,9 +28,7 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok("친구 요청을 보냈습니다.", HttpStatus.OK));
     }
 
-    /**
-     * 2. 친구 요청 수락
-     */
+    // 2. 친구 요청 수락
     @PostMapping("/accept/{friendSeq}")
     public ResponseEntity<ResponseDto<?>> acceptFriendRequest(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -41,9 +37,8 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok("친구 요청을 수락했습니다.", HttpStatus.OK));
     }
 
-    /**
-     * 3. 친구 요청 거절
-     */
+
+    // 3. 친구 요청 거절
     @DeleteMapping("/reject/{friendSeq}")
     public ResponseEntity<ResponseDto<?>> rejectFriendRequest(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -52,9 +47,8 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok("친구 요청을 거절했습니다.", HttpStatus.OK));
     }
 
-    /**
-     * 4. 친구 목록 조회 및 검색
-     */
+
+    // 4. 친구 목록 조회 및 검색
     @GetMapping("/list")
     public ResponseEntity<ResponseDto<?>> getFriendList(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -64,9 +58,8 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok(friendList, HttpStatus.OK));
     }
 
-    /**
-     * 5. 보낸 요청 목록 조회
-     */
+
+    // 5. 보낸 요청 목록 조회
     @GetMapping("/sent")
     public ResponseEntity<ResponseDto<?>> getSentRequestList(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -75,9 +68,7 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok(sentRequestList, HttpStatus.OK));
     }
 
-    /**
-     * 6. 받은 요청 목록 조회
-     */
+    // 6. 받은 요청 목록 조회
     @GetMapping("/received")
     public ResponseEntity<ResponseDto<?>> getReceivedRequestList(
             @RequestHeader("X-Member-Seq") Long memberSeq,
@@ -86,9 +77,7 @@ public class FriendController {
         return ResponseEntity.ok(ResponseDto.ok(receivedRequestList, HttpStatus.OK));
     }
 
-    /**
-     * 7. 친구 삭제 (친구 끊기)
-     */
+    // 7. 친구 삭제 (친구 끊기)
     @DeleteMapping("/{friendMemberSeq}")
     public ResponseEntity<ResponseDto<?>> deleteFriend(
             @RequestHeader("X-Member-Seq") Long memberSeq,
