@@ -89,7 +89,8 @@ public class TaskService {
                 checkAuthorityIsSuper(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
-                findByWorkSpaceSeqAndMemberSeq(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
+                findByWorkSpaceSeqAndMemberSeq(delegateSuperAuthorityReqDto.getWorkSpaceSeq(),
+                        delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
                         -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         // 위임할 사용자의 권한을 SUPER로 변경
         changeAuthorityMember.updateAuthority(Authority.SUPER);
@@ -109,6 +110,30 @@ public class TaskService {
                         .build())
                 .map(scheduleManagementChannelMemberRepository::save) // save된 객체 반환
                 .count();
+    }
+
+    // 내 워크스페이스 목록
+    public List<Long> myWorkSpaceList(Long memberSeq) {
+        List<ScheduleManagementChannelMember> myWorkSpaceList =
+                scheduleManagementChannelMemberRepository.findAllByMemberSeq(memberSeq)
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+
+        return myWorkSpaceList.stream()
+                .map(ScheduleManagementChannelMember::getWorkSpaceSeq)
+                .distinct() // 중복 제거를 원할 경우
+                .toList();
+    }
+
+    // 워크스페이스 멤버 목록
+    public List<Long> workSpaceMemberList(Long workSpaceSeq) {
+        List<ScheduleManagementChannelMember> myWorkSpaceList =
+                scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+
+        return myWorkSpaceList.stream()
+                .map(ScheduleManagementChannelMember::getMemberSeq)
+                .distinct() // 중복 제거를 원할 경우
+                .toList();
     }
 
     // 팀 Task 전체 삭제(WorkSpace 삭제시)
