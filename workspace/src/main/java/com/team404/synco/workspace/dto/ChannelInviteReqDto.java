@@ -10,5 +10,5 @@ import java.util.List;
 public class ChannelInviteReqDto {
     private Long channelSeq;
     private Long workSpaceSeq;
-    private List<Long> friendList;
+    private List<Long> memberList;
 }

@@ -22,8 +22,8 @@ public class WorkSpaceRedisService {
     private static final String MEMBER_KEY_PREFIX = "memberSeq:";
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
     private static final String WORKSPACE_LIST = "workSpaceList";
-    private static final String FRIEND_LIST = "friendList";
-    private static final String MEBMER_NAME = "memberName";
+    private static final String MEMBER_LIST = "memberList";
+    private static final String MEMBER_NAME = "memberName";
     private static final String MEMBER_PROFILE_URL = "memberProfileUrl";
 
 
@@ -42,7 +42,7 @@ public class WorkSpaceRedisService {
 
         // key가 없을 경우 → 멤버 정보 처음 등록
         if (!hasKey) {
-            memberRedisTemplate.opsForHash().put(memberKey, MEBMER_NAME, member.getName());
+            memberRedisTemplate.opsForHash().put(memberKey, MEMBER_NAME, member.getName());
             memberRedisTemplate.opsForHash().put(memberKey, MEMBER_PROFILE_URL, member.getProfileImageUrl());
         }
     }
@@ -81,13 +81,13 @@ public class WorkSpaceRedisService {
     public void addMemberToWorkSpace(WorkSpace workSpace, Long memberSeq) {
         String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpace.getWorkSpaceSeq();
 
-        // friendList 필드 가져오기
-        Object existing = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, FRIEND_LIST);
-        List<Long> friendList = new ArrayList<>();
+        // memberList 필드 가져오기
+        Object existing = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, MEMBER_LIST);
+        List<Long> memberList = new ArrayList<>();
 
         if (existing != null) {
             try {
-                friendList = objectMapper.readValue(existing.toString(), new TypeReference<List<Long>>() {
+                memberList = objectMapper.readValue(existing.toString(), new TypeReference<List<Long>>() {
                 });
             } catch (Exception e) {
                 throw new SerializationException("직렬화에 실패하였습니다.");
@@ -95,36 +95,42 @@ public class WorkSpaceRedisService {
         }
 
         // 새로운 member 리스트에 추가
-        if (!friendList.contains(memberSeq)) {
-            friendList.add(memberSeq);
+        if (!memberList.contains(memberSeq)) {
+            memberList.add(memberSeq);
         }
 
         try {
-            String json = objectMapper.writeValueAsString(friendList);
-            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, FRIEND_LIST, json);
+            String json = objectMapper.writeValueAsString(memberList);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, MEMBER_LIST, json);
         } catch (Exception e) {
             throw new SerializationException("직렬화에 실패하였습니다.");
         }
     }
 
     // 워크스페이스를 멤버 정보에서 삭제
-    public void removeWorkspaceFromMember(Long memberSeq, Long workspaceSeq) throws Exception {
-        String key = MEMBER_KEY_PREFIX + memberSeq;
-        String field = WORKSPACE_LIST;
+    public void removeWorkspaceFromMember(Long workspaceSeq) throws Exception {
+        String workSpaceKey = WORKSPACE_KEY_PREFIX + workspaceSeq;
 
-        // 현재 문자열(JSON) 가져오기
-        String json = (String) memberRedisTemplate.opsForHash().get(key, field);
-        if (json == null) return;
+        // 워크스페이스 목록에서 memberList를 조회
+        String memberJson = (String) workSpaceRedisTemplate.opsForHash().get(workSpaceKey, MEMBER_LIST);
 
         // 역직렬화
-        List<Long> list = objectMapper.readValue(json, new TypeReference<List<Long>>() {});
+        List<Long> memberList = objectMapper.readValue(memberJson, new TypeReference<List<Long>>() {});
 
-        // 값 제거
-        list.remove(workspaceSeq);
+        // memberList의 길이만큼 순회하면서 워크스페이스를 삭제.
+        for(Long memberSeq : memberList){
+            String memberKey = MEMBER_KEY_PREFIX + memberSeq;
 
-        // 다시 직렬화하여 저장
-        String updatedWorkSpaceList = objectMapper.writeValueAsString(list);
-        memberRedisTemplate.opsForHash().put(key, field, updatedWorkSpaceList);
+            String json = (String) memberRedisTemplate.opsForHash().get(memberKey, WORKSPACE_LIST);
+            if (json == null) return;
+            // 역직렬화
+            List<Long> list = objectMapper.readValue(json, new TypeReference<List<Long>>() {});
+            // 값 제거
+            list.remove(workspaceSeq);
+            // 다시 직렬화하여 저장
+            String updatedWorkSpaceList = objectMapper.writeValueAsString(list);
+            memberRedisTemplate.opsForHash().put(memberKey, WORKSPACE_LIST, updatedWorkSpaceList);
+        }
     }
 
     // 워크스페이스 목록에서 워크스페이스 삭제
@@ -135,7 +141,7 @@ public class WorkSpaceRedisService {
 
     // 친구 목록 조회
     // ToDo : 개발중
-    /*public List<Long> getFriendList(Long workSpaceSeq) {
+    /*public List<Long> getMemberList(Long workSpaceSeq) {
         String key = "workSpaceSeq:" + workSpaceSeq;
         Object redisValue = workSpaceRedisTemplate.opsForHash().get(key, "memberList");
 

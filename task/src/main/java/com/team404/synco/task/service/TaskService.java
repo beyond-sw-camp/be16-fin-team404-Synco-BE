@@ -38,8 +38,11 @@ public class TaskService {
                 .build();
         scheduleManagementChannelMemberRepository.save(creator);
 
-        Optional.ofNullable(taskChannelMemberCreateReqDto.getFriendList()).orElse(Collections.emptyList())
-                .stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
+        Optional.ofNullable(taskChannelMemberCreateReqDto.getMemberList())
+                .orElse(Collections.emptyList()) // null이면 빈 리스트로 대체
+                .stream()
+                .filter(Objects::nonNull)
+                .map(memberSeq -> ScheduleManagementChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
                         .workSpaceSeq(taskChannelMemberCreateReqDto.getWorkSpaceReq())
@@ -49,43 +52,44 @@ public class TaskService {
 
     // 채널 권한 설정
     public void grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
-        // 기본 채널 멤버 조회
-        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.
-                findFirstByMemberSeqAndWorkSpaceSeq(memberSeq, grantAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
-                        -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
-        // 현재 사용자의 권한이 super인지 확인
-        if (!scheduleManagementChannelMember.getAuthority().equals(Authority.SUPER)) {
-            throw new AccessDeniedException("SUPER 사용자만 권한 변경이 가능합니다.");
-        }
+        checkInviteAndCreateChannelAuthority(grantAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
-                findFirstByMemberSeqAndWorkSpaceSeq(memberSeq, grantAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
+                findByWorkSpaceSeqAndMemberSeq(grantAuthorityReqDto.getWorkSpaceSeq(), grantAuthorityReqDto.getGrantMemberSeq()).orElseThrow(()
                         -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         String authority = grantAuthorityReqDto.getAuthority();
         switch (authority) {
             case "MANAGER":
                 changeAuthorityMember.updateAuthority(Authority.MANAGER);
+                break;
             case "PARTICIPANT":
                 changeAuthorityMember.updateAuthority(Authority.PARTICIPANT);
+                break;
             default:
                 break;
+        }
+    }
+
+    // 초대, 채널 생성 권한 검증
+    private void checkInviteAndCreateChannelAuthority(Long workSpaceSeq, Long memberSeq) throws AccessDeniedException {
+        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
+                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+
+        if (!scheduleManagementChannelMember.getAuthority().equals(Authority.SUPER) &&
+                !scheduleManagementChannelMember.getAuthority().equals(Authority.MANAGER)) {
+            throw new AccessDeniedException("초대 권한이 없습니다.");
         }
     }
 
     // SUPER 권한 위임
     public void delegateSuperAuthority(DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto, Long memberSeq)
             throws AccessDeniedException {
-        // 기본 채널 멤버 조회
-        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.
-                findFirstByMemberSeqAndWorkSpaceSeq(memberSeq, delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
-                        -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         // 현재 사용자의 권한이 super인지 확인
-        if (!scheduleManagementChannelMember.getAuthority().equals(Authority.SUPER)) {
-            throw new AccessDeniedException("SUPER 사용자만 권한 변경이 가능합니다.");
-        }
+        ScheduleManagementChannelMember scheduleManagementChannelMember =
+                checkAuthorityIsSuper(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), memberSeq);
         // 대상 멤버 권한 변경
         ScheduleManagementChannelMember changeAuthorityMember = scheduleManagementChannelMemberRepository.
-                findFirstByMemberSeqAndWorkSpaceSeq(memberSeq, delegateSuperAuthorityReqDto.getWorkSpaceSeq()).orElseThrow(()
+                findByWorkSpaceSeqAndMemberSeq(delegateSuperAuthorityReqDto.getWorkSpaceSeq(), delegateSuperAuthorityReqDto.getDelegateMemberSeq()).orElseThrow(()
                         -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다.."));
         // 위임할 사용자의 권한을 SUPER로 변경
         changeAuthorityMember.updateAuthority(Authority.SUPER);
@@ -95,10 +99,10 @@ public class TaskService {
 
     // 멤버 추가
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto) {
-        List<Long> friendList = Optional.ofNullable(channelInviteReqDto.getFriendList())
+        List<Long> memberList = Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
-        return friendList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
+        return memberList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
                         .workSpaceSeq(channelInviteReqDto.getWorkSpaceSeq())
@@ -110,5 +114,18 @@ public class TaskService {
     // 팀 Task 전체 삭제(WorkSpace 삭제시)
     public void deleteAllTask(Long workSpaceSeq) {
         scheduleManagementChannelMemberRepository.deleteByWorkSpaceSeq(workSpaceSeq);
+    }
+
+    // SUPER 권한 검증
+    private ScheduleManagementChannelMember checkAuthorityIsSuper(Long workSpaceSeq, Long memberSeq) throws AccessDeniedException {
+        // 조회
+        ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository.
+                findByWorkSpaceSeqAndMemberSeq(workSpaceSeq, memberSeq).orElseThrow(()
+                        -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+        // 현재 사용자의 권한이 super인지 확인
+        if (!scheduleManagementChannelMember.getAuthority().equals(Authority.SUPER)) {
+            throw new AccessDeniedException("SUPER 사용자만 권한 변경이 가능합니다.");
+        }
+        return scheduleManagementChannelMember;
     }
 }
