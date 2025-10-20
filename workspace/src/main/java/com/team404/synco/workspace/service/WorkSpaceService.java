@@ -260,6 +260,11 @@ public class WorkSpaceService {
         WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq).orElseThrow(() ->
                 new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
 
+        // 강제 탈퇴
+        if(workSpace.getMember().getMemberSeq().equals(memberSeq)){
+            throw new IllegalStateException("SUPER 사용자는 탈퇴할 수 없습니다.");
+        }
+
         // 사용자 검증
         List<WorkSpaceMemberInfoResDto> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpace.getWorkSpaceSeq());
         boolean isMemberIncluded = workSpaceMemberList.stream()
