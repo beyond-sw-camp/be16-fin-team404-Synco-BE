@@ -730,26 +730,37 @@ public class CommonDriveService {
         
         List<FolderTreeDto> rootFolders = new ArrayList<>();
         
-        // 계층 구조 구성
+        // 1단계: 최상위 폴더들 먼저 처리
         for (Folder folder : allFolders) {
-            FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
-            
             if (folder.getParentFolderSeq() == null) {
-                // 최상위 폴더
+                FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
                 folderDto.setDepthAndPath(0, folder.getFolderName());
+                folderDto.setFolderName(folder.getFolderName()); // 폴더명 명시적 설정
                 rootFolders.add(folderDto);
-            } else {
-                // 하위 폴더
+            }
+        }
+        
+        // 2단계: 하위 폴더들을 부모에 연결
+        for (Folder folder : allFolders) {
+            if (folder.getParentFolderSeq() != null) {
+                FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
                 FolderTreeDto parentDto = folderMap.get(folder.getParentFolderSeq());
+                
                 if (parentDto != null && parentDto.getDepth() != null) {
-                    String path = parentDto.getPath() + "/" + folder.getFolderName();
-                    folderDto.setDepthAndPath(parentDto.getDepth() + 1, path);
+                    // 부모의 깊이와 경로를 기반으로 자식 설정
+                    int childDepth = parentDto.getDepth() + 1;
+                    String childPath = parentDto.getPath() + "/" + folder.getFolderName();
+                    folderDto.setDepthAndPath(childDepth, childPath);
+                    folderDto.setFolderName(folder.getFolderName()); // 폴더명 명시적 설정
+                    
+                    // 부모의 children에 추가
                     parentDto.addChild(folderDto);
                 }
             }
         }
         
-        log.info("폴더 트리 조회 완료 - DriveChannelSeq: {}, 총 폴더 수: {}", driveChannelSeq, allFolders.size());
+        log.info("폴더 트리 조회 완료 - DriveChannelSeq: {}, 총 폴더 수: {}, 루트 폴더 수: {}", 
+                driveChannelSeq, allFolders.size(), rootFolders.size());
         return rootFolders;
     }
 
