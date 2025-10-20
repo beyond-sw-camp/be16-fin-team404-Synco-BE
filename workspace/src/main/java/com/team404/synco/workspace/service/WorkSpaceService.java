@@ -228,7 +228,6 @@ public class WorkSpaceService {
                 .map(Optional::get)
                 .map(WorkSpaceMemberInfoResDto::fromEntity)
                 .toList();
-
     }
 
     // 프로젝트 워크스페이스 수정
@@ -255,6 +254,55 @@ public class WorkSpaceService {
         }
         return WorkSpaceResDto.fromEntity(workSpace);
     }
+
+    // 워크스페이스 탈퇴
+    public void leaveWorkSpace(Long workSpaceSeq, Long memberSeq) throws Exception {
+        WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq).orElseThrow(() ->
+                new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
+
+        // 사용자 검증
+        List<WorkSpaceMemberInfoResDto> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpace.getWorkSpaceSeq());
+        boolean isMemberIncluded = workSpaceMemberList.stream()
+                .anyMatch(member -> Objects.equals(member.getMemberSeq(), memberSeq));
+
+        if (!isMemberIncluded) {
+            throw new AccessDeniedException("해당 워크스페이스의 멤버가 아닙니다.");
+        }
+        // 레디스 멤버 목록에서 워크스페이스 삭제
+        workSpaceRedisService.removeWorkspaceFromMember(memberSeq, workSpace.getWorkSpaceSeq());
+        // 레디스 워크스페이스 목록에서 워크스페이스 삭제
+        workSpaceRedisService.removeMemberFromWorkSpace(memberSeq, workSpace.getWorkSpaceSeq());
+        // 각 모듈 db에서 멤버 정보 삭제
+        chatFeign.leaveWorkSpace(workSpace.getWorkSpaceSeq(), memberSeq);
+        taskFeign.leaveWorkSpaceFromTask(workSpace.getWorkSpaceSeq(), memberSeq);
+        taskFeign.leaveWorkSpaceFromVirtualMeeting(workSpace.getWorkSpaceSeq(), memberSeq);
+    }
+
+    // SUPER 사용자에 의한 워크스페이스 강제 탈퇴
+    public void kickFromWorkSpace(KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto, Long memberSeq) throws Exception {
+        WorkSpace workSpace = workSpaceRepository.findById(kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq()).orElseThrow(() ->
+                new EntityNotFoundException("해당 워크스페이스가 존재하지 않습니다."));
+        // 권한 검증
+        checkAuthority(workSpace, memberSeq);
+
+        // 탙뢰 대상 사용자 검증
+        List<WorkSpaceMemberInfoResDto> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpace.getWorkSpaceSeq());
+        boolean isMemberIncluded = workSpaceMemberList.stream()
+                .anyMatch(member -> Objects.equals(member.getMemberSeq(), memberSeq));
+
+        if (!isMemberIncluded) {
+            throw new AccessDeniedException("해당 워크스페이스의 멤버가 아닙니다.");
+        }
+        // 레디스 멤버 목록에서 워크스페이스 삭제
+        workSpaceRedisService.removeWorkspaceFromMember(kickMemberFromWorkSpaceReqDto.getMemberSeq(), workSpace.getWorkSpaceSeq());
+        // 레디스 워크스페이스 목록에서 워크스페이스 삭제
+        workSpaceRedisService.removeMemberFromWorkSpace(kickMemberFromWorkSpaceReqDto.getMemberSeq(), workSpace.getWorkSpaceSeq());
+        // 각 모듈 db에서 멤버 정보 삭제
+        chatFeign.kickFromWorkSpace(kickMemberFromWorkSpaceReqDto);
+        taskFeign.kickFromWorkSpaceTask(kickMemberFromWorkSpaceReqDto);
+        taskFeign.kickFromWorkSpaceVirtualMeeting(kickMemberFromWorkSpaceReqDto);
+    }
+
 
     // 워크스페이스 삭제
     public void deleteWorkSpace(Long workSpaceSeq, Long memberSeq) throws Exception {
@@ -318,11 +366,6 @@ public class WorkSpaceService {
             throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
         }
     }
-
-//    // 워크스페이스 상세 조회(대시보드)
-//    public WorkSpaceDetailResDto workSpaceDetail(){
-//        return null;
-//    }
 //
 //
 //

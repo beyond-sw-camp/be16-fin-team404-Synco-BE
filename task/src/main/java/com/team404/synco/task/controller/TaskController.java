@@ -6,6 +6,7 @@ import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.service.TaskService;
 import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
+import com.team404.synco.virtualmeeting.dto.KickMemberFromWorkSpaceReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,5 +67,19 @@ public class TaskController {
     @DeleteMapping("/{workSpaceSeq}")
     public void deleteTeamTaskChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         taskService.deleteAllTask(workSpaceSeq);
+    }
+
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
+        taskService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // 워크스페이스 강제탈퇴
+    @DeleteMapping("/kick")
+    public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
+        Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
+        Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
+        taskService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 }

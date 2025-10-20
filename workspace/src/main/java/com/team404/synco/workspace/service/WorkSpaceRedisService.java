@@ -186,6 +186,19 @@ public class WorkSpaceRedisService {
                 .put(key, field, objectMapper.writeValueAsString(list));
     }
 
+    // 멤버를 워크스페이스 정보에서 삭제
+    public void removeMemberFromWorkSpace(Long memberSeq, Long workSpaceSeq) throws Exception{
+        String key = WORKSPACE_KEY_PREFIX + workSpaceSeq;
+        String field = MEMBER_LIST;
+        String json = (String) workSpaceRedisTemplate.opsForHash().get(key, field);
+        if (json == null) return;
+
+        List<Long> list = objectMapper.readValue(json, new TypeReference<>() {});
+        list.remove(memberSeq);
+        workSpaceRedisTemplate.opsForHash()
+                .put(key, field, objectMapper.writeValueAsString(list));
+    }
+
     // 워크스페이스 목록에서 워크스페이스 삭제
     public void removeWorkspace(Long workspaceSeq) throws Exception {
         workSpaceRedisTemplate.delete(WORKSPACE_KEY_PREFIX + workspaceSeq);

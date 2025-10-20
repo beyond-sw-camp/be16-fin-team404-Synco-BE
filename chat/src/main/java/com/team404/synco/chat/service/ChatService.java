@@ -205,6 +205,18 @@ public class ChatService {
         chatChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 
+    // 워크스페이스 탈퇴
+    public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
+        // 기본 채널 조회 (권한 검증용)
+        ChatChannel basicChannel = checkBasicChannel(workSpaceSeq);
+        log.info("권한 검증 성공");
+        // 멤버가 채널에 있는지 확인
+        chatChannelMemberRepository.findByChannelAndMember(basicChannel.getChatChannelSeq(),
+                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+        log.info("멤버 프로젝트 존재 여부 검증 성공");
+        chatChannelMemberRepository.deleteByChannelAndMember(basicChannel.getChatChannelSeq(), memberSeq);
+    }
+
     // 기본 채널 검증
     private ChatChannel checkBasicChannel(Long workSpaceSeq) {
         return chatChannelRepository.findFirstByWorkSpaceSeqOrderByChatChannelSeqAsc(workSpaceSeq).orElseThrow(() ->

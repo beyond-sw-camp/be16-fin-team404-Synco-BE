@@ -87,5 +87,19 @@ public class WorkSpaceController {
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에 초대되었습니다.", HttpStatus.OK));
     }
 
-    // 채널 삭제
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> leaveWorkSpace(@PathVariable("workSpaceSeq") Long workSpaceSeq,
+                                                          @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
+        workSpaceService.leaveWorkSpace(workSpaceSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에서 탈퇴되었습니다.", HttpStatus.OK));
+    }
+
+    // 강제 탈퇴
+    @DeleteMapping("/kick")
+    public ResponseEntity<ResponseDto<?>> kickWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto,
+                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
+        workSpaceService.kickFromWorkSpace(kickMemberFromWorkSpaceReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 해당 사용자를 강제 탈퇴시켰습니다.", HttpStatus.OK));
+    }
 }

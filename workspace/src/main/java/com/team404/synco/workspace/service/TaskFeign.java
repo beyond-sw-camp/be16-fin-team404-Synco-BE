@@ -27,6 +27,12 @@ public interface TaskFeign {
     @GetMapping("/task/{workSpaceSeq}/members")
     List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq);
 
+    @DeleteMapping("/task/leave/{workSpaceSeq}")
+    void leaveWorkSpaceFromTask(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/task/kick")
+    void kickFromWorkSpaceTask(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto);
+
     @PostMapping("/virtual-meeting/createBasicChannel")
     void createVirtualMeetBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
 
@@ -40,4 +46,10 @@ public interface TaskFeign {
     @PostMapping("/virtual-meeting/delegateSuperAuthority")
     void delegateVirtualMeetChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                   @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/virtual-meeting/leave/{workSpaceSeq}")
+    void leaveWorkSpaceFromVirtualMeeting(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/virtual-meeting/kick")
+    void kickFromWorkSpaceVirtualMeeting(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto);
 }

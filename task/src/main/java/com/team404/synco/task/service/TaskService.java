@@ -112,6 +112,15 @@ public class TaskService {
                 .count();
     }
 
+    // 워크스페이스 탈퇴
+    public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
+        // 멤버가 채널에 있는지 확인 / 채널에 있는 모든 멤버 행 다 가져오기
+        scheduleManagementChannelMemberRepository.findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
+                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+
+        scheduleManagementChannelMemberRepository.deleteByChannelAndMember(workSpaceSeq, memberSeq);
+    }
+
     // 내 워크스페이스 목록
     public List<Long> myWorkSpaceList(Long memberSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
