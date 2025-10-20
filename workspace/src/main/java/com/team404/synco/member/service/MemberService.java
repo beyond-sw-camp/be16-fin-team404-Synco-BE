@@ -5,11 +5,10 @@ import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
-import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.common.service.EmailService;
-import com.team404.synco.alarm.service.SseNotificationService;
 import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.friend.repository.FriendRepository;
+import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
@@ -28,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Transactional
 @Service
@@ -47,7 +46,6 @@ public class MemberService {
     private final KakaoService kakaoService;
     private final NaverService naverService;
     private final FriendRepository friendRepository;
-    private final SseNotificationService sseNotificationService;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
@@ -203,12 +201,13 @@ public class MemberService {
                     return memberRepository.save(newMember);
                 });
 
-        // 로그인 시 이전 활성 상태로 복원
-        member.restoreLastActiveStatus();
-
+        // 탈퇴한 계정인지 먼저 확인
         if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
             throw new IllegalArgumentException("이미 탈퇴한 계정입니다.");
         }
+
+        // 로그인 시 이전 활성 상태로 복원
+        member.restoreLastActiveStatus();
 
         boolean needMemberId = member.getMemberId() == null || member.getMemberId().isBlank();
 
@@ -284,27 +283,6 @@ public class MemberService {
         member.saveLastActiveStatus();
         member.updateActiveStatus(ActiveStatus.OFFLINE);
 
-        // 저장된 이전 상태와 OFFLINE 상태를 비교하여 알림 발송
-        ActiveStatus lastActiveStatus = member.getLastActiveStatus();
-        if (!lastActiveStatus.equals(ActiveStatus.OFFLINE)) {
-            // 승인된 친구 목록 조회 (Pageable.unpaged()로 전체 조회)
-            Page<Friend> friendPage = friendRepository.findAllByMemberAndFriendStatus(
-                member,
-                FriendStatus.APPROVE,
-                Pageable.unpaged()
-            );
-
-            List<Member> friendList = friendPage.getContent().stream()
-                    .map(Friend::getFriendMember)
-                    .collect(Collectors.toList());
-
-            // 친구들에게 실시간 알림 발송
-            if (!friendList.isEmpty()) {
-                sseNotificationService.notifyStatusChangeToFriends(member, lastActiveStatus, ActiveStatus.OFFLINE, friendList);
-                log.info("로그아웃 상태 변경 알림 발송: memberSeq={}, {} → OFFLINE, 친구 수={}",
-                        memberSeq, lastActiveStatus, friendList.size());
-            }
-        }
 
         jwtTokenProvider.deleteRt(memberSeq);
     }
@@ -314,6 +292,13 @@ public class MemberService {
         if (keyword == null || keyword.isBlank()) {
             throw new IllegalArgumentException("검색 키워드를 입력해주세요.");
         }
+        // APPROVE 상태인 친구들의 memberSeq 목록 조회
+        Member currentMember = memberRepository.findById(memberSeq)
+            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        Page<Friend> approvedFriendsPage = friendRepository.findAllByMemberAndFriendStatus(currentMember, FriendStatus.APPROVE, Pageable.unpaged());
+        List<Long> approvedFriendList = approvedFriendsPage.getContent().stream()
+            .map(friend -> friend.getFriendMember().getMemberSeq())
+            .toList();
 
         Specification<Member> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -325,43 +310,44 @@ public class MemberService {
 
             predicates.add(cb.equal(root.get("ynDel"), YnColumn.IS_FALSE));
 
+            // APPROVE 상태인 친구들 제외
+            if (!approvedFriendList.isEmpty()) {
+                predicates.add(cb.not(root.get("memberSeq").in(approvedFriendList)));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Page<Member> memberList = memberRepository.findAll(spec, pageable);
-        return memberList.map(MemberSearchResDto::fromEntity);
+        return memberList.map(member -> {
+            String requestStatus = getRequestStatus(currentMember, member);
+            return MemberSearchResDto.fromEntity(member, requestStatus);
+        });
+    }
+
+    private String getRequestStatus(Member currentMember, Member targetMember) {
+        // 내가 보낸 요청인지 확인
+        if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
+                currentMember, targetMember, FriendStatus.PENDING)) {
+            return "sent";
+        }
+        // 나에게 온 요청인지 확인
+        if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
+                targetMember, currentMember, FriendStatus.PENDING)) {
+            return "received";
+        }
+        return "none";
     }
 
     public void updateActiveStatus(Long memberSeq, ActiveStatusUpdateReqDto reqDto) {
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
-        // 이전 상태 저장
-        ActiveStatus previousStatus = member.getActiveStatus();
-
+        if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
+            throw new IllegalArgumentException("탈퇴한 회원입니다.");
+        }
         // 상태 변경
         member.updateActiveStatus(reqDto.getActiveStatus());
-
-        // 상태가 실제로 변경된 경우에만 친구들에게 알림 발송
-        if (!previousStatus.equals(reqDto.getActiveStatus())) {
-            // 승인된 친구 목록 조회 (Pageable.unpaged()로 전체 조회)
-            Page<Friend> friendPage = friendRepository.findAllByMemberAndFriendStatus(
-                member,
-                FriendStatus.APPROVE,
-                Pageable.unpaged()
-            );
-
-            List<Member> friendList = friendPage.getContent().stream()
-                    .map(Friend::getFriendMember)
-                    .collect(Collectors.toList());
-
-            // 친구들에게 실시간 알림 발송
-            if (!friendList.isEmpty()) {
-                sseNotificationService.notifyStatusChangeToFriends(member, previousStatus, reqDto.getActiveStatus(), friendList);
-                log.info("상태 변경 알림 발송: memberSeq={}, {} → {}, 친구 수={}",
-                        memberSeq, previousStatus, reqDto.getActiveStatus(), friendList.size());
-            }
-        }
     }
 
 }

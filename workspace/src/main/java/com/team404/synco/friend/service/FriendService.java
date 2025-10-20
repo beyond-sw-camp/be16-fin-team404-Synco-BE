@@ -29,9 +29,7 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
 
-    /**
-     * 1. 친구 요청 보내기
-     */
+    // 1. 친구 요청 보내기
     public void requestFriend(Long memberSeq, FriendReqDto friendReqDto) {
         Member requester = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
@@ -51,7 +49,7 @@ public class FriendService {
             throw new IllegalArgumentException("이미 친구 요청을 보낸 상태입니다.");
         }
 
-        if (friendRepository.existsByFriendMemberAndMemberAndFriendStatus(receiver, requester, FriendStatus.PENDING)) {
+        if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(receiver, requester, FriendStatus.PENDING)) {
             throw new IllegalArgumentException("상대방이 이미 회원님에게 친구 요청을 보냈습니다. 받은 요청 목록을 확인해주세요.");
         }
 
@@ -64,9 +62,7 @@ public class FriendService {
         friendRepository.save(newRequest);
     }
 
-    /**
-     * 2. 친구 요청 수락하기
-     */
+    // 2. 친구 요청 수락하기
     public void acceptFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
@@ -102,9 +98,7 @@ public class FriendService {
         friendRepository.save(acceptedRelationship);
     }
 
-    /**
-     * 3. 친구 요청 거절하기
-     */
+    // 3. 친구 요청 거절하기
     public void rejectFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
@@ -123,9 +117,7 @@ public class FriendService {
         friendRepository.delete(pendingRequest);
     }
 
-    /**
-     * 4. 친구 목록 조회 및 검색 (ACCEPTED)
-     */
+    // 4. 친구 목록 조회 및 검색 (ACCEPTED)
     @Transactional(readOnly = true)
     public Page<FriendResDto> getFriendList(Long memberSeq, Pageable pageable, String keyword) {
         Member member = memberRepository.findById(memberSeq)
@@ -152,12 +144,10 @@ public class FriendService {
             friendList = friendRepository.findAllByMemberAndFriendStatus(member, FriendStatus.APPROVE, pageable);
         }
 
-        return friendList.map(friend -> FriendResDto.fromEntity(friend.getFriendMember()));
+        return friendList.map(FriendResDto::fromEntity);
     }
 
-    /**
-     * 5. 보낸 요청 목록 조회 (PENDING)
-     */
+    // 5. 보낸 요청 목록 조회 (PENDING)
     @Transactional(readOnly = true)
     public Page<FriendResDto> getSentRequestList(Long memberSeq, Pageable pageable) {
         Member member = memberRepository.findById(memberSeq)
@@ -165,12 +155,10 @@ public class FriendService {
 
         Page<Friend> sentRequestList = friendRepository.findAllByMemberAndFriendStatus(member, FriendStatus.PENDING, pageable);
 
-        return sentRequestList.map(request -> FriendResDto.fromEntity(request.getFriendMember()));
+        return sentRequestList.map(FriendResDto::fromEntity);
     }
 
-    /**
-     * 6. 받은 요청 목록 조회 (PENDING)
-     */
+    // 6. 받은 요청 목록 조회 (PENDING)
     @Transactional(readOnly = true)
     public Page<ReceivedReqDto> getReceivedRequestList(Long memberSeq, Pageable pageable) {
         Member member = memberRepository.findById(memberSeq)
@@ -181,9 +169,7 @@ public class FriendService {
         return receivedRequestList.map(ReceivedReqDto::fromEntity);
     }
 
-    /**
-     * 7. 보낸 친구 요청 취소하기
-     */
+    // 7. 보낸 친구 요청 취소하기
     public void cancelFriendRequest(Long friendSeq, Long memberSeq) {
         Friend sentRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
@@ -202,9 +188,7 @@ public class FriendService {
         friendRepository.delete(sentRequest);
     }
 
-    /**
-     * 8. 친구 삭제 (친구 끊기)
-     */
+    // 8. 친구 삭제 (친구 끊기)
     public void deleteFriend(Long friendMemberSeq, Long memberSeq) {
         Member me = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));

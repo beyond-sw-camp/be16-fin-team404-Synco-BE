@@ -15,15 +15,18 @@ public class MemberSearchResDto {
     private String memberId;
     private String name;
     private String profileImageUrl;
+    private String requestStatus = "none";
 
-    public static MemberSearchResDto fromEntity(Member member) {
+    public static MemberSearchResDto fromEntity(Member member, String requestStatus) {
         return MemberSearchResDto.builder()
                 .memberSeq(member.getMemberSeq())
                 .memberId(member.getMemberId())
                 .name(member.getName())
                 .profileImageUrl(member.getProfileImageUrl())
+                .requestStatus(requestStatus)
                 .build();
     }
+
 }
 
 

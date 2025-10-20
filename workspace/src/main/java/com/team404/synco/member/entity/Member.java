@@ -57,8 +57,6 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member")
     private List<Alarm> alarmList = new ArrayList<>();
     @OneToMany(mappedBy = "member")
-    private List<Friend> memberList = new ArrayList<>();
-    @OneToMany(mappedBy = "member")
     private List<WorkSpace> workSpaceList = new ArrayList<>();
 
     public void updateMember(MemberUpdateDto memberUpdateDto) {

@@ -26,10 +26,8 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, JpaSpecif
     boolean existsFriendRelation(@Param("member1") Member member1, @Param("member2") Member member2, @Param("status") FriendStatus status);
 
     // 내가 이미 친구 요청을 보냈는지 (A → B, PENDING)
-    boolean existsByMemberAndFriendMemberAndFriendStatus(Member member, Member friendMember, FriendStatus friendStatus);
-
     // 상대방이 나에게 이미 요청을 보냈는지 (B → A, PENDING)
-    boolean existsByFriendMemberAndMemberAndFriendStatus(Member friendMember, Member member, FriendStatus friendStatus);
+    boolean existsByMemberAndFriendMemberAndFriendStatus(Member member, Member friendMember, FriendStatus friendStatus);
 
     // 친구 목록 & 보낸 요청 목록 (member와 friendStatus로 조회)
     Page<Friend> findAllByMemberAndFriendStatus(Member member, FriendStatus friendStatus, Pageable pageable);

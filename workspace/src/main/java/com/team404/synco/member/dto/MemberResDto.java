@@ -5,6 +5,7 @@ import com.team404.synco.member.entity.Member;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
@@ -19,6 +20,7 @@ public class MemberResDto {
     private String telNo;
     private ActiveStatus activeStatus;
     private LocalDate birthDate;
+    private LocalDateTime createdAt;
 
     public static MemberResDto fromEntity(Member member) {
         return MemberResDto.builder()
@@ -30,6 +32,7 @@ public class MemberResDto {
                 .telNo(member.getTelNo())
                 .activeStatus(member.getActiveStatus())
                 .birthDate(member.getBirthDate())
+                .createdAt(member.getCreatedAt())
                 .build();
     }
 }
