@@ -12,6 +12,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ChatMessageResDto {
 //    private Long messageSeq;
 //    private String senderName;

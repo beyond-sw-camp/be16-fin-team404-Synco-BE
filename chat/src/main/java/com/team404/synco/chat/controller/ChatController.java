@@ -93,31 +93,6 @@ public class ChatController {
     }
 
     ///////////////////////////////////////////채팅기능////////////////////////////////////////////////
-    /**
-     * ✅ 채팅 파일 업로드 (채널별 업로드)
-     */
-    @PostMapping("/files/upload/{channelSeq}")
-    public Map<String, Object> uploadFiles(@PathVariable Long channelSeq,
-                                           @RequestParam("files") List<MultipartFile> files) {
-        List<String> uploadedUrls = chatService.uploadFiles(files, channelSeq);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("uploadedUrls", uploadedUrls);
-
-        log.info("💾 채팅 파일 업로드 완료 - channelSeq={}, files={}", channelSeq, uploadedUrls);
-        return response;
-    }
-
-    /**
-     * ✅ Presigned URL 방식 파일 다운로드
-     */
-    @GetMapping("/files/download")
-    public Map<String, Object> downloadFile(@RequestParam("key") String key) {
-        String presignedUrl = chatService.generateDownloadUrl(key);
-        Map<String, Object> response = new HashMap<>();
-        response.put("downloadUrl", presignedUrl);
-        return response;
-    }
 
     // 채팅목록 조회 (개인워크스페이스)
     @GetMapping("/channels/personal")

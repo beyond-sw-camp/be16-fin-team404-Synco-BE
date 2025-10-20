@@ -3,6 +3,7 @@ package com.team404.synco.chat.config;
 import com.team404.synco.chat.security.JwtUtil;
 import com.team404.synco.chat.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -17,7 +18,7 @@ public class StompHandler implements ChannelInterceptor {
     private final ChatService chatService;
     private final JwtUtil jwtUtil;
 
-    public StompHandler(ChatService chatService, JwtUtil jwtUtil) {
+    public StompHandler(@Lazy ChatService chatService, JwtUtil jwtUtil) {
         this.chatService = chatService;
         this.jwtUtil = jwtUtil;
     }

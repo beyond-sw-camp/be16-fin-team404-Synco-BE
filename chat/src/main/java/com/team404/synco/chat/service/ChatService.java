@@ -1,15 +1,14 @@
 package com.team404.synco.chat.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.chat.dto.*;
 import com.team404.synco.chat.dto.ChannelCreateReqDto;
 import com.team404.synco.chat.dto.ChannelInviteReqDto;
 import com.team404.synco.chat.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.chat.dto.GrantAuthorityReqDto;
 import com.team404.synco.chat.dto.*;
-import com.team404.synco.chat.entity.ChatChannel;
-import com.team404.synco.chat.entity.ChatChannelMember;
-import com.team404.synco.chat.entity.ChatMessage;
-import com.team404.synco.chat.entity.WorkSpaceType;
+import com.team404.synco.chat.entity.*;
 import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.chat.repository.ChatMessageRepository;
@@ -45,7 +44,6 @@ public class ChatService {
     private final ChatChannelMemberRepository chatChannelMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final S3Uploader s3Uploader;
-    private final ChatRedisService chatRedisService;
     private final String folderNamePrefix = "chat/";
 
     public ChatService(RedisTemplate<String, Object> memberRedisTemplate, ChatChannelRepository chatChannelRepository, ChatChannelMemberRepository chatChannelMemberRepository, ChatMessageRepository chatMessageRepository, S3Uploader s3Uploader, ChatRedisService chatRedisService) {
@@ -54,7 +52,6 @@ public class ChatService {
         this.chatChannelMemberRepository = chatChannelMemberRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.s3Uploader = s3Uploader;
-        this.chatRedisService = chatRedisService;
     }
 
     // 기본 채널 생성
@@ -275,83 +272,62 @@ public class ChatService {
     }
 
     // 메시지 저장 - stompcontroller
+    @Transactional
     public void saveMessage(Long channelSeq, ChatMessageReqDto dto) {
+        log.info("===========채팅 메시지 저장 시작===========");
+
         // 1️⃣ 채널 존재 여부 검증
-        log.info("===========채널존재여부검증===========");
         ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
                 .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
 
-        // 2️⃣ 발신자 존재 여부 검증 (Redis에서 조회)
-        log.info("===========발신자존재여부검증===========");
+        // 2️⃣ Redis에서 발신자 정보 확인
         String memberKey = "memberSeq:" + dto.getSenderSeq();
         String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
-
         if (memberName == null) {
             throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
         }
 
-        // 3️⃣ 해당 채팅 채널의 참여자 여부 검증
-        log.info("===========채팅채널의참여자여부검증===========");
+        // 3️⃣ 채널 참여자 여부 확인
         ChatChannelMember sender = chatChannelMemberRepository
                 .findByChatChannelAndMemberSeq(chatChannel, dto.getSenderSeq())
                 .orElseThrow(() -> new EntityNotFoundException("해당 채널에 참여하지 않은 사용자입니다. memberSeq=" + dto.getSenderSeq()));
 
-        // 4️⃣ 파일 업로드 처리 (optional)
-        // TODO: s3업로드는 api로 하고 이거는 db에 url 저장하는 로직으로 바꿔야함
-        log.info("===========파일업로드처리===========");
-        String fileUrls = null;
+        // 4️⃣ 파일 업로드 (optional)
+        List<String> uploadedUrls = new ArrayList<>();
         if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
+            log.info("===========S3 파일 업로드===========");
             if (dto.getFiles().size() > 20) {
                 throw new IllegalArgumentException("최대 20개의 파일만 전송할 수 있습니다.");
             }
 
-//            List<String> uploadedUrls = s3Uploader.upload(dto.getFiles(), "chat");
-//            fileUrls = String.join(",", uploadedUrls);
+            // S3 업로드 실행
+            uploadedUrls = s3Uploader.uploadAll(dto.getFiles(), channelSeq);
         }
 
-        // 5️⃣ 메시지 엔티티 생성
-        log.info("===========메시지 엔티티 생성===========");
+        // 5️⃣ DB 저장용 JSON 문자열 변환
+        String fileUrlsJson = null;
+        if (!uploadedUrls.isEmpty()) {
+            try {
+                fileUrlsJson = new ObjectMapper().writeValueAsString(uploadedUrls);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("파일 URL JSON 변환 실패", e);
+            }
+        }
+
+        // 6️⃣ 메시지 엔티티 생성 및 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatChannelMember(sender)
                 .chatMessageText(dto.getChatMessageText())
-                .chatMessageFileUrls(fileUrls)
-                .chatMessageParentSeq(dto.getReplyToSeq() != null ? dto.getReplyToSeq() : 0L)
+                .chatMessageFileUrls(fileUrlsJson)
+                .chatMessageParentSeq(dto.getReplyToSeq() != null ? dto.getReplyToSeq() : null)
                 .build();
 
         chatMessageRepository.save(chatMessage);
 
-        // 6️⃣ 로그
-        log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={})",
-                channelSeq, dto.getSenderSeq(), memberName);
+        log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={})",
+                channelSeq, dto.getSenderSeq(), memberName, uploadedUrls);
     }
 
-    // 채팅 파일 업로드 (폴더 자동 생성 + 중복 검증)
-    public List<String> uploadFiles(List<MultipartFile> files, Long chatChannelSeq) {
-        if (files == null || files.isEmpty()) {
-            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
-        }
-
-        List<String> uploadedUrls = new ArrayList<>();
-
-        for (MultipartFile file : files) {
-            try {
-                // 예: chat/15
-                String uploadPath = folderNamePrefix + chatChannelSeq;
-                String fileUrl = s3Uploader.upload(file, uploadPath);
-                uploadedUrls.add(fileUrl);
-            } catch (Exception e) {
-                log.error("❌ 채팅 파일 업로드 실패: {}", file.getOriginalFilename(), e);
-            }
-        }
-
-        log.info("💬 ChatService - 업로드 완료 (channelSeq={}): {}", chatChannelSeq, uploadedUrls);
-        return uploadedUrls;
-    }
-
-    // Presigned URL 생성 (다운로드용)
-    public String generateDownloadUrl(String key) {
-        return s3Uploader.createPresignedUrl(key);
-    }
 
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)
