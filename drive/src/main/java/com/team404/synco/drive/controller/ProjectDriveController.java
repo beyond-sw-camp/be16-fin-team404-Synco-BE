@@ -140,7 +140,7 @@ public class ProjectDriveController {
     }
 
     // 팀 드라이브 삭제(워크스페이스 삭제시)
-    @DeleteMapping("/{workSpaceSeq}")
+    @DeleteMapping("/deleteDrive/{workSpaceSeq}")
     public void deleteAllChannel(@PathVariable Long workSpaceSeq) {
         projectDriveService.deleteDrive(workSpaceSeq);
     }
