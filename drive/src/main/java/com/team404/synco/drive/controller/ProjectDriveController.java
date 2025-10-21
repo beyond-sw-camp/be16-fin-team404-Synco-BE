@@ -144,13 +144,13 @@ public class ProjectDriveController {
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-//    // 프로젝트 드라이브 공유문서 다운로드
-//    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
-//    public ResponseEntity<byte[]> downloadProjectDocument(
-//            @PathVariable Long driveChannelSeq,
-//            @PathVariable Long documentSeq) {
-//        return projectDriveService.downloadProjectDocument(driveChannelSeq, documentSeq);
-//    }
+    // 프로젝트 드라이브 공유문서 다운로드
+    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
+    public ResponseEntity<byte[]> downloadProjectDocument(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        return projectDriveService.downloadProjectDocument(driveChannelSeq, documentSeq);
+    }
 
     // 프로젝트 드라이브 폴더 트리 조회
     @GetMapping("/{driveChannelSeq}/folders/tree")

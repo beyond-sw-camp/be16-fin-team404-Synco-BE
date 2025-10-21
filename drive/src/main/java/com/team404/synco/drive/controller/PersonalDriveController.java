@@ -95,6 +95,14 @@ public class PersonalDriveController {
         return personalDriveService.downloadPersonalFile(driveChannelSeq, documentSeq);
     }
 
+    // 개인 드라이브 공유문서 다운로드
+    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
+    public ResponseEntity<byte[]> downloadPersonalDocument(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
+    }
+
     // 폴더 이름 변경
     @PatchMapping("/folder/rename")
     public ResponseEntity<ResponseDto<?>> renamePersonalFolder(@RequestBody RenameFolderReqDto renameFolderReqDto) {
@@ -128,14 +136,6 @@ public class PersonalDriveController {
         DriveItemDto document = personalDriveService.togglePersonalDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
-
-//    // 개인 드라이브 공유문서 다운로드
-//    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
-//    public ResponseEntity<byte[]> downloadPersonalDocument(
-//            @PathVariable Long driveChannelSeq,
-//            @PathVariable Long documentSeq) {
-//        return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
-//    }
 
     // 개인 드라이브 폴더 트리 조회
     @GetMapping("/{driveChannelSeq}/folders/tree")
