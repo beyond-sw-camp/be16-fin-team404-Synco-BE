@@ -14,12 +14,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ChatMessageResDto {
-//    private Long messageSeq;
-//    private String senderName;
+    private Long chatMessageSeq; // ✅ 메시지 고유 ID 추가
     private Long channelSeq;
-    private Long senderSeq;          // ✅ Redis key로 조회용
-    private MessageType messageType;      // TEXT, FILE, REPLY 등
-    private String chatMessageText;       // 메시지 내용
-    private Long replyToSeq;              // 답장 대상 메시지 ID (nullable)
-    private String chatMessageFileUrls;     // 다중 파일 업로드 (optional)
+    private Long senderSeq; // ✅ Redis key로 조회용
+    private String senderName; // ✅ 발신자 이름 추가
+    private String senderProfileImageUrl; // ✅ 발신자 프로필 이미지 추가
+    private MessageType messageType; // TEXT, FILE, REPLY 등
+    private String chatMessageText; // 메시지 내용
+    private Long replyToSeq; // 답장 대상 메시지 ID (nullable)
+    private String chatMessageFileUrls; // 다중 파일 업로드 (optional)
 }

@@ -3,6 +3,7 @@ package com.team404.synco.chat.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.chat.dto.ChatMessageReqDto;
+import com.team404.synco.chat.dto.ChatMessageResDto;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.chat.service.RedisPubSubService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,17 +23,17 @@ public class StompController {
         this.redisPubSubService = redisPubSubService;
     }
 
-//    클라이언트가 보낸 메시지를 서버가 받아서 처리하고 Redis로 publish
+    // 클라이언트가 보낸 메시지를 서버가 받아서 처리하고 Redis로 publish
     @MessageMapping("/{channelSeq}")
-    public void sendMessage(@DestinationVariable Long channelSeq, ChatMessageReqDto chatMessageReqDto) throws JsonProcessingException {
+    public void sendMessage(@DestinationVariable Long channelSeq, ChatMessageReqDto chatMessageReqDto)
+            throws JsonProcessingException {
         log.info("메시지 본문 : {}", chatMessageReqDto.getChatMessageText());
 
-        chatService.saveMessage(channelSeq, chatMessageReqDto); //메시지 저장
+        ChatMessageResDto chatMessageResDto = chatService.saveMessage(channelSeq, chatMessageReqDto); // 메시지 저장
 
-        chatMessageReqDto.setChannelSeq(channelSeq);
-        System.out.println("chatMessageReqDto : " + chatMessageReqDto);
+        System.out.println("chatMessageResDto : " + chatMessageResDto);
         ObjectMapper objectMapper = new ObjectMapper();
-        String message = objectMapper.writeValueAsString(chatMessageReqDto);
+        String message = objectMapper.writeValueAsString(chatMessageResDto);
         redisPubSubService.publish("chat", message);
     }
 }
