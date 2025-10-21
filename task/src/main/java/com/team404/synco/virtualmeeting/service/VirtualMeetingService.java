@@ -194,6 +194,17 @@ public class VirtualMeetingService {
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 
+    // 워크스페이스 탈퇴
+    public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
+        // 기본 채널 조회 (권한 검증용)
+        VirtualMeetingChannel basicChannel = checkBasicChannel(workSpaceSeq);
+
+        // 멤버가 채널에 있는지 확인 / 채널에 있는 모든 멤버 행 다 가져오기
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(basicChannel.getVirtualMeetingChannelSeq(),
+                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+
+        virtualMeetingChannelMemberRepository.deleteByChannelAndMember(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
+    }
 
     // 기본 채널 검증
     private VirtualMeetingChannel checkBasicChannel(Long workSpaceSeq) {
