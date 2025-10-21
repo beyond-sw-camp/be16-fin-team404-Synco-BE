@@ -1,6 +1,6 @@
 package com.team404.synco.common.service;
 
-
+import com.team404.synco.drive.util.ContentTypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,10 +37,13 @@ public class S3Uploader {
 
         String key = folder + "/" + generateUniqueFileName(file.getOriginalFilename());
 
+        // ✅ ContentTypeUtil을 사용하여 정확한 Content-Type 설정
+        String contentType = ContentTypeUtil.getContentType(file.getOriginalFilename());
+        
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
-                .contentType(file.getContentType())
+                .contentType(contentType)  // ✅ ContentTypeUtil에서 가져온 정확한 타입
                 .build();
 
         try (InputStream in = file.getInputStream()) {
@@ -99,10 +102,9 @@ public class S3Uploader {
             throw new IllegalArgumentException("파일 크기는 100MB를 초과할 수 없습니다.");
         }
 
+        // ✅ 모든 확장자 허용 (ContentTypeUtil에서 처리)
         String ext = getExtension(file.getOriginalFilename());
-        if (!ext.matches("\\.(jpg|jpeg|svg|png|gif|webp|pdf|mp4|mov|avi|mkv|doc|docx|xls|xlsx|ppt|pptx|txt|zip|rar)$")) {
-            throw new IllegalArgumentException("지원하지 않는 파일 형식입니다.");
-        }
+        // 확장자 제한 제거 - 모든 파일 타입 허용
     }
 
     /**

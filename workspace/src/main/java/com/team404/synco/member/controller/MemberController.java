@@ -1,10 +1,15 @@
 package com.team404.synco.member.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
+import com.team404.synco.common.util.CookieUtil;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+    private final CookieUtil cookieUtil;
 
     @PostMapping("/create")
     public ResponseEntity<ResponseDto<?>> createMember(@ModelAttribute @Validated CreateMemberDto createMemberDto) {
@@ -25,7 +31,12 @@ public class MemberController {
     @PostMapping("/doLogin")
     public ResponseEntity<ResponseDto<?>> doLogin(@RequestBody LoginReqDto loginReqDto) {
         LoginResDto loginResDto = memberService.doLogin(loginReqDto);
-        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+        
+        ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
     }
 
     @GetMapping("/myPage")
@@ -46,10 +57,23 @@ public class MemberController {
         return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ResponseDto<?>> logout(@RequestHeader("X-Member-Seq") Long memberSeq) {
+        memberService.logout(memberSeq);
+        
+        ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .body(ResponseDto.ok("로그아웃 성공", HttpStatus.OK));
+    }
+
     @PostMapping("/refreshAt")
-    public ResponseEntity<ResponseDto<?>> generateNewAt(@RequestBody RefreshTokenDto refreshTokenDto) {
-        LoginResDto loginResDto = memberService.generateNewAt(refreshTokenDto);
-        return ResponseEntity.ok(ResponseDto.ok(loginResDto, HttpStatus.OK));
+    public ResponseEntity<ResponseDto<?>> generateNewAt(@CookieValue("refreshToken") String refreshToken) {
+        LoginResDto loginResDto = memberService.generateNewAt(refreshToken);
+        
+        return ResponseEntity.ok()
+                .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
     }
 
     @PostMapping("/findId")
@@ -69,6 +93,60 @@ public class MemberController {
                                                          @RequestBody @Validated ChangePasswordReqDto changePasswordReqDto) {
         memberService.changePassword(memberSeq, changePasswordReqDto);
         return ResponseEntity.ok(ResponseDto.ok("비밀번호가 성공적으로 변경되었습니다.", HttpStatus.OK));
+    }
+
+    @PostMapping("/google/doLogin")
+    public ResponseEntity<ResponseDto<?>> googleLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.googleLogin(redirectDto);
+        
+        ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
+    }
+
+    @PostMapping("/kakao/doLogin")
+    public ResponseEntity<ResponseDto<?>> kakaoLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.kakaoLogin(redirectDto);
+        
+        ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
+    }
+
+    @PostMapping("/naver/doLogin")
+    public ResponseEntity<ResponseDto<?>> naverLogin(@RequestBody RedirectDto redirectDto) {
+        LoginResDto loginResDto = memberService.naverLogin(redirectDto);
+        
+        ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .body(ResponseDto.ok(loginResDto.withoutRefreshToken(), HttpStatus.OK));
+    }
+
+    @PatchMapping("/social/memberId")
+    public ResponseEntity<ResponseDto<?>> registerMemberId(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                               @RequestBody @Validated MemberIdReqDto memberIdReqDto) {
+        memberService.registerMemberId(memberSeq, memberIdReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ResponseDto<?>> searchMembers(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                        @RequestParam String keyword, Pageable pageable) {
+        Page<MemberSearchResDto> searchResult = memberService.searchMembers(memberSeq, keyword, pageable);
+        return ResponseEntity.ok(ResponseDto.ok(searchResult, HttpStatus.OK));
+    }
+
+    @PatchMapping("/updateActiveStatus")
+    public ResponseEntity<ResponseDto<?>> updateActiveStatus(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                             @RequestBody @Validated ActiveStatusUpdateReqDto reqDto) {
+        memberService.updateActiveStatus(memberSeq, reqDto);
+        return ResponseEntity.ok(ResponseDto.ok("상태가 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 
 }

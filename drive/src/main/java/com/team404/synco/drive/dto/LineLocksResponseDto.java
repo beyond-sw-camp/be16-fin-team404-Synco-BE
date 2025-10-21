@@ -2,13 +2,16 @@ package com.team404.synco.drive.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
+import java.util.List;
+
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdateDocumentReqDto {
-    private String content;
+public class LineLocksResponseDto {
+    private Long documentId;
+    private List<LineLockDto> locks;
 }

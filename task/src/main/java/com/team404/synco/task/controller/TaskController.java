@@ -6,12 +6,14 @@ import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.service.TaskService;
 import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
+import com.team404.synco.virtualmeeting.dto.KickMemberFromWorkSpaceReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,26 +34,52 @@ public class TaskController {
     }
 
     // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
+    @PatchMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
-                                                                 @RequestHeader("X-member-seq")Long memberSeq) throws AccessDeniedException
+                                                                 @RequestHeader("X-Member-Seq")Long memberSeq) throws AccessDeniedException
     {
         taskService.grantToMember(grantAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("해당 사용자의 권한을 변경했습니다.", HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임
-    @PatchMapping("/delegateSuperAuthority")
+    @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
-                                                                 @RequestHeader("X-member-seq") Long memberSeq) throws AccessDeniedException
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException
     {
         taskService.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
 
+    // 내 워크스페이스 목록
+    @GetMapping("/memberList")
+    public List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){
+        return taskService.myWorkSpaceList(memberSeq);
+    }
+
+    // 워크스페이스 멤버 목록
+    @GetMapping("/{workSpaceSeq}/members")
+    public List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq){
+        return taskService.workSpaceMemberList(workSpaceSeq);
+    }
+
     // 팀 테스크 전체 삭제
     @DeleteMapping("/{workSpaceSeq}")
-    public void deleteTeamTaskChannel(@PathVariable Long workSpaceSeq){
+    public void deleteTeamTaskChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         taskService.deleteAllTask(workSpaceSeq);
+    }
+
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
+        taskService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // 워크스페이스 강제탈퇴
+    @DeleteMapping("/kick")
+    public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
+        Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
+        Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
+        taskService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 }

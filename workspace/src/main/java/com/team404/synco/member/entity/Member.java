@@ -21,6 +21,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = {@Index(name = "idx_member_search", columnList = "ynDel, memberId")})
 public class Member extends BaseEntity {
 
     @Id
@@ -28,16 +29,17 @@ public class Member extends BaseEntity {
     private Long memberSeq;
     @Column(nullable = false)
     private String email;
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String memberId;
-    @Column(nullable = false)
     private String password;
     @Column(nullable = false)
     private String name;
     @Column(nullable = false)
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    private ActiveStatus activeStatus = ActiveStatus.LOGOUT;
+    private ActiveStatus activeStatus = ActiveStatus.OFFLINE;
+    @Enumerated(EnumType.STRING)
+    private ActiveStatus lastActiveStatus;
     private String statusMessage;
     private String profileImageUrl;
     @Column(columnDefinition = "CHAR(13)")
@@ -54,8 +56,6 @@ public class Member extends BaseEntity {
     private String ynAlarmOffSet = YnColumn.IS_FALSE;
     @OneToMany(mappedBy = "member")
     private List<Alarm> alarmList = new ArrayList<>();
-    @OneToMany(mappedBy = "member")
-    private List<Friend> friendList = new ArrayList<>();
     @OneToMany(mappedBy = "member")
     private List<WorkSpace> workSpaceList = new ArrayList<>();
 
@@ -78,5 +78,25 @@ public class Member extends BaseEntity {
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void registerMemberId(String memberId) {
+        this.memberId = memberId;
+    }
+
+    public void updateActiveStatus(ActiveStatus activeStatus) {
+        this.activeStatus = activeStatus;
+    }
+
+    public void saveLastActiveStatus() {
+        this.lastActiveStatus = this.activeStatus;
+    }
+
+    public void restoreLastActiveStatus() {
+        if (this.lastActiveStatus != null) {
+            this.activeStatus = this.lastActiveStatus;
+        } else {
+            this.activeStatus = ActiveStatus.ONLINE;
+        }
     }
 }

@@ -2,10 +2,7 @@ package com.team404.synco.workspace.service;
 
 import com.team404.synco.workspace.dto.DriveCreateReqDto;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "drive-service")
 public interface DriveFeign {
@@ -15,6 +12,6 @@ public interface DriveFeign {
     @PostMapping("/drive/project/create")
     void createTeamDrive(@RequestBody DriveCreateReqDto driveCreateReqDto);
 
-    @DeleteMapping("/drive/project/{workSpaceSeq}")
-    void deleteTeamDrive(@PathVariable Long workSpaceSeq);
+    @DeleteMapping("/drive/project/deleteDrive/{workSpaceSeq}")
+    void deleteTeamDrive(@PathVariable("workSpaceSeq") Long workSpaceSeq);
 }

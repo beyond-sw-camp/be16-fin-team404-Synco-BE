@@ -22,6 +22,12 @@ public class CommonExceptionHandler {
                 .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, e.getMessage()));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ResponseDto<?>> handleIllegalStateException(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ResponseDto<?>> handleEntityNotFoundException(EntityNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -42,10 +48,17 @@ public class CommonExceptionHandler {
                 .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, errorMessage));
     }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ResponseDto<?>> handleRuntimeException(RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseDto<?>> handleGeneralException(Exception e) {
+        e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."));
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다: " + e.getMessage()));
     }
 
     @ExceptionHandler(SecurityException.class)
