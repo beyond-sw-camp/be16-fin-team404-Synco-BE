@@ -9,9 +9,9 @@ import com.team404.synco.workspace.dto.*;
 import com.team404.synco.workspace.entity.WorkSpace;
 import com.team404.synco.workspace.repository.WorkSpaceRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
@@ -125,6 +125,7 @@ public class WorkSpaceService {
     }
 
     // 개인 워크스페이스 대시보드 조회
+    @Transactional(readOnly = true)
     public PersonalDashBoardResDto findMyDashBoard(Long workSpaceSeq, Long memberSeq){
         // ToDo : 담당 개발자님이 개발(가져온 다음에 PersonalDashBoardResDto에 추가) or 개발되면 제가 API 가져와서 쓰겠습니다.
         // 1. 상단 통계 부분 개발
@@ -147,6 +148,7 @@ public class WorkSpaceService {
     }
 
     // 팀 워크스페이스 대시보드 조회
+    @Transactional(readOnly = true)
     public TeamDashBoardResDto findTeamDashBoard(Long workSpaceSeq){
         // ToDo : 담당 개발자님이 개발(가져온 다음에 TeamDashBoardResDto에 추가) or 개발되면 제가 API 가져와서 쓰겠습니다.
         // 1. 상단 통계 부분 개발
@@ -175,6 +177,7 @@ public class WorkSpaceService {
     }
 
     // 내 워크스페이스 목록 조회
+    @Transactional(readOnly = true)
     public List<WorkSpaceInfoResDto> findMyWorkSpaceList(Long memberSeq) {
         List<?> myWorkSpaceList = workSpaceRedisService.findMyWorkSpaceList(memberSeq);
 
@@ -202,6 +205,7 @@ public class WorkSpaceService {
     }
 
     // 워크스페이스별 멤버 목록 조회
+    @Transactional(readOnly = true)
     public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq){
         List<?> workSpaceMemberList = workSpaceRedisService.findWorkSpaceMemberList(workSpaceSeq);
 

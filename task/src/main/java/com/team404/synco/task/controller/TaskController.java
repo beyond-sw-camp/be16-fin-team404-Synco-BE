@@ -51,6 +51,13 @@ public class TaskController {
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
 
+    // 채널 리스트 조회
+    @GetMapping("/channels/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> getChannelList(@PathVariable("workSpaceSeq") Long workSpaceSeq)
+    {
+        return ResponseEntity.ok(ResponseDto.ok(taskService.findTaskChannelMember(workSpaceSeq), HttpStatus.OK));
+    }
+
     // 내 워크스페이스 목록
     @GetMapping("/memberList")
     public List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){

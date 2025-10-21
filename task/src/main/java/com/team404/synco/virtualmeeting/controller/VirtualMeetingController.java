@@ -73,6 +73,13 @@ public class VirtualMeetingController {
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
 
+    // 채널 리스트 조회
+    @GetMapping("/channels/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> getChannelList(@PathVariable("workSpaceSeq") Long workSpaceSeq)
+    {
+        return ResponseEntity.ok(ResponseDto.ok(virtualMeetingService.findChatChannelList(workSpaceSeq), HttpStatus.OK));
+    }
+
     // 전체 채널 삭제(워크스페이스 삭제시)
     @DeleteMapping("/{workSpaceSeq}")
     public void deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){

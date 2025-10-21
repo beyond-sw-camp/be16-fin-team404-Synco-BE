@@ -6,10 +6,12 @@ import com.team404.synco.chat.entity.ChatChannelMember;
 import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.common.constant.Authority;
+import com.team404.synco.common.service.MemberRedisComponent;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
@@ -18,16 +20,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class ChatService {
     private final ChatChannelRepository chatChannelRepository;
     private final ChatChannelMemberRepository chatChannelMemberRepository;
-
-    public ChatService(ChatChannelRepository chatChannelRepository, ChatChannelMemberRepository chatChannelMemberRepository) {
-        this.chatChannelRepository = chatChannelRepository;
-        this.chatChannelMemberRepository = chatChannelMemberRepository;
-    }
+    private final MemberRedisComponent memberRedisComponent;
 
     // 기본 채널 생성
     public Long createBasicChannel(ChannelCreateReqDto channelCreateReqDto) {
@@ -198,6 +197,28 @@ public class ChatService {
                 )
                 .map(chatChannelMemberRepository::save)
                 .count();
+    }
+
+    // 채널 리스트
+    @Transactional(readOnly = true)
+    public List<ChannelInfoResDto> findChatChannelList(Long workSpaceSeq) {
+        return chatChannelRepository.findByWorkSpaceSeq(workSpaceSeq)
+                .stream()
+                .map(chatChannel -> {
+                    List<ChannelMemberResDto> channelMemberResDtoList = chatChannel.getChatChannelmemberList()
+                            .stream()
+                            .map(chatChannelMember -> {
+                                String memberName = memberRedisComponent.getMemberName(chatChannelMember.getMemberSeq())
+                                        .replaceAll("^\"|\"$", "");;
+                                String memberProfileUrl = memberRedisComponent.getMemberProfileUrl(
+                                        chatChannelMember.getMemberSeq()).replaceAll("^\"|\"$", "");    ;
+                                return ChannelMemberResDto.of(chatChannelMember, memberName, memberProfileUrl);
+                            })
+                            .toList();
+
+                    return ChannelInfoResDto.of(chatChannel, channelMemberResDtoList);
+                })
+                .toList();
     }
 
     // 채널 전체 삭제(Team WorkSpace 삭제시)

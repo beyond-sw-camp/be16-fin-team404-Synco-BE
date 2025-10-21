@@ -2,31 +2,29 @@ package com.team404.synco.task.service;
 
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
+import com.team404.synco.task.common.component.MemberRedisComponent;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import com.team404.synco.task.repository.ScheduleManagementChannelMemberRepository;
 import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
+import com.team404.synco.task.dto.ChannelMemberResDto;
 import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.AccessDeniedException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class TaskService {
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
-
-    public TaskService(ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository) {
-        this.scheduleManagementChannelMemberRepository = scheduleManagementChannelMemberRepository;
-    }
+    private final MemberRedisComponent memberRedisComponent;
 
     // 팀 task 생성
     public void createTaskChannel(TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto) {
@@ -121,7 +119,23 @@ public class TaskService {
         scheduleManagementChannelMemberRepository.deleteByChannelAndMember(workSpaceSeq, memberSeq);
     }
 
+    // 멤버 목록
+    @Transactional(readOnly = true)
+    public List<ChannelMemberResDto> findTaskChannelMember(Long workSpaceSeq) {
+        return scheduleManagementChannelMemberRepository.findByWorkSpaceSeq(workSpaceSeq)
+                .stream()
+                .map(member -> {
+                    String memberName = memberRedisComponent.getMemberName(member.getMemberSeq())
+                            .replaceAll("^\"|\"$", "");
+                    String memberProfileUrl = memberRedisComponent.getMemberProfileUrl(member.getMemberSeq())
+                            .replaceAll("^\"|\"$", "");
+                    return ChannelMemberResDto.of(member, memberName, memberProfileUrl);
+                })
+                .toList();
+    }
+
     // 내 워크스페이스 목록
+    @Transactional(readOnly = true)
     public List<Long> myWorkSpaceList(Long memberSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByMemberSeq(memberSeq)
@@ -134,6 +148,7 @@ public class TaskService {
     }
 
     // 워크스페이스 멤버 목록
+    @Transactional(readOnly = true)
     public List<Long> workSpaceMemberList(Long workSpaceSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)
