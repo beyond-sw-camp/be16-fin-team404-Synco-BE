@@ -5,6 +5,8 @@ import com.team404.synco.common.util.CookieUtil;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -131,6 +133,20 @@ public class MemberController {
                                                @RequestBody @Validated MemberIdReqDto memberIdReqDto) {
         memberService.registerMemberId(memberSeq, memberIdReqDto);
         return ResponseEntity.ok(ResponseDto.ok("OK", HttpStatus.OK));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ResponseDto<?>> searchMembers(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                        @RequestParam String keyword, Pageable pageable) {
+        Page<MemberSearchResDto> searchResult = memberService.searchMembers(memberSeq, keyword, pageable);
+        return ResponseEntity.ok(ResponseDto.ok(searchResult, HttpStatus.OK));
+    }
+
+    @PatchMapping("/updateActiveStatus")
+    public ResponseEntity<ResponseDto<?>> updateActiveStatus(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                             @RequestBody @Validated ActiveStatusUpdateReqDto reqDto) {
+        memberService.updateActiveStatus(memberSeq, reqDto);
+        return ResponseEntity.ok(ResponseDto.ok("상태가 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 
 }

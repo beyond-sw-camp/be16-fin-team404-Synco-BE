@@ -1,8 +1,12 @@
 package com.team404.synco.member.service;
 
 import com.team404.synco.common.auth.JwtTokenProvider;
+import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.friend.entity.Friend;
+import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
@@ -10,12 +14,20 @@ import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Transactional
 @Service
@@ -33,6 +45,7 @@ public class MemberService {
     private final GoogleService googleService;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final FriendRepository friendRepository;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
 
@@ -71,6 +84,9 @@ public class MemberService {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
+        // 로그인 시 이전 활성 상태로 복원
+        member.restoreLastActiveStatus();
+
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
@@ -91,10 +107,26 @@ public class MemberService {
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
+        // 소셜 로그인 회원의 이메일 변경 차단
+        if (member.getSocialType() != SocialType.NORMAL) {
+            String requestedEmail = memberUpdateDto.getEmail();
+            if (requestedEmail != null && !requestedEmail.equals(member.getEmail())) {
+                throw new IllegalArgumentException("소셜 로그인 회원은 이메일을 변경할 수 없습니다.");
+            }
+        }
+
+        // 아이디 중복 체크 (현재 아이디와 다른 경우에만)
+        String requestedMemberId = memberUpdateDto.getId();
+        if (requestedMemberId != null && !requestedMemberId.equals(member.getMemberId())) {
+            if (memberRepository.existsByMemberId(requestedMemberId)) {
+                throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            }
+        }
+
         member.updateMember(memberUpdateDto);
 
-        MultipartFile profileImage = memberUpdateDto.getProfileImage();
-        if (profileImage != null && !profileImage.isEmpty()) {
+        // 프로필 이미지 삭제 요청 처리
+        if (Boolean.TRUE.equals(memberUpdateDto.getDeleteProfileImage())) {
             if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
                 try {
                     s3Uploader.delete(member.getProfileImageUrl());
@@ -102,8 +134,22 @@ public class MemberService {
                     log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
                 }
             }
-            String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
-            member.updateImageUrl(newProfileImageUrl);
+            member.updateImageUrl(null);
+        }
+        // 프로필 이미지 변경 처리
+        else {
+            MultipartFile profileImage = memberUpdateDto.getProfileImage();
+            if (profileImage != null && !profileImage.isEmpty()) {
+                if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
+                    try {
+                        s3Uploader.delete(member.getProfileImageUrl());
+                    } catch (Exception e) {
+                        log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
+                    }
+                }
+                String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
+                member.updateImageUrl(newProfileImageUrl);
+            }
         }
         return MemberResDto.fromEntity(member);
     }
@@ -171,9 +217,13 @@ public class MemberService {
                     return memberRepository.save(newMember);
                 });
 
+        // 탈퇴한 계정인지 먼저 확인
         if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
             throw new IllegalArgumentException("이미 탈퇴한 계정입니다.");
         }
+
+        // 로그인 시 이전 활성 상태로 복원
+        member.restoreLastActiveStatus();
 
         boolean needMemberId = member.getMemberId() == null || member.getMemberId().isBlank();
 
@@ -245,11 +295,75 @@ public class MemberService {
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
+        // 로그아웃 시 현재 상태를 저장하고 OFFLINE으로 변경
+        member.saveLastActiveStatus();
+        member.updateActiveStatus(ActiveStatus.OFFLINE);
+
+
+        jwtTokenProvider.deleteRt(memberSeq);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MemberSearchResDto> searchMembers(Long memberSeq, String keyword, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new IllegalArgumentException("검색 키워드를 입력해주세요.");
+        }
+        // APPROVE 상태인 친구들의 memberSeq 목록 조회
+        Member currentMember = memberRepository.findById(memberSeq)
+            .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+        Page<Friend> approvedFriendsPage = friendRepository.findAllByMemberAndFriendStatus(currentMember, FriendStatus.APPROVE, Pageable.unpaged());
+        List<Long> approvedFriendList = approvedFriendsPage.getContent().stream()
+            .map(friend -> friend.getFriendMember().getMemberSeq())
+            .toList();
+
+        Specification<Member> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            String keywordPattern = keyword + "%";
+            predicates.add(cb.like(root.get("memberId"), keywordPattern));
+
+            predicates.add(cb.notEqual(root.get("memberSeq"), memberSeq));
+
+            predicates.add(cb.equal(root.get("ynDel"), YnColumn.IS_FALSE));
+
+            // APPROVE 상태인 친구들 제외
+            if (!approvedFriendList.isEmpty()) {
+                predicates.add(cb.not(root.get("memberSeq").in(approvedFriendList)));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<Member> memberList = memberRepository.findAll(spec, pageable);
+        return memberList.map(member -> {
+            String requestStatus = getRequestStatus(currentMember, member);
+            return MemberSearchResDto.fromEntity(member, requestStatus);
+        });
+    }
+
+    private String getRequestStatus(Member currentMember, Member targetMember) {
+        // 내가 보낸 요청인지 확인
+        if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
+                currentMember, targetMember, FriendStatus.PENDING)) {
+            return "sent";
+        }
+        // 나에게 온 요청인지 확인
+        if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
+                targetMember, currentMember, FriendStatus.PENDING)) {
+            return "received";
+        }
+        return "none";
+    }
+
+    public void updateActiveStatus(Long memberSeq, ActiveStatusUpdateReqDto reqDto) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
         if (YnColumn.IS_TRUE.equals(member.getYnDel())) {
             throw new IllegalArgumentException("탈퇴한 회원입니다.");
         }
-
-        jwtTokenProvider.deleteRt(memberSeq);
+        // 상태 변경
+        member.updateActiveStatus(reqDto.getActiveStatus());
     }
 
 }
