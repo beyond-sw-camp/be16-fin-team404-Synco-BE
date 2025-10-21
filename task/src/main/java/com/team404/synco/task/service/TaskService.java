@@ -110,7 +110,7 @@ public class TaskService {
                 .count();
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
         // 멤버가 채널에 있는지 확인 / 채널에 있는 모든 멤버 행 다 가져오기
         scheduleManagementChannelMemberRepository.findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
@@ -134,12 +134,12 @@ public class TaskService {
                 .toList();
     }
 
-    // 내 워크스페이스 목록
+    // 내 프로젝트 목록
     @Transactional(readOnly = true)
     public List<Long> myWorkSpaceList(Long memberSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByMemberSeq(memberSeq)
-                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 프로젝트 목록이 없습니다."));
 
         return myWorkSpaceList.stream()
                 .map(ScheduleManagementChannelMember::getWorkSpaceSeq)
@@ -147,12 +147,12 @@ public class TaskService {
                 .toList();
     }
 
-    // 워크스페이스 멤버 목록
+    // 프로젝트 멤버 목록
     @Transactional(readOnly = true)
     public List<Long> workSpaceMemberList(Long workSpaceSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)
-                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 프로젝트 목록이 없습니다."));
 
         return myWorkSpaceList.stream()
                 .map(ScheduleManagementChannelMember::getMemberSeq)

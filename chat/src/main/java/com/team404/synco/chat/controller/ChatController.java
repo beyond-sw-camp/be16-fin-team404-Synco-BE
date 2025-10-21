@@ -56,7 +56,7 @@ public class ChatController {
     }
 
     // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
+    @PatchMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         ChannelGrantResDto channelGrantResDto = chatService.grantToMember(grantAuthorityReqDto, memberSeq);
@@ -78,20 +78,20 @@ public class ChatController {
         return ResponseEntity.ok(ResponseDto.ok(chatService.findChatChannelList(workSpaceSeq), HttpStatus.OK));
     }
 
-    // 전체 채널 삭제(워크스페이스 삭제시)
+    // 전체 채널 삭제(프로젝트 삭제시)
     @DeleteMapping("/{workSpaceSeq}")
     public ResponseEntity<ResponseDto<?>> deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq) {
         chatService.deleteAllChannel(workSpaceSeq);
         return ResponseEntity.ok(ResponseDto.ok("삭제 완료", HttpStatus.OK));
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     @DeleteMapping("/leave/{workSpaceSeq}")
     public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
         chatService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 
-    // 워크스페이스 강제탈퇴
+    // 프로젝트 강제탈퇴
     @DeleteMapping("/kick")
     public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
         Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();

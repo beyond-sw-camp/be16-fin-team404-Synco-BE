@@ -118,7 +118,7 @@ public class VirtualMeetingService {
 
     // 채널 권한 설정
     public ChannelGrantResDto grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
-        // 유효한 워크스페이스인지 기본채널 여부를 통해 검증
+        // 유효한 프로젝트인지 기본채널 여부를 통해 검증
         VirtualMeetingChannel basicChannel = checkBasicChannel(grantAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
         VirtualMeetingChannelMember superMember = checkAuthorityIsSuper(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
@@ -164,7 +164,7 @@ public class VirtualMeetingService {
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(channelInviteReqDto.getWorkSpaceSeq());        // 초대한 사람 권한 검증
         checkChannelAuthority(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
-        // 워크스페이스 내 모든 채널 조회 (기본 채널 포함)
+        // 프로젝트 내 모든 채널 조회 (기본 채널 포함)
         List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
                 .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
@@ -214,7 +214,7 @@ public class VirtualMeetingService {
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(workSpaceSeq);

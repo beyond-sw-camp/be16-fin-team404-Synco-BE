@@ -3,6 +3,7 @@ package com.team404.synco.workspace.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.service.RedisFallback;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.workspace.dto.WorkSpaceInfoResDto;
@@ -50,7 +51,7 @@ public class WorkSpaceRedisService {
 
     // 멤버 정보 변경
 
-    // 멤버가 속한 워크스페이스 목록 저장
+    // 멤버가 속한 프로젝트 목록 저장
     public void addWorkSpace(WorkSpace workSpace, Long memberSeq) {
         String memberKey = MEMBER_KEY_PREFIX + memberSeq;
 
@@ -70,15 +71,15 @@ public class WorkSpaceRedisService {
         }
     }
 
-    // 워크스페이스 정보 저장
+    // 프로젝트 정보 저장
     public void addMemberToWorkSpace(WorkSpace workSpace, Long memberSeq) {
         if (workSpace == null || workSpace.getWorkSpaceSeq() == null)
-            throw new IllegalArgumentException("워크스페이스 정보가 유효하지 않습니다.");
+            throw new IllegalArgumentException("프로젝트 정보가 유효하지 않습니다.");
 
         String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpace.getWorkSpaceSeq();
 
         try {
-            // 워크스페이스 기본정보 (문자열 그대로 저장)
+            // 프로젝트 기본정보 (문자열 그대로 저장)
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "name", workSpace.getWorkSpaceName());
 
             if (workSpace.getWorkSpaceThumbnailImageUrl() != null) {
@@ -105,11 +106,24 @@ public class WorkSpaceRedisService {
             String json = objectMapper.writeValueAsString(memberList);
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, MEMBER_LIST, json);
         } catch (Exception e) {
-            throw new SerializationException("워크스페이스 Redis 저장 중 오류 발생", e);
+            throw new SerializationException("프로젝트 Redis 저장 중 오류 발생", e);
         }
     }
 
-    // 워크스페이스 목록 조회
+    // 프로젝트 정보 수정
+    public void editWorkSpaceInfo(Long workSpaceSeq, String name, String thumbnailImage){
+        String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpaceSeq;
+        if(name != null){
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "name", name);
+        }
+        if (thumbnailImage != null) {
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "thumbnailImage",
+                    thumbnailImage
+            );
+        }
+    }
+
+    // 프로젝트 목록 조회
     @RedisFallback
     public List<WorkSpaceInfoResDto> findMyWorkSpaceList(Long memberSeq) {
         try {
@@ -144,9 +158,9 @@ public class WorkSpaceRedisService {
         }
     }
 
-    // 워크스페이스 멤버 목록 조회
+    // 프로젝트 멤버 목록 조회
     @RedisFallback
-    public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq) {
+    public List<WorkSpaceMemberInfoResDto> findWorkSpaceMemberList(Long workSpaceSeq, Long superMemberSeq) {
         try {
             String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpaceSeq;
             Object cachedValue = workSpaceRedisTemplate.opsForHash().get(workSpaceKey, MEMBER_LIST);
@@ -154,17 +168,23 @@ public class WorkSpaceRedisService {
 
             List<Long> memberList = objectMapper.readValue(cachedValue.toString(), new TypeReference<>() {});
             if (memberList.isEmpty()) return Collections.emptyList();
+
             return memberList.stream()
                     .map(seq -> {
                         String memberKey = MEMBER_KEY_PREFIX + seq;
                         Map<Object, Object> info = memberRedisTemplate.opsForHash().entries(memberKey);
                         if (info.isEmpty()) return null;
 
+                        Authority authority = seq.equals(superMemberSeq)
+                                ? Authority.SUPER
+                                : Authority.PARTICIPANT;
+
                         return WorkSpaceMemberInfoResDto.builder()
                                 .memberSeq(seq)
-                                .name((String) info.get("memberName"))
-                                .profileImageUrl((String) info.get("memberProfileUrl"))
-                                .activeStatus(ActiveStatus.valueOf((String) info.get("activeStatus")))
+                                .name((String) info.get(MEMBER_NAME))
+                                .profileImageUrl((String) info.get(MEMBER_PROFILE_URL))
+                                .activeStatus(ActiveStatus.valueOf((String) info.get(ACTIVE_STATUS)))
+                                .authority(authority)
                                 .build();
                     })
                     .filter(Objects::nonNull)
@@ -179,7 +199,7 @@ public class WorkSpaceRedisService {
         }
     }
 
-    // 워크스페이스를 멤버 정보에서 삭제
+    // 프로젝트를 멤버 정보에서 삭제
     public void removeWorkspaceFromMember(Long memberSeq, Long workspaceSeq) throws Exception {
         String key = MEMBER_KEY_PREFIX + memberSeq;
         String field = WORKSPACE_LIST;
@@ -192,7 +212,7 @@ public class WorkSpaceRedisService {
                 .put(key, field, objectMapper.writeValueAsString(list));
     }
 
-    // 멤버를 워크스페이스 정보에서 삭제
+    // 멤버를 프로젝트 정보에서 삭제
     public void removeMemberFromWorkSpace(Long memberSeq, Long workSpaceSeq) throws Exception{
         String key = WORKSPACE_KEY_PREFIX + workSpaceSeq;
         String field = MEMBER_LIST;
@@ -205,7 +225,7 @@ public class WorkSpaceRedisService {
                 .put(key, field, objectMapper.writeValueAsString(list));
     }
 
-    // 워크스페이스 목록에서 워크스페이스 삭제
+    // 프로젝트 목록에서 프로젝트 삭제
     public void removeWorkspace(Long workspaceSeq) throws Exception {
         workSpaceRedisTemplate.delete(WORKSPACE_KEY_PREFIX + workspaceSeq);
     }

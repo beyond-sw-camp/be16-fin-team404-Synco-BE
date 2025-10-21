@@ -58,13 +58,13 @@ public class TaskController {
         return ResponseEntity.ok(ResponseDto.ok(taskService.findTaskChannelMember(workSpaceSeq), HttpStatus.OK));
     }
 
-    // 내 워크스페이스 목록
+    // 내 프로젝트 목록
     @GetMapping("/memberList")
     public List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq){
         return taskService.myWorkSpaceList(memberSeq);
     }
 
-    // 워크스페이스 멤버 목록
+    // 프로젝트 멤버 목록
     @GetMapping("/{workSpaceSeq}/members")
     public List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         return taskService.workSpaceMemberList(workSpaceSeq);
@@ -76,13 +76,13 @@ public class TaskController {
         taskService.deleteAllTask(workSpaceSeq);
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     @DeleteMapping("/leave/{workSpaceSeq}")
     public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
         taskService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 
-    // 워크스페이스 강제탈퇴
+    // 프로젝트 강제탈퇴
     @DeleteMapping("/kick")
     public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
         Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
