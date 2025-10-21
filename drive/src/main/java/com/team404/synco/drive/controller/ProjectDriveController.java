@@ -2,6 +2,7 @@ package com.team404.synco.drive.controller;
 
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.drive.dto.*;
+import com.team404.synco.drive.service.ProjectDocumentRedisService;
 import com.team404.synco.drive.service.ProjectDriveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -22,6 +25,7 @@ import java.util.List;
 public class ProjectDriveController {
 
     private final ProjectDriveService projectDriveService;
+    private final ProjectDocumentRedisService projectDocumentRedisService;
 
     // 드라이브 생성
     @PostMapping("/create")
@@ -115,28 +119,63 @@ public class ProjectDriveController {
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
-    // 프로젝트 드라이브 문서 상세 조회
-    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}")
-    public ResponseEntity<ResponseDto<?>> getProjectDocument(
+    // 프로젝트 드라이브 공유문서 목록 조회
+    @GetMapping("{driveChannelSeq}/share-docs/{document}/list")
+    public ResponseEntity<ResponseDto<?>> getProjectSharedDocuments(
             @PathVariable Long driveChannelSeq,
-            @PathVariable Long documentSeq) {
-        DocumentDetailDto document = projectDriveService.getProjectDocument(driveChannelSeq, documentSeq);
-        return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
+            @PathVariable Long document
+    ) {
+
+        List<DocDetailListResDto> sharedDocs = projectDriveService.getProjectSharedDocuments(driveChannelSeq,document);
+        return ResponseEntity.ok(ResponseDto.ok(sharedDocs, HttpStatus.OK));
     }
 
-    // 프로젝트 드라이브 문서 잠금/해제 토글
-    @PostMapping("/documents/lock")
+    // 프로젝트 드라이브 공유문서 참여자 목록 조회
+    @GetMapping("/documents/{documentId}/participants")
+    public ResponseEntity<ResponseDto<?>> getDocumentParticipants(@PathVariable Long documentId) {
+        ParticipantsResponseDto participants = projectDocumentRedisService.getDocumentParticipants(documentId);
+        return ResponseEntity.ok(ResponseDto.ok(participants, HttpStatus.OK));
+    }
+
+    // 프로젝트 드라이브 공유문서 잠금/해제 토글
+    @PatchMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> toggleProjectDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
         DriveItemDto document = projectDriveService.toggleProjectDocumentLock(toggleReqDto);
         return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
     }
 
-    // 프로젝트 드라이브 문서 다운로드
+    // 프로젝트 드라이브 공유문서 다운로드
     @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
     public ResponseEntity<byte[]> downloadProjectDocument(
             @PathVariable Long driveChannelSeq,
             @PathVariable Long documentSeq) {
         return projectDriveService.downloadProjectDocument(driveChannelSeq, documentSeq);
+    }
+
+    // 프로젝트 드라이브 폴더 트리 조회
+    @GetMapping("/{driveChannelSeq}/folders/tree")
+    public ResponseEntity<ResponseDto<?>> getProjectFolderTree(@PathVariable Long driveChannelSeq) {
+        List<FolderTreeDto> folderTree = projectDriveService.getProjectFolderTree(driveChannelSeq);
+        return ResponseEntity.ok(ResponseDto.ok(folderTree, HttpStatus.OK));
+    }
+
+    // 프로젝트 드라이브 문서 이름 변경
+    @PatchMapping("/document/rename")
+    public ResponseEntity<ResponseDto<?>> renameProjectDocument(@RequestBody RenameDocumentReqDto renameDocumentReqDto) {
+        projectDriveService.renameProjectDocument(renameDocumentReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
+    }
+
+    // 문서의 모든 라인 락 정보 조회
+    @GetMapping("/{driveChannelSeq}/document/{documentSeq}/locks")
+    public ResponseEntity<ResponseDto<?>> getDocumentLineLocks(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        log.info("🔍 라인 락 조회 요청 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannelSeq, documentSeq);
+        
+        LineLocksResponseDto locks = projectDocumentRedisService.getAllLineLocksAsDto(documentSeq);
+        
+        return ResponseEntity.ok(ResponseDto.ok(locks, HttpStatus.OK));
     }
 
     // 팀 드라이브 삭제(워크스페이스 삭제시)

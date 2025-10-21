@@ -1,6 +1,7 @@
 package com.team404.synco.drive.repository;
 
 import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,9 +24,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     @Query("SELECT d FROM Document d WHERE d.documentName = :documentName AND d.folder IS NULL AND d.driveChannel.driveChannelSeq = :driveChannelSeq")
     Optional<Document> findTopLevelDocumentByNameAndChannelForNewFile(@Param("documentName") String documentName, @Param("driveChannelSeq") Long driveChannelSeq);
     
-    // 최상위 문서 중복 검증을 위한 메서드 (folder가 null인 경우)
+    // 최상위 문서 중복 검증 (이름 변경용 - 기존 문서 제외)
     @Query("SELECT d FROM Document d WHERE d.documentName = :documentName AND d.documentSeq != :documentSeq AND d.folder IS NULL AND d.driveChannel.driveChannelSeq = :driveChannelSeq")
-    Optional<Document> findTopLevelDocumentByNameAndChannel(@Param("documentName") String documentName, @Param("documentSeq") Long documentSeq, @Param("driveChannelSeq") Long driveChannelSeq);
+    Optional<Document> findTopLevelDocumentByNameAndChannelExcluding(@Param("documentName") String documentName, @Param("documentSeq") Long documentSeq, @Param("driveChannelSeq") Long driveChannelSeq);
     
     // 페이징 쿼리: 특정 드라이브 채널과 부모 폴더의 문서들 조회
     @Query("SELECT d FROM Document d WHERE d.driveChannel.driveChannelSeq = :driveChannelSeq AND " +

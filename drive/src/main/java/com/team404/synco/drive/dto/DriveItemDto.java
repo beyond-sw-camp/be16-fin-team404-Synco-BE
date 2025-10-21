@@ -26,6 +26,7 @@ public class DriveItemDto {
     private LocalDateTime uploadDate; // 업로드 날짜 (폴더인 경우 생성 날짜)
     private LocalDateTime modifiedDate; // 수정 날짜 (폴더인 경우 생성 날짜)
     private String icon; // 아이콘 (폴더, 파일, 공유문서 구분)
+    private Long orders; // 정렬 순서 (폴더/문서 공통)
     private List<DriveItemDto> children; // 하위 아이템 (폴더인 경우에만 사용)
     
     // 공유문서 관련
@@ -48,6 +49,7 @@ public class DriveItemDto {
                 .uploadDate(folder.getCreatedAt())
                 .modifiedDate(folder.getUpdatedAt())
                 .icon(typeInfo.icon)
+                .orders(folder.getOrders()) // ✅ 폴더 정렬 순서
                 .parentFolderSeq(folder.getParentFolderSeq())
                 .children(new ArrayList<>())
                 .build();
@@ -64,6 +66,7 @@ public class DriveItemDto {
                 .uploadDate(document.getCreatedAt())
                 .modifiedDate(document.getUpdatedAt())
                 .icon(typeInfo.icon)
+                .orders(0L) // ✅ 문서 정렬 순서 (기본값 0, 추후 Document 엔티티에 orders 필드 추가 시 수정)
                 .parentFolderSeq(document.getFolder() != null ? document.getFolder().getFolderSeq() : null)
                 .isShared(typeInfo.isShared)
                 .isLocked(typeInfo.isLocked)
