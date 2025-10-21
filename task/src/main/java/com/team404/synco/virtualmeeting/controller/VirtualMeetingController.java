@@ -2,7 +2,7 @@ package com.team404.synco.virtualmeeting.controller;
 
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.common.constant.dto.ResponseDto;
-import com.team404.synco.virtualmeeting.dto.*;
+import com.team404.synco.virtualmeeting.dto.Feign.*;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,35 +17,13 @@ import java.nio.file.AccessDeniedException;
 public class VirtualMeetingController {
     private final VirtualMeetingService virtualMeetingService;
 
+    // ====================================Feign 관련 메서드========================================
+
     // 기본 채널 생성
     @PostMapping("/createBasicChannel")
     public ResponseEntity<ResponseDto<?>> createBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto){
         Long id = virtualMeetingService.createBasicChannel(channelCreateReqDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
-    }
-
-    // 채널 생성
-    @PostMapping("/createChannel")
-    public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto,
-                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        ChannelCreateResDto channelCreateResDto = virtualMeetingService.createChannel(channelCreateReqDto, memberSeq);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(channelCreateResDto, HttpStatus.CREATED));
-    }
-
-    // 채널 수정
-    @PatchMapping("/rename")
-    public ResponseEntity<ResponseDto<?>> renameChannel(@RequestBody ChannelEditReqDto channelEditReqDto,
-                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        ChannelEditResDto channelEditResDto = virtualMeetingService.renameChannel(channelEditReqDto, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(channelEditResDto, HttpStatus.OK));
-    }
-
-    // 채널 삭제
-    @DeleteMapping("/channel/{channelSeq}")
-    public ResponseEntity<ResponseDto<?>> deleteChannel(@PathVariable("channelSeq") Long channelSeq,
-                                                        @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        virtualMeetingService.deleteChannel(channelSeq, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok("채널이 삭제되었습니다.", HttpStatus.OK));
     }
 
     // 채널에 멤버 추가
@@ -54,14 +32,6 @@ public class VirtualMeetingController {
                                                     @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         Long id = virtualMeetingService.addMemberToChannel(channelInviteReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(id, HttpStatus.OK));
-    }
-
-    // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
-    public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
-                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(channelGrantResDto, HttpStatus.OK));
     }
 
     // 채널 SUPER 권한 위임
@@ -91,5 +61,57 @@ public class VirtualMeetingController {
         Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
         Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
         virtualMeetingService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // =====================================일반 채널 관련 메서드=======================================
+
+    // 채널 권한 설정
+    @PostMapping("/changeChannelAuthority")
+    public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
+                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(channelGrantResDto, HttpStatus.OK));
+    }
+
+    // =====================================LiveKit 룸 관련 메서드=======================================
+
+    // 현재 진행중인 화상회의 목록
+    @GetMapping("/channel/{channelSeq}/rooms/active")
+    public ResponseEntity<ResponseDto<?>> getActiveRooms(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        
+        var responseDto = virtualMeetingService.getActiveRooms(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
+    }
+
+    // 최근 화상회의 룸 목록
+    @GetMapping("/channel/{channelSeq}/rooms/recent")
+    public ResponseEntity<ResponseDto<?>> getRecentRooms(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        
+        var responseDto = virtualMeetingService.getRecentRooms(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
+    }
+
+    // 요약 목록
+    @GetMapping("/channel/{channelSeq}/recordings/summaries")
+    public ResponseEntity<ResponseDto<?>> getSummarizedRecordings(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        
+        var responseDto = virtualMeetingService.getSummarizedRecordings(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
+    }
+
+    // 녹화 요약 상세 조회 (녹화 ID로)
+    @GetMapping("/recordings/{recordingId}/summary")
+    public ResponseEntity<ResponseDto<?>> getRecordingSummaryById(
+            @PathVariable String recordingId,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        
+        var responseDto = virtualMeetingService.getRecordingSummaryById(recordingId, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
     }
 }
