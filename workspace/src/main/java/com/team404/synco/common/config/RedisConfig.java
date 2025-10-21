@@ -89,4 +89,5 @@ public class RedisConfig {
         redisTemplate.setConnectionFactory(workSpaceConnectionFactory);
         return redisTemplate;
     }
+
 }

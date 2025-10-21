@@ -20,7 +20,6 @@ public class JwtAuthFilter implements GlobalFilter {
     @Value("${jwt.secretKey}")
     private String secretKey;
 
-
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     // TODO: oauth 로그인 url 추가 에정
     private static final List<String> ALLOWED_PATHS = List.of(
@@ -34,6 +33,7 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/kakao/doLogin",
             "/member/naver/doLogin",
             "/drive/**",
+            "/project/**",
             "/document/**",
             "/connect/**"
     );
@@ -41,14 +41,17 @@ public class JwtAuthFilter implements GlobalFilter {
         @Override
         public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-            log.info("token 검증 시작");
-            String bearerToken = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-            String path = exchange.getRequest().getURI().getRawPath();
+        log.info("token 검증 시작");
+        String bearerToken = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+        String path = exchange.getRequest().getURI().getRawPath();
         log.info(path);
 
-        boolean isAllowed = ALLOWED_PATHS.stream().anyMatch(allowed -> pathMatcher.match(allowed, path));
-        if (isAllowed) {
-            return chain.filter(exchange);
+        // ✅ 패턴 매칭으로 허용된 경로 확인
+        for (String allowedPath : ALLOWED_PATHS) {
+            if (pathMatcher.match(allowedPath, path)) {
+                log.info("허용된 경로: {}", path);
+                return chain.filter(exchange);
+            }
         }
 
         try {

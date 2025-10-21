@@ -1,32 +1,18 @@
 package com.team404.synco.chat.controller;
 
 import com.team404.synco.chat.dto.*;
-import com.team404.synco.chat.dto.ChannelCreateReqDto;
-import com.team404.synco.chat.dto.ChannelInviteReqDto;
-import com.team404.synco.chat.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.chat.dto.GrantAuthorityReqDto;
-import com.team404.synco.chat.dto.*;
-import com.team404.synco.chat.entity.WorkSpaceType;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/chat")
-@Slf4j
 public class ChatController {
     private final ChatService chatService;
 
@@ -90,6 +76,20 @@ public class ChatController {
     public ResponseEntity<ResponseDto<?>> deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq) {
         chatService.deleteAllChannel(workSpaceSeq);
         return ResponseEntity.ok(ResponseDto.ok("삭제 완료", HttpStatus.OK));
+    }
+
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
+        chatService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // 워크스페이스 강제탈퇴
+    @DeleteMapping("/kick")
+    public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
+        Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
+        Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
+        chatService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 
     ///////////////////////////////////////////채팅기능////////////////////////////////////////////////
