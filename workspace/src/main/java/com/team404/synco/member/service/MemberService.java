@@ -107,6 +107,22 @@ public class MemberService {
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
+        // 소셜 로그인 회원의 이메일 변경 차단
+        if (member.getSocialType() != SocialType.NORMAL) {
+            String requestedEmail = memberUpdateDto.getEmail();
+            if (requestedEmail != null && !requestedEmail.equals(member.getEmail())) {
+                throw new IllegalArgumentException("소셜 로그인 회원은 이메일을 변경할 수 없습니다.");
+            }
+        }
+
+        // 아이디 중복 체크 (현재 아이디와 다른 경우에만)
+        String requestedMemberId = memberUpdateDto.getId();
+        if (requestedMemberId != null && !requestedMemberId.equals(member.getMemberId())) {
+            if (memberRepository.existsByMemberId(requestedMemberId)) {
+                throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            }
+        }
+
         member.updateMember(memberUpdateDto);
 
         // 프로필 이미지 삭제 요청 처리
