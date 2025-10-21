@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +25,34 @@ public class WorkSpaceController {
                                                           @RequestHeader("X-Member-Seq") Long memberSeq) {
         WorkSpaceResDto workSpaceResDto = workSpaceService.createTeamWorkSpace(teamWorkSpaceCreateReqDto, memberSeq);
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
+    }
+
+    // 내 워크스페이스 목록 조회
+    @GetMapping("/me")
+    public ResponseEntity<ResponseDto<?>> myWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        List<WorkSpaceInfoResDto> myWorkSpaceListResDto = workSpaceService.findMyWorkSpaceList(memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(myWorkSpaceListResDto, HttpStatus.OK));
+    }
+
+    // 워크스페이스 멤버 목록 조회
+    @GetMapping("/{workSpaceSeq}/members")
+    public ResponseEntity<ResponseDto<?>> getWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
+        List<WorkSpaceMemberInfoResDto> workSpaceMemberListResDto = workSpaceService.findWorkSpaceMemberList(workSpaceSeq);
+        return ResponseEntity.ok(ResponseDto.ok(workSpaceMemberListResDto, HttpStatus.OK));
+    }
+
+    // 내 워크스페이스 대시보드
+    @GetMapping("/personal/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> personalDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
+        List<WorkSpaceInfoResDto> myWorkSpaceListResDto = workSpaceService.findMyWorkSpaceList(workSpaceSeq);
+        return ResponseEntity.ok(ResponseDto.ok(myWorkSpaceListResDto, HttpStatus.OK));
+    }
+
+    // 팀 워크스페이스 대시보드
+    @GetMapping("/teams/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> teamDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
+        TeamDashBoardResDto teamDashBoardResDto = workSpaceService.findTeamDashBoard(workSpaceSeq);
+        return ResponseEntity.ok(ResponseDto.ok(teamDashBoardResDto, HttpStatus.OK));
     }
 
     // 프로젝트 워크스페이스 수정
@@ -41,6 +70,7 @@ public class WorkSpaceController {
         workSpaceService.deleteWorkSpace(workSpaceSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("팀 워크스페이스가 성공적으로 삭제되었습니다.", HttpStatus.OK));
     }
+
     //프로젝트 워크스페이스 SUPER 권한 위임
     @PostMapping("/delegateSuperAuthority")
     public ResponseEntity<ResponseDto<?>> delegateSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
@@ -52,12 +82,24 @@ public class WorkSpaceController {
     // 워크스페이스 초대
     @PostMapping("/invite")
     public ResponseEntity<ResponseDto<?>> inviteWorkSpace(@RequestBody ChannelInviteReqDto channelInviteReqDto,
-                                                                 @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+                                                          @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         workSpaceService.inviteWorkSpace(channelInviteReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에 초대되었습니다.", HttpStatus.OK));
     }
 
-    // 내 워크스페이스 목록 조회
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> leaveWorkSpace(@PathVariable("workSpaceSeq") Long workSpaceSeq,
+                                                          @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
+        workSpaceService.leaveWorkSpace(workSpaceSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 워크스페이스에서 탈퇴되었습니다.", HttpStatus.OK));
+    }
 
-    // 채널 삭제
+    // 강제 탈퇴
+    @DeleteMapping("/kick")
+    public ResponseEntity<ResponseDto<?>> kickWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto,
+                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
+        workSpaceService.kickFromWorkSpace(kickMemberFromWorkSpaceReqDto, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 해당 사용자를 강제 탈퇴시켰습니다.", HttpStatus.OK));
+    }
 }

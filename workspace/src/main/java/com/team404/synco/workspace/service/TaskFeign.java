@@ -1,11 +1,10 @@
 package com.team404.synco.workspace.service;
 
-import com.team404.synco.workspace.dto.ChannelCreateReqDto;
-import com.team404.synco.workspace.dto.ChannelInviteReqDto;
-import com.team404.synco.workspace.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.workspace.dto.TaskChannelMemberCreateReqDto;
+import com.team404.synco.workspace.dto.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @FeignClient(name = "task-service")
 public interface TaskFeign {
@@ -22,6 +21,18 @@ public interface TaskFeign {
     @PostMapping("/task/addMember")
     void addMemberToTaskChannel(@RequestBody ChannelInviteReqDto channelInviteReqDto);
 
+    @GetMapping("/task/memberList")
+    List<Long> findMyWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @GetMapping("/task/{workSpaceSeq}/members")
+    List<Long> findWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq);
+
+    @DeleteMapping("/task/leave/{workSpaceSeq}")
+    void leaveWorkSpaceFromTask(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/task/kick")
+    void kickFromWorkSpaceTask(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto);
+
     @PostMapping("/virtual-meeting/createBasicChannel")
     void createVirtualMeetBasicChannel(@RequestBody ChannelCreateReqDto channelCreateReqDto);
 
@@ -35,4 +46,10 @@ public interface TaskFeign {
     @PostMapping("/virtual-meeting/delegateSuperAuthority")
     void delegateVirtualMeetChannelSuperAuthority(@RequestBody DelegateSuperAuthorityReqDto delegateSuperAuthorityReqDto,
                                                   @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/virtual-meeting/leave/{workSpaceSeq}")
+    void leaveWorkSpaceFromVirtualMeeting(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq);
+
+    @DeleteMapping("/virtual-meeting/kick")
+    void kickFromWorkSpaceVirtualMeeting(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto);
 }

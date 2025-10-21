@@ -17,6 +17,7 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ResponseDto<?>> handleIllegalArgumentException(IllegalArgumentException e) {
+        e.printStackTrace();
         return ResponseEntity.badRequest()
                 .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, e.getMessage()));
     }
@@ -35,6 +36,7 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ResponseDto<?>> handleValidationException(MethodArgumentNotValidException e) {
+        e.printStackTrace();
         FieldError fieldError = e.getBindingResult().getFieldError();
         String errorMessage = fieldError != null ? fieldError.getDefaultMessage() : "입력값이 올바르지 않습니다.";
         return ResponseEntity.badRequest()
@@ -43,8 +45,9 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseDto<?>> handleGeneralException(Exception e) {
+        e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다 : " + e.getMessage()));
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다. : " + e.getMessage()));
     }
 
     @ExceptionHandler(SecurityException.class)

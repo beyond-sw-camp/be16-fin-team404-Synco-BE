@@ -77,4 +77,18 @@ public class ChatController {
         chatService.deleteAllChannel(workSpaceSeq);
         return ResponseEntity.ok(ResponseDto.ok("삭제 완료", HttpStatus.OK));
     }
+
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
+        chatService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // 워크스페이스 강제탈퇴
+    @DeleteMapping("/kick")
+    public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
+        Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
+        Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
+        chatService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
 }
