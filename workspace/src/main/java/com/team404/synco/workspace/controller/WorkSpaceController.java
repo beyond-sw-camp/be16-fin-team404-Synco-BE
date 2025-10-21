@@ -1,5 +1,6 @@
 package com.team404.synco.workspace.controller;
 
+import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.workspace.dto.*;
 import com.team404.synco.workspace.service.WorkSpaceService;
@@ -69,6 +70,14 @@ public class WorkSpaceController {
                                                           @RequestHeader("X-Member-Seq") Long memberSeq) throws Exception {
         workSpaceService.deleteWorkSpace(workSpaceSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("팀 워크스페이스가 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 프로젝트 권한 조회(SUPER OR PARTICIPANT)
+    @GetMapping("/checkAuthority/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> checkAuthority(@PathVariable("workSpaceSeq") Long workSpaceSeq,
+                                                         @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException{
+        Authority authority = workSpaceService.checkAuthority(workSpaceSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(authority, HttpStatus.OK));
     }
 
     //프로젝트 워크스페이스 SUPER 권한 위임
