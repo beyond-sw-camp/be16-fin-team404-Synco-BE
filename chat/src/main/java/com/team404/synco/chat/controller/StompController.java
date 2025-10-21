@@ -23,13 +23,13 @@ public class StompController {
     }
 
 //    클라이언트가 보낸 메시지를 서버가 받아서 처리하고 Redis로 publish
-    @MessageMapping("/{channelReq}")
-    public void sendMessage(@DestinationVariable Long channelReq, ChatMessageReqDto chatMessageReqDto) throws JsonProcessingException {
+    @MessageMapping("/{channelSeq}")
+    public void sendMessage(@DestinationVariable Long channelSeq, ChatMessageReqDto chatMessageReqDto) throws JsonProcessingException {
         log.info("메시지 본문 : {}", chatMessageReqDto.getChatMessageText());
 
-        chatService.saveMessage(channelReq, chatMessageReqDto); //메시지 저장
+        chatService.saveMessage(channelSeq, chatMessageReqDto); //메시지 저장
 
-        chatMessageReqDto.setChannelSeq(channelReq);
+        chatMessageReqDto.setChannelSeq(channelSeq);
         System.out.println("chatMessageReqDto : " + chatMessageReqDto);
         ObjectMapper objectMapper = new ObjectMapper();
         String message = objectMapper.writeValueAsString(chatMessageReqDto);
