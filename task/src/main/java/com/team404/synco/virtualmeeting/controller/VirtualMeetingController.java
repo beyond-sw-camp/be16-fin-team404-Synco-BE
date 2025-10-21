@@ -78,4 +78,18 @@ public class VirtualMeetingController {
     public void deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         virtualMeetingService.deleteAllChannel(workSpaceSeq);
     }
+
+    // 워크스페이스 탈퇴
+    @DeleteMapping("/leave/{workSpaceSeq}")
+    public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
+        virtualMeetingService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
+
+    // 워크스페이스 강제탈퇴
+    @DeleteMapping("/kick")
+    public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
+        Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();
+        Long memberSeq = kickMemberFromWorkSpaceReqDto.getMemberSeq();
+        virtualMeetingService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
+    }
 }

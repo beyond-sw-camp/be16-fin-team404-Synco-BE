@@ -40,7 +40,6 @@ public class ChatService {
                 .chatChannel(chatChannel)
                 .build();
         chatChannelMemberRepository.save(creator);
-
         Optional.ofNullable(channelCreateReqDto.getMemberList()).orElse(Collections.emptyList())
                 .stream().filter(Objects::nonNull).map(memberSeq -> ChatChannelMember.builder()
                         .memberSeq(memberSeq)
@@ -201,9 +200,21 @@ public class ChatService {
                 .count();
     }
 
-    // 채널 전체 삭제(WorkSpace 삭제시)
+    // 채널 전체 삭제(Team WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
         chatChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
+    }
+
+    // 워크스페이스 탈퇴
+    public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
+        // 기본 채널 조회 (권한 검증용)
+        ChatChannel basicChannel = checkBasicChannel(workSpaceSeq);
+        log.info("권한 검증 성공");
+        // 멤버가 채널에 있는지 확인
+        chatChannelMemberRepository.findByChannelAndMember(basicChannel.getChatChannelSeq(),
+                memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));
+        log.info("멤버 프로젝트 존재 여부 검증 성공");
+        chatChannelMemberRepository.deleteByChannelAndMember(basicChannel.getChatChannelSeq(), memberSeq);
     }
 
     // 기본 채널 검증
@@ -212,7 +223,7 @@ public class ChatService {
                 new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
     }
 
-    // 초대, 채널 생성 권한 검증
+    // 채널 권한 검증
     private void checkChannelAuthority(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         ChatChannelMember chatChannelMember = chatChannelMemberRepository.findByChannelAndMember(channelSeq,
                 memberSeq).orElseThrow(() -> new EntityNotFoundException("프로젝트의 멤버가 아닙니다."));

@@ -178,8 +178,8 @@ public class MemberService {
         if (member.getMemberId() != null) {
             throw new IllegalStateException("이미 아이디가 등록된 회원입니다.");
         }
-
         member.registerMemberId(memberIdReqDto.getMemberId());
+        workSpaceService.createIndividualWorkSpace(member.getMemberSeq());
     }
 
     public LoginResDto googleLogin(RedirectDto redirectDto) {
