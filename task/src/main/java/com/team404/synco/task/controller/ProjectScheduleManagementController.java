@@ -1,13 +1,16 @@
 package com.team404.synco.task.controller;
 
 import com.team404.synco.common.constant.dto.ResponseDto;
-import com.team404.synco.task.dto.request.BoardCreateRequestDto;
-import com.team404.synco.task.dto.request.TaskCreateRequestDto;
+import com.team404.synco.task.dto.request.BoardCreateReqDto;
+import com.team404.synco.task.dto.request.TaskCreateReqDto;
+import com.team404.synco.task.dto.response.WorkspaceMemberDto;
 import com.team404.synco.task.service.ProjectScheduleManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -30,13 +33,18 @@ public class ProjectScheduleManagementController {
 
     /// 4. project space 내 board 등록
     @PostMapping("/board")
-    public ResponseEntity<?> createProjectBoard(@RequestBody BoardCreateRequestDto boardCreateRequestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(scheduleManagementService.createProjectBoard(boardCreateRequestDto));
+    public ResponseEntity<?> createProjectBoard(@RequestBody BoardCreateReqDto boardCreateReqDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(scheduleManagementService.createProjectBoard(boardCreateReqDto));
     }
 
     /// 3. project space task 등록
     @PostMapping("/task")
-    public ResponseEntity<ResponseDto<?>> createProjectTask(@RequestHeader("X-Member-seq") long memberSeq, @RequestBody TaskCreateRequestDto taskCreateRequestDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(scheduleManagementService.createProjectTaskAfterAuthorityCheck(memberSeq, taskCreateRequestDto), HttpStatus.CREATED));
+    public ResponseEntity<ResponseDto<?>> createProjectTask(@RequestHeader("X-Member-seq") long memberSeq, @RequestBody TaskCreateReqDto taskCreateReqDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(scheduleManagementService.createProjectTaskAfterAuthorityCheck(memberSeq, taskCreateReqDto), HttpStatus.CREATED));
+    }
+
+    @GetMapping("/memberList/{workSpaceSeq}")
+    public ResponseEntity<?> getWorkspaceMembers(@PathVariable long workSpaceSeq) {
+        return ResponseEntity.status(HttpStatus.OK).body(scheduleManagementService.getWorkspaceMemberList(workSpaceSeq));
     }
 }

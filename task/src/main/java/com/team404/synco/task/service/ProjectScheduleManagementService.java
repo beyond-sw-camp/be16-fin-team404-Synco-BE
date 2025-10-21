@@ -4,10 +4,11 @@ import com.team404.synco.common.constant.Authority;
 import com.team404.synco.task.common.component.MemberRedisComponent;
 import com.team404.synco.task.common.domain.MemberInfo;
 import com.team404.synco.task.constant.TaskStatus;
-import com.team404.synco.task.dto.request.BoardCreateRequestDto;
-import com.team404.synco.task.dto.request.TaskCreateRequestDto;
-import com.team404.synco.task.dto.response.BoardResponseDto;
-import com.team404.synco.task.dto.response.TasksResponseDto;
+import com.team404.synco.task.dto.request.BoardCreateReqDto;
+import com.team404.synco.task.dto.request.TaskCreateReqDto;
+import com.team404.synco.task.dto.response.BoardResDto;
+import com.team404.synco.task.dto.response.TasksResDto;
+import com.team404.synco.task.dto.response.WorkspaceMemberDto;
 import com.team404.synco.task.entity.Board;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import com.team404.synco.task.entity.Task;
@@ -33,62 +34,73 @@ public class ProjectScheduleManagementService {
     private final MemberRedisComponent memberRedisComponent;
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
 
+    // 워크스페이스의 모든 Task를 상태별로 그룹화해서 반환 (팀일정 화면용)
     @Transactional(readOnly = true)
-    public List<TasksResponseDto> getAllTasksResponseDtoList(final long workSpaceSeq) {
-        final Map<TaskStatus, List<Task>> groupedTasks = taskRepository.findAllByWorkSpaceSeqOrderByCreatedAsc(workSpaceSeq).stream()
-                .collect(Collectors.groupingBy(Task::getTaskStatus));
-        return groupedTasks.entrySet().stream()
-                .map(entry -> TasksResponseDto.builder()
-                        .taskStatusDescription(entry.getKey().getDisplayName())
-                        .taskResponseDtoList(entry.getValue().stream()
-                                .map(task -> TasksResponseDto.TaskResponseDto.builder()
-                                        .taskSeq(task.getTaskSeq())
-                                        .taskTitle(task.getTaskTitle())
-                                        .taskStatus(task.getTaskStatus())
-                                        .startDate(task.getStartDate())
-                                        .endDate(task.getEndDate())
-                                        .picMemberSeq(task.getPicMemberSeq().getMemberSeq())
-////                                        .picMemberName(task.getPicMember().getName())
-////                                        .picMemberProfileImageUrl(task.getPicMember().getProfileImageUrl())
-                                        .build()).toList())
-                        .build()).toList();
-    }
+    public List<TasksResDto> getAllTasksResponseDtoList(final long workSpaceSeq) {
+    final Map<TaskStatus, List<Task>> groupedTasks = taskRepository.findAllByWorkSpaceSeqOrderByCreatedAsc(workSpaceSeq).stream()
+            .collect(Collectors.groupingBy(Task::getTaskStatus));
+    
+    return groupedTasks.entrySet().stream()
+            .map(entry -> TasksResDto.fromEntity(entry.getKey(), entry.getValue()))
+            .toList();
+}
 
+    // Task 생성 
     @Transactional
-    public long createProjectTaskAfterAuthorityCheck(final long memberSeq, final TaskCreateRequestDto taskCreateRequestDto) {
+    public long createProjectTaskAfterAuthorityCheck(final long memberSeq, final TaskCreateReqDto taskCreateReqDto) {
         final ScheduleManagementChannelMember picMember = scheduleManagementChannelMemberRepository
-                .findById(taskCreateRequestDto.getPicMemberSeq()).orElseThrow(() -> new EntityNotFoundException("일정관리 채널 업무 담당자 회원을 찾을 수 없습니다."));
+                .findById(taskCreateReqDto.getPicMemberSeq()).orElseThrow(() -> new EntityNotFoundException("일정관리 채널 업무 담당자 회원을 찾을 수 없습니다."));
         final ScheduleManagementChannelMember createMember = scheduleManagementChannelMemberRepository.findByMemberSeqAndWorkSpaceSeq(memberSeq, picMember.getWorkSpaceSeq())
                 .orElseThrow(() -> new EntityNotFoundException("일정관리 채널 생성자 회원을 찾을 수 없습니다."));
         if (createMember.getAuthority() == Authority.PARTICIPANT) {
             throw new ForbiddenException("권한이 유효하지 않습니다.");
         }
         Optional<Board> board = Optional.empty();
-        if(taskCreateRequestDto.getBoardSeq() != null) {
-            board = boardRepository.findById(taskCreateRequestDto.getBoardSeq());
+        if(taskCreateReqDto.getBoardSeq() != null) {
+            board = boardRepository.findById(taskCreateReqDto.getBoardSeq());
             if (board.isEmpty()) {
                 throw new EntityNotFoundException("일정관리 채널 보드를 찾을 수 없습니다.");
             }
         }
-        return taskRepository.save(taskCreateRequestDto.toEntity(picMember, board)).getTaskSeq();
+        return taskRepository.save(taskCreateReqDto.toEntity(picMember, board)).getTaskSeq();
     }
 
+    // 특정 멤버가 생성한 보드들과 해당 보드의 Task들을 반환 (개인일정 화면용)
     @Transactional(readOnly = true)
-    public List<BoardResponseDto> fetchBoardsWithTasksByChannelMember(final long memberSeq, final long workSpaceSeq) {
+    public List<BoardResDto> fetchBoardsWithTasksByChannelMember(final long memberSeq, final long workSpaceSeq) {
         List<Board> boardList = boardRepository.findAllByMemberAndWorkSpace(memberSeq, workSpaceSeq);
-        return boardList.stream().map(board -> {
-            Map<Long, MemberInfo> memberInfoMap = board.getTaskList().stream().collect(Collectors.toMap(Task::getTaskSeq,
-                    task -> MemberInfo.builder().memberSeq(memberSeq).memberName(memberRedisComponent.getMemberName(memberSeq))
-                            .memberProfileImageUrl(memberRedisComponent.getMemberProfileUrl(memberSeq)).build()));
-            return BoardResponseDto.fromEntity(board, memberInfoMap);
-        }).toList();
+        return boardList.stream()
+            .map(BoardResDto::fromEntity)
+            .toList();
     }
 
+    // 보드 생성
     @Transactional
-    public long createProjectBoard(final BoardCreateRequestDto boardCreateRequestDto) {
+    public long createProjectBoard(final BoardCreateReqDto boardCreateReqDto) {
         final ScheduleManagementChannelMember scheduleManagementChannelMember = scheduleManagementChannelMemberRepository
-                .findById(boardCreateRequestDto.getScheduleManagementChannelMemberSeq())
+                .findById(boardCreateReqDto.getScheduleManagementChannelMemberSeq())
                 .orElseThrow(() -> new EntityNotFoundException("일정관리 채널 회원을 찾을수 없습니다."));
-        return boardRepository.save(boardCreateRequestDto.toEntity(scheduleManagementChannelMember)).getBoardSeq();
+
+        long maxOrder = boardRepository.findMaxOrderByWorkSpaceSeq(scheduleManagementChannelMember.getWorkSpaceSeq())
+                .orElse(0L);
+
+        Board board = boardCreateReqDto.toEntity(scheduleManagementChannelMember, maxOrder + 1);
+
+        return boardRepository.save(board).getBoardSeq();
+    }
+
+    // 워크스페이스 멤버 목록 조회
+    @Transactional(readOnly = true)
+    public List<WorkspaceMemberDto> getWorkspaceMemberList(final long workSpaceSeq) {
+        List<ScheduleManagementChannelMember> memberList = scheduleManagementChannelMemberRepository
+                .findAllByWorkSpaceSeq(workSpaceSeq).orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));;
+
+        return memberList.stream()
+                .map(member -> WorkspaceMemberDto.fromEntity(
+                        member,
+                        memberRedisComponent.getMemberName(member.getMemberSeq()),
+                        memberRedisComponent.getMemberProfileUrl(member.getMemberSeq())
+                ))
+                .toList();
     }
 }

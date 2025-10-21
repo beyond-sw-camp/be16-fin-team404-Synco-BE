@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Getter
 @Builder
-public class TaskCreateRequestDto {
+public class TaskCreateReqDto {
     @NotEmpty
     private TaskStatus taskStatus;
     @NotEmpty

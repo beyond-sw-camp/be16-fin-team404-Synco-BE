@@ -10,13 +10,13 @@ import java.util.List;
 
 @Getter
 @Builder
-public class TasksResponseDto {
+public class TasksResDto {
     private String taskStatusDescription;
-    private List<TaskResponseDto> taskResponseDtoList;
+    private List<TaskResDto> taskResDtoList;
 
     @Getter
     @Builder
-    public static class TaskResponseDto {
+    public static class TaskResDto {
         private long taskSeq;
         private String taskTitle;
         private TaskStatus taskStatus;
@@ -26,14 +26,14 @@ public class TasksResponseDto {
         private String picMemberName;
         private String picMemberProfileImageUrl;
 
-        public static TaskResponseDto fromEntity(Task task) {
-            return TaskResponseDto.builder()
+        public static TaskResDto fromEntity(Task task) {
+            return TaskResDto.builder()
                     .taskSeq(task.getTaskSeq())
                     .taskTitle(task.getTaskTitle())
                     .taskStatus(task.getTaskStatus())
                     .startDate(task.getStartDate())
                     .endDate(task.getEndDate())
-                    .picMemberSeq(task.getPicMemberSeq().getScheduleManagementChannelMemberSeq())
+                    .picMemberSeq(task.getPicMemberSeq().getMemberSeq())
                     .picMemberName("") // member 이름 필요하면 추가
                     .picMemberProfileImageUrl("") // member 프로필 필요하면 추가
                     .build();
@@ -41,13 +41,13 @@ public class TasksResponseDto {
 
     }
 
-    public static TasksResponseDto fromEntity(TaskStatus taskStatus, List<Task> tasks) {
-        List<TaskResponseDto> dtoList = tasks.stream()
-                .map(TaskResponseDto::fromEntity)
+    public static TasksResDto fromEntity(TaskStatus taskStatus, List<Task> tasks) {
+        List<TaskResDto> dtoList = tasks.stream()
+                .map(TaskResDto::fromEntity)
                 .toList();
-        return TasksResponseDto.builder()
+        return TasksResDto.builder()
                 .taskStatusDescription(taskStatus.getDisplayName())
-                .taskResponseDtoList(dtoList)
+                .taskResDtoList(dtoList)
                 .build();
     }
 }

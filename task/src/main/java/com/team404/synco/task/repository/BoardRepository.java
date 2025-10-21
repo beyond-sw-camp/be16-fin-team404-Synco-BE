@@ -17,4 +17,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
             "WHERE smcm.memberSeq = :memberSeq " +
             "AND smcm.workSpaceSeq = :workSpaceSeq")
     List<Board> findAllByMemberAndWorkSpace(long memberSeq, long workSpaceSeq);
+
+    @Query("SELECT MAX(b.orders) FROM Board b WHERE b.scheduleManagementChannelMember.workSpaceSeq = :workSpaceSeq")
+    Optional<Long> findMaxOrderByWorkSpaceSeq(long workSpaceSeq);
+
 }
