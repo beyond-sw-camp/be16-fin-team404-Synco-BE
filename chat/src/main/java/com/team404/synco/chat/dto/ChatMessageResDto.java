@@ -21,5 +21,5 @@ public class ChatMessageResDto {
     private MessageType messageType;      // TEXT, FILE, REPLY 등
     private String chatMessageText;       // 메시지 내용
     private Long replyToSeq;              // 답장 대상 메시지 ID (nullable)
-    private List<String> files;    // 다중 파일 업로드 (optional)
+    private String chatMessageFileUrls;     // 다중 파일 업로드 (optional)
 }

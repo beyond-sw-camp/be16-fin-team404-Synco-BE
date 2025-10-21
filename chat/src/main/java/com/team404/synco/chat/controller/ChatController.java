@@ -8,9 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -95,6 +97,15 @@ public class ChatController {
     }
 
     ///////////////////////////////////////////채팅기능////////////////////////////////////////////////
+    // 첨부파일 업로드
+    @PostMapping("/files/upload/{channelSeq}")
+    public ResponseEntity<Map<String, List<String>>> uploadFiles(
+            @PathVariable Long channelSeq,
+            @RequestPart("files") List<MultipartFile> files
+    ) {
+        List<String> urls = chatService.uploadChatFiles(channelSeq, files); // S3 업로드 + URL 반환
+        return ResponseEntity.ok(Map.of("uploadedUrls", urls));
+    }
 
     // 채팅목록 조회 (개인워크스페이스)
     @GetMapping("/channels/personal")

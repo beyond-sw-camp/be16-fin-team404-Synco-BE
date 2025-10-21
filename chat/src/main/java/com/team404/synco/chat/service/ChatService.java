@@ -287,7 +287,7 @@ public class ChatService {
     public void saveMessage(Long channelSeq, ChatMessageReqDto dto) {
         log.info("===========채팅 메시지 저장 시작===========");
 
-        // 1️⃣ 채널 존재 여부 검증
+        // 1️⃣ 채널 검증
         ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
                 .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
 
@@ -303,41 +303,32 @@ public class ChatService {
                 .findByChatChannelAndMemberSeq(chatChannel, dto.getSenderSeq())
                 .orElseThrow(() -> new EntityNotFoundException("해당 채널에 참여하지 않은 사용자입니다. memberSeq=" + dto.getSenderSeq()));
 
-        // 4️⃣ 파일 업로드 (optional)
-        List<String> uploadedUrls = new ArrayList<>();
-        if (dto.getFiles() != null && !dto.getFiles().isEmpty()) {
-            log.info("===========S3 파일 업로드===========");
-            if (dto.getFiles().size() > 20) {
-                throw new IllegalArgumentException("최대 20개의 파일만 전송할 수 있습니다.");
-            }
+        // 4️⃣ 파일 URL 문자열 그대로 저장
+        String fileUrls = dto.getChatMessageFileUrls();
 
-            // S3 업로드 실행
-            uploadedUrls = s3Uploader.uploadAll(dto.getFiles(), channelSeq);
-        }
-
-        // 5️⃣ DB 저장용 JSON 문자열 변환
-        String fileUrlsJson = null;
-        if (!uploadedUrls.isEmpty()) {
-            try {
-                fileUrlsJson = new ObjectMapper().writeValueAsString(uploadedUrls);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("파일 URL JSON 변환 실패", e);
-            }
-        }
-
-        // 6️⃣ 메시지 엔티티 생성 및 저장
+        // 5️⃣ 메시지 엔티티 생성 및 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatChannelMember(sender)
                 .chatMessageText(dto.getChatMessageText())
-                .chatMessageFileUrls(fileUrlsJson)
-                .chatMessageParentSeq(dto.getReplyToSeq() != null ? dto.getReplyToSeq() : null)
+                .chatMessageFileUrls(fileUrls)  // ← 그대로 저장
+                .chatMessageParentSeq(dto.getReplyToSeq())
                 .build();
 
         chatMessageRepository.save(chatMessage);
 
         log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={})",
-                channelSeq, dto.getSenderSeq(), memberName, uploadedUrls);
+                channelSeq, dto.getSenderSeq(), memberName, fileUrls);
     }
+
+    // 첨부파일 저장
+    public List<String> uploadChatFiles(Long channelSeq, List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("업로드할 파일이 없습니다.");
+        }
+        // S3 경로 규칙: chat/{channelSeq}
+        return s3Uploader.uploadAll(files, "chat/" + channelSeq);
+    }
+
 
 
     // 채팅목록 조회 (개인워크스페이스)

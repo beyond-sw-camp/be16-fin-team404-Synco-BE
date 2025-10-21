@@ -1,5 +1,6 @@
 package com.team404.synco.common.service;
 
+import com.team404.synco.common.util.ContentTypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,12 +8,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -24,81 +30,97 @@ public class S3Uploader {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            "jpg", "jpeg", "png", "gif", "webp", "pdf", "mp4", "mov", "avi", "mkv",
-            "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "zip", "rar"
-    );
-
-    /** ✅ 단일 파일 업로드 */
-    public String upload(MultipartFile file, Long channelSeq) {
+    /**
+     * ✅ 단일 파일 업로드
+     */
+    public String upload(MultipartFile file, String folder) {
         validateFile(file);
-        String folderPath = "chat/" + channelSeq;
+
+        String key = folder + "/" + generateUniqueFileName(file.getOriginalFilename());
+        String contentType = ContentTypeUtil.getContentType(file.getOriginalFilename());
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .build();
 
         try (InputStream in = file.getInputStream()) {
-            String uniqueFileName = generateUniqueFileName(file.getOriginalFilename());
-            String key = folderPath + "/" + uniqueFileName;
-
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .build();
-
             s3Client.putObject(request, RequestBody.fromInputStream(in, file.getSize()));
-            String url = s3Client.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
-
-            log.info("✅ S3 업로드 성공 - {}", url);
-            return url;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("S3 업로드 실패: " + file.getOriginalFilename(), e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("S3 업로드 실패", e);
         }
+
+        String url = s3Client.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
+        log.info("✅ S3 업로드 성공 - Key: {}, URL: {}", key, url);
+        return url;
     }
 
-    /** ✅ 다중 파일 업로드 */
-    public List<String> uploadAll(List<MultipartFile> files, Long channelSeq) {
+    /**
+     * ✅ 다중 파일 업로드 (채팅/게시판 공용)
+     */
+    public List<String> uploadAll(List<MultipartFile> files, String folder) {
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 없습니다.");
         }
-        if (files.size() > 20) {
-            throw new IllegalArgumentException("최대 20개의 파일만 업로드할 수 있습니다.");
-        }
-
-        List<String> urls = new ArrayList<>();
-        for (MultipartFile file : files) {
-            urls.add(upload(file, channelSeq));
-        }
-        return urls;
+        return files.stream()
+                .map(file -> this.upload(file, folder))
+                .toList();
     }
 
-    /** ✅ 파일명 검증 */
+    /**
+     * 파일 다운로드
+     */
+    public byte[] download(String fileUrl) {
+        try {
+            String key = extractKeyFromUrl(fileUrl);
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+            return s3Client.getObjectAsBytes(request).asByteArray();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("S3 다운로드 실패", e);
+        }
+    }
+
+    /**
+     * 파일 삭제
+     */
+    public void delete(String fileUrl) {
+        try {
+            String key = extractKeyFromUrl(fileUrl);
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build());
+            log.info("🗑️ S3 삭제 성공 - Key: {}", key);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("S3 삭제 실패", e);
+        }
+    }
+
+    // ===================== 내부 유틸 ===================== //
+
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("파일이 비어있습니다.");
         }
-
         long maxSize = 100 * 1024 * 1024; // 100MB
         if (file.getSize() > maxSize) {
             throw new IllegalArgumentException("파일 크기는 100MB를 초과할 수 없습니다.");
         }
-
-        String ext = getExtension(file.getOriginalFilename());
-        if (!ALLOWED_EXTENSIONS.contains(ext.toLowerCase())) {
-            throw new IllegalArgumentException("지원하지 않는 파일 형식입니다: ." + ext);
-        }
     }
 
-    /** ✅ 고유 파일명 생성 (예: 20251020_ab12cd34_회의록.pdf) */
-    private String generateUniqueFileName(String original) {
-        String dateStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    private String generateUniqueFileName(String originalFileName) {
+        String dateStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String randomId = UUID.randomUUID().toString().substring(0, 8);
-        return dateStamp + "_" + randomId + "_" + original;
+        return dateStamp + "_" + randomId + "_" + originalFileName;
     }
 
-    /** ✅ 확장자 추출 */
-    private String getExtension(String fileName) {
-        if (fileName == null || !fileName.contains(".")) {
-            throw new IllegalArgumentException("파일 확장자가 없습니다.");
-        }
-        return fileName.substring(fileName.lastIndexOf('.') + 1);
+    private String extractKeyFromUrl(String fileUrl) {
+        int index = fileUrl.indexOf(".amazonaws.com/");
+        if (index == -1) throw new IllegalArgumentException("잘못된 S3 URL 형식입니다.");
+        return URLDecoder.decode(fileUrl.substring(index + ".amazonaws.com/".length()), java.nio.charset.StandardCharsets.UTF_8);
     }
 }
