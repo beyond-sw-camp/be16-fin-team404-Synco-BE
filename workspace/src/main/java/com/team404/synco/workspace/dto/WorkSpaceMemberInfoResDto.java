@@ -1,5 +1,6 @@
 package com.team404.synco.workspace.dto;
 
+import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.member.entity.Member;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import lombok.Getter;
 public class WorkSpaceMemberInfoResDto {
     private Long memberSeq;
     private String name;
+    private ActiveStatus activeStatus;
     private String profileImageUrl;
 
     public static WorkSpaceMemberInfoResDto fromEntity(Member member){
@@ -16,6 +18,7 @@ public class WorkSpaceMemberInfoResDto {
                 .memberSeq(member.getMemberSeq())
                 .name(member.getName())
                 .profileImageUrl(member.getProfileImageUrl())
+                .activeStatus(member.getActiveStatus())
                 .build();
     }
 }
