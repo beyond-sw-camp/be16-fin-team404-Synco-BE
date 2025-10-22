@@ -1,5 +1,6 @@
 package com.team404.synco.workspace.service;
 
+import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.member.entity.Member;
@@ -360,6 +361,17 @@ public class WorkSpaceService {
         chatFeign.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         taskFeign.delegateTaskChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         taskFeign.delegateVirtualMeetChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
+    }
+
+    // 프로젝트 슈퍼 권한 체크
+    public Authority checkAuthority(Long workSpaceSeq, Long memberSeq) throws AccessDeniedException {
+        WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq)
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 워크스페이스입니다."));
+        if(!workSpace.getMember().getMemberSeq().equals(memberSeq)){
+            return Authority.PARTICIPANT;
+        } else {
+            return Authority.SUPER;
+        }
     }
 
     // SUPER 권한 검증

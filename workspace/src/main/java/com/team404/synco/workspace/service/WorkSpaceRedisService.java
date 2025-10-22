@@ -2,6 +2,7 @@ package com.team404.synco.workspace.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.common.service.RedisFallback;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.workspace.dto.WorkSpaceInfoResDto;
@@ -28,6 +29,7 @@ public class WorkSpaceRedisService {
     private static final String MEMBER_LIST = "memberList";
     private static final String MEMBER_NAME = "memberName";
     private static final String MEMBER_PROFILE_URL = "memberProfileUrl";
+    private static final String ACTIVE_STATUS = "activeStatus";
 
     public WorkSpaceRedisService(
             @Qualifier("memberInventory") RedisTemplate<String, Object> memberRedisTemplate,
@@ -39,11 +41,14 @@ public class WorkSpaceRedisService {
     // 멤버 기본 정보 저장
     public void addMemberInfo(Member member) {
         String memberKey = MEMBER_KEY_PREFIX + member.getMemberSeq();
-        if (!memberRedisTemplate.hasKey(memberKey)) {
-            memberRedisTemplate.opsForHash().put(memberKey, MEMBER_NAME, member.getName());
-            memberRedisTemplate.opsForHash().put(memberKey, MEMBER_PROFILE_URL, member.getProfileImageUrl());
-        }
+        memberRedisTemplate.opsForHash().put(memberKey, MEMBER_NAME, member.getName());
+        memberRedisTemplate.opsForHash().put(memberKey, MEMBER_PROFILE_URL, member.getProfileImageUrl());
+        memberRedisTemplate.opsForHash().put(memberKey, ACTIVE_STATUS, member.getActiveStatus());
     }
+
+
+
+    // 멤버 정보 변경
 
     // 멤버가 속한 워크스페이스 목록 저장
     public void addWorkSpace(WorkSpace workSpace, Long memberSeq) {
@@ -159,6 +164,7 @@ public class WorkSpaceRedisService {
                                 .memberSeq(seq)
                                 .name((String) info.get("memberName"))
                                 .profileImageUrl((String) info.get("memberProfileUrl"))
+                                .activeStatus(ActiveStatus.valueOf((String) info.get("activeStatus")))
                                 .build();
                     })
                     .filter(Objects::nonNull)

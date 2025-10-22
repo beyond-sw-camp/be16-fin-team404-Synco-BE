@@ -12,6 +12,7 @@ import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
+import com.team404.synco.workspace.service.WorkSpaceRedisService;
 import com.team404.synco.workspace.service.WorkSpaceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -45,6 +46,7 @@ public class MemberService {
     private final GoogleService googleService;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final WorkSpaceRedisService workSpaceRedisService;
     private final FriendRepository friendRepository;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
@@ -89,6 +91,8 @@ public class MemberService {
 
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
+
+        workSpaceRedisService.addMemberInfo(member);
 
         return LoginResDto.builder()
                 .accessToken(accessToken)
@@ -151,6 +155,7 @@ public class MemberService {
                 member.updateImageUrl(newProfileImageUrl);
             }
         }
+        workSpaceRedisService.addMemberInfo(member);
         return MemberResDto.fromEntity(member);
     }
 
@@ -230,6 +235,8 @@ public class MemberService {
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
+        workSpaceRedisService.addMemberInfo(member);
+
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -299,7 +306,7 @@ public class MemberService {
         member.saveLastActiveStatus();
         member.updateActiveStatus(ActiveStatus.OFFLINE);
 
-
+        workSpaceRedisService.addMemberInfo(member);
         jwtTokenProvider.deleteRt(memberSeq);
     }
 
@@ -364,6 +371,7 @@ public class MemberService {
         }
         // 상태 변경
         member.updateActiveStatus(reqDto.getActiveStatus());
+        workSpaceRedisService.addMemberInfo(member);
     }
 
 }
