@@ -2,15 +2,17 @@ package com.team404.synco.virtualmeeting.service;
 
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
+import com.team404.synco.task.common.component.MemberRedisComponent;
 import com.team404.synco.virtualmeeting.dto.*;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelMemberRepository;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
@@ -19,17 +21,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
-
-    public VirtualMeetingService(VirtualMeetingChannelRepository virtualMeetingChannelRepository,
-                                 VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository) {
-        this.virtualMeetingChannelRepository = virtualMeetingChannelRepository;
-        this.virtualMeetingChannelMemberRepository = virtualMeetingChannelMemberRepository;
-    }
+    private final MemberRedisComponent memberRedisComponent;
 
     // 기본 채널 생성
     public Long createBasicChannel(ChannelCreateReqDto channelCreateReqDto) {
@@ -120,7 +118,7 @@ public class VirtualMeetingService {
 
     // 채널 권한 설정
     public ChannelGrantResDto grantToMember(GrantAuthorityReqDto grantAuthorityReqDto, Long memberSeq) throws AccessDeniedException {
-        // 유효한 워크스페이스인지 기본채널 여부를 통해 검증
+        // 유효한 프로젝트인지 기본채널 여부를 통해 검증
         VirtualMeetingChannel basicChannel = checkBasicChannel(grantAuthorityReqDto.getWorkSpaceSeq());
         // SUPER 권한 검증
         VirtualMeetingChannelMember superMember = checkAuthorityIsSuper(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
@@ -166,7 +164,7 @@ public class VirtualMeetingService {
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(channelInviteReqDto.getWorkSpaceSeq());        // 초대한 사람 권한 검증
         checkChannelAuthority(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
-        // 워크스페이스 내 모든 채널 조회 (기본 채널 포함)
+        // 프로젝트 내 모든 채널 조회 (기본 채널 포함)
         List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
                 .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
@@ -189,12 +187,34 @@ public class VirtualMeetingService {
                 .count();
     }
 
+    // 채널 리스트
+    @Transactional(readOnly = true)
+    public List<ChannelInfoResDto> findChatChannelList(Long workSpaceSeq) {
+        return virtualMeetingChannelRepository.findByWorkSpaceSeq(workSpaceSeq)
+                .stream()
+                .map(virtualMeetingChannel -> {
+                    List<ChannelMemberResDto> channelMemberResDtoList = virtualMeetingChannel.getVirtualMeetingChannelmemberList()
+                            .stream()
+                            .map(virtualMeetingChannelMember -> {
+                                String memberName = memberRedisComponent.getMemberName(virtualMeetingChannelMember.getMemberSeq())
+                                        .replaceAll("^\"|\"$", "");
+                                String memberProfileUrl = memberRedisComponent.getMemberProfileUrl(
+                                        virtualMeetingChannelMember.getMemberSeq()).replaceAll("^\"|\"$", "");
+                                return ChannelMemberResDto.of(virtualMeetingChannelMember, memberName, memberProfileUrl);
+                            })
+                            .toList();
+
+                    return ChannelInfoResDto.of(virtualMeetingChannel, channelMemberResDtoList);
+                })
+                .toList();
+    }
+
     // 채널 전체 삭제(WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(workSpaceSeq);

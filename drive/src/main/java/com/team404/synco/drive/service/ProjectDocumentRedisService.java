@@ -30,7 +30,7 @@ public class ProjectDocumentRedisService implements MessageListener {
     // Redis 키 패턴
     private static final String ONLINE_USERS_KEY = "document:online-users:";
     private static final String LINE_LOCKS_KEY = "document:locks:"; // 라인 락 키
-    // 워크스페이스 멤버 확인용 (Redis DB 2)
+    // 프로젝트 멤버 확인용 (Redis DB 2)
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
     private static final String FRIEND_LIST = "friendList";
 
@@ -407,10 +407,10 @@ public class ProjectDocumentRedisService implements MessageListener {
         }
     }
 
-    // ==================== 워크스페이스 멤버 확인 (Redis DB 2) ====================
+    // ==================== 프로젝트 멤버 확인 (Redis DB 2) ====================
 
 
-    // 워크스페이스 멤버 여부 확인
+    // 프로젝트 멤버 여부 확인
     public boolean isMemberOfWorkspace(Long workspaceSeq, Long userSeq) {
         try {
             String workspaceKey = WORKSPACE_KEY_PREFIX + workspaceSeq;
@@ -419,7 +419,7 @@ public class ProjectDocumentRedisService implements MessageListener {
             Object existing = workspaceMembersTemplate.opsForHash().get(workspaceKey, FRIEND_LIST);
 
             if (existing == null) {
-                log.warn("⚠️ 워크스페이스 멤버 목록 없음 - WorkspaceSeq: {}", workspaceSeq);
+                log.warn("⚠️ 프로젝트 멤버 목록 없음 - WorkspaceSeq: {}", workspaceSeq);
                 return false;
             }
 

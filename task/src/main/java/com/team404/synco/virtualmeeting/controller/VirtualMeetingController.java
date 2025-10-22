@@ -57,7 +57,7 @@ public class VirtualMeetingController {
     }
 
     // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
+    @PatchMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
@@ -73,19 +73,26 @@ public class VirtualMeetingController {
         return ResponseEntity.ok(ResponseDto.ok("채널의 SUPER 권한 사용자가 변경되었습니다.", HttpStatus.OK));
     }
 
-    // 전체 채널 삭제(워크스페이스 삭제시)
+    // 채널 리스트 조회
+    @GetMapping("/channels/{workSpaceSeq}")
+    public ResponseEntity<ResponseDto<?>> getChannelList(@PathVariable("workSpaceSeq") Long workSpaceSeq)
+    {
+        return ResponseEntity.ok(ResponseDto.ok(virtualMeetingService.findChatChannelList(workSpaceSeq), HttpStatus.OK));
+    }
+
+    // 전체 채널 삭제(프로젝트 삭제시)
     @DeleteMapping("/{workSpaceSeq}")
     public void deleteAllChannel(@PathVariable("workSpaceSeq") Long workSpaceSeq){
         virtualMeetingService.deleteAllChannel(workSpaceSeq);
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     @DeleteMapping("/leave/{workSpaceSeq}")
     public void leaveWorkSpace(@PathVariable("workSpaceSeq")Long workSpaceSeq, @RequestHeader("X-Member-Seq") Long memberSeq){
         virtualMeetingService.deleteMemberFromWorkSpace(workSpaceSeq, memberSeq);
     }
 
-    // 워크스페이스 강제탈퇴
+    // 프로젝트 강제탈퇴
     @DeleteMapping("/kick")
     public void kickFromWorkSpace(@RequestBody KickMemberFromWorkSpaceReqDto kickMemberFromWorkSpaceReqDto){
         Long workSpaceSeq = kickMemberFromWorkSpaceReqDto.getWorkSpaceSeq();

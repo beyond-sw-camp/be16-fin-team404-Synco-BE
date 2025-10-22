@@ -23,4 +23,6 @@ public interface ScheduleManagementChannelMemberRepository extends JpaRepository
             "AND m.memberSeq = :memberSeq")
     void deleteByChannelAndMember(@Param("workSpaceSeq")Long workSpaceSeq,
                                      @Param("memberSeq")Long memberSeq);
+
+    List<ScheduleManagementChannelMember> findByWorkSpaceSeq(Long workSpaceSeq);
 }
