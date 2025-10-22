@@ -364,13 +364,13 @@ public class ChatService {
                 .map(m -> {
                     String key = "memberSeq:" + m.getMemberSeq();
                     String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "profileImageUrl");
+                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
 
                     // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
                     String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
                     String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
 
-                    return ChannelMemberResDto.builder()
+                   return ChannelMemberResDto.builder()
                             .memberSeq(m.getMemberSeq())
                             .memberName(memberName)
                             .profileImageUrl(profileImageUrl)

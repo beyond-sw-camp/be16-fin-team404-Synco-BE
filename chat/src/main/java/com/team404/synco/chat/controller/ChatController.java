@@ -116,9 +116,7 @@ public class ChatController {
     public ResponseEntity<ResponseDto<?>> getChannelMembers(
             @PathVariable Long channelSeq,
             @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-
         List<ChannelMemberResDto> members = chatService.getChannelMembers(channelSeq, memberSeq);
-
         return ResponseEntity.ok(ResponseDto.ok(members, HttpStatus.OK));
     }
 
@@ -132,7 +130,8 @@ public class ChatController {
 
     // 채팅목록 조회 (프로젝트워크스페이스)
     @GetMapping("/channels/project/{workspaceSeq}")
-    public ResponseEntity<List<MyChatListResDto>> getProjectChatChannels(@RequestHeader("X-Member-Seq") Long memberSeq,
+    public ResponseEntity<List<MyChatListResDto>> getProjectChatChannels(
+            @RequestHeader("X-Member-Seq") Long memberSeq,
             @PathVariable Long workspaceSeq) {
         List<MyChatListResDto> result = chatService.getMyChatChannelsByProjectWorkspace(memberSeq, workspaceSeq);
         return ResponseEntity.ok(result);
