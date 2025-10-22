@@ -2,6 +2,7 @@ package com.team404.synco.virtualmeeting.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
@@ -60,6 +61,11 @@ public class RoomService {
 
     // 화상회의 방 생성
     public RoomSessionResDto createImmediateRoom(Long memberSeq, RoomCreateReqDto roomCreateReqDto) {
+        VirtualMeetingChannelMember virtualMeetingChannelMember = virtualMeetingChannelMemberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("화상회의 채널 멤버가 아닙니다."));
+        if(!(virtualMeetingChannelMember.getAuthority().equals(Authority.SUPER) || virtualMeetingChannelMember.getAuthority().equals(Authority.MANAGER))){
+            throw new IllegalStateException("화상회의 방 생성 권한이 없습니다.");
+        }
+
         Room room = roomCreateReqDto.toEntity(memberSeq);
         roomRepository.save(room);
 
