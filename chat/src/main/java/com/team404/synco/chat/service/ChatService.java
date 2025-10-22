@@ -295,10 +295,20 @@ public class ChatService {
         ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
                 .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
 
+//        // 2️⃣ Redis에서 발신자 정보 확인
+//        String memberKey = "memberSeq:" + dto.getSenderSeq();
+//        String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
+////        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "profileImageUrl");
+//        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
+
         // 2️⃣ Redis에서 발신자 정보 확인
         String memberKey = "memberSeq:" + dto.getSenderSeq();
-        String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
-        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "profileImageUrl");
+        String rawMemberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
+        String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
+
+        // ✅ 따옴표 제거 (null-safe, JSON 문자열 대응)
+        String memberName = rawMemberName != null ? rawMemberName.replaceAll("^\"|\"$", "") : null;
+        String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
 
         if (memberName == null) {
             throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
