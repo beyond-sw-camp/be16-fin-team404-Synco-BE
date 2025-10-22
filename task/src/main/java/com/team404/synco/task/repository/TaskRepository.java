@@ -15,4 +15,17 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "where m.workSpaceSeq = :workSpaceSeq " +
             "order by t.createdAt asc")
     List<Task> findAllByWorkSpaceSeqOrderByCreatedAsc(@Param("workSpaceSeq") long workSpaceSeq);
+
+    @Query("select t from Task t " +
+           "where t.picMemberSeq.scheduleManagementChannelMemberSeq = :scheduleManagementChannelMemberSeq " +
+           "and t.board is null " +
+           "order by t.createdAt asc")
+    List<Task> findMyTasksWithoutBoard(@Param("scheduleManagementChannelMemberSeq") long scheduleManagementChannelMemberSeq);
+
+    @Query("select t from Task t " +
+           "join t.picMemberSeq m " +
+           "where m.workSpaceSeq = :workSpaceSeq " +
+           "and m.memberSeq = :assigneeMemberSeq " +
+           "order by t.createdAt asc")
+    List<Task> findTasksByAssigneeAndWorkSpace(@Param("assigneeMemberSeq") long assigneeMemberSeq, @Param("workSpaceSeq") long workSpaceSeq);
 }
