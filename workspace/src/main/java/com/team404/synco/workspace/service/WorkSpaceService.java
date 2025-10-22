@@ -192,6 +192,7 @@ public class WorkSpaceService {
             List<Long> seqList = (List<Long>) myWorkSpaceList;
 
             return seqList.stream()
+                    .skip(1)
                     .map(workSpaceRepository::findById)
                     .flatMap(Optional::stream)
                     .map(WorkSpaceInfoResDto::fromEntity)
@@ -242,33 +243,51 @@ public class WorkSpaceService {
 
 
     // 프로젝트 수정
-    public WorkSpaceResDto editWorkSpace(TeamWorkSpaceEditReqDto teamWorkSpaceEditReqDto, Long memberSeq) throws AccessDeniedException {
-        WorkSpace workSpace = workSpaceRepository.findById(teamWorkSpaceEditReqDto.getWorkSpaceSeq()).orElseThrow(() ->
-                new EntityNotFoundException("해당 프로젝트가 존재하지 않습니다."));
+    public WorkSpaceResDto editWorkSpace(TeamWorkSpaceEditReqDto teamWorkSpaceEditReqDto, Long memberSeq)
+            throws AccessDeniedException {
+        WorkSpace workSpace = workSpaceRepository.findById(teamWorkSpaceEditReqDto.getWorkSpaceSeq())
+                .orElseThrow(() -> new EntityNotFoundException("해당 프로젝트가 존재하지 않습니다."));
+
         // 권한 검증
         checkAuthority(workSpace, memberSeq);
 
+        MultipartFile profileImage = teamWorkSpaceEditReqDto.getWorkSpaceThumbnailImage();
+        log.info("수정할 이미지 : {}", profileImage);
+
         // 이름 수정
         String newName = teamWorkSpaceEditReqDto.getWorkSpaceName();
-        String newThumbnailImageUrl = "";
         workSpace.updateWorkSpaceName(newName);
-        // 썸네일 수정
-        MultipartFile profileImage = teamWorkSpaceEditReqDto.getWorkSpaceThumbnailImage();
+
+        String newThumbnailImageUrl = workSpace.getWorkSpaceThumbnailImageUrl();
+
+        // 썸네일이 null 또는 비어 있으면 S3 / DB 수정 전부 skip
         if (profileImage != null && !profileImage.isEmpty()) {
-            if (workSpace.getWorkSpaceThumbnailImageUrl() != null && !workSpace.getWorkSpaceThumbnailImageUrl().isEmpty()) {
-                try {
-                    s3Uploader.delete(workSpace.getWorkSpaceThumbnailImageUrl());
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("S3 이미지 삭제에 실패했습니다.");
+            try {
+                // 기존 이미지가 존재할 경우 S3에서 삭제
+                if (newThumbnailImageUrl != null && !newThumbnailImageUrl.isEmpty()) {
+                    s3Uploader.delete(newThumbnailImageUrl);
                 }
+
+                // 새 이미지 업로드
                 newThumbnailImageUrl = s3Uploader.upload(profileImage, WORKSPACE_THUMBNAIL_DIRECTORY);
                 workSpace.updateImageUrl(newThumbnailImageUrl);
+
+            } catch (Exception e) {
+                throw new IllegalArgumentException("워크스페이스 썸네일 수정 중 오류가 발생했습니다: " + e.getMessage());
             }
+        } else {
+            log.info("썸네일이 null 또는 비어 있으므로 S3 및 DB 수정 건너뜀");
         }
-        // redis에도 반영
-        workSpaceRedisService.editWorkSpaceInfo(workSpace.getWorkSpaceSeq(), newName, newThumbnailImageUrl);
+
+        // redis 반영
+        workSpaceRedisService.editWorkSpaceInfo(
+                workSpace.getWorkSpaceSeq(),
+                newName,
+                newThumbnailImageUrl
+        );
         return WorkSpaceResDto.fromEntity(workSpace);
     }
+
 
     // 프로젝트 탈퇴
     public void leaveWorkSpace(Long workSpaceSeq, Long memberSeq) throws Exception {
