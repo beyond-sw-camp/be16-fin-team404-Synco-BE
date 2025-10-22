@@ -8,12 +8,14 @@ import com.team404.synco.virtualmeeting.dto.Feign.ChannelGrantResDto;
 import com.team404.synco.virtualmeeting.dto.Feign.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.GrantAuthorityReqDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomActiveListDto;
+import com.team404.synco.virtualmeeting.dto.*;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
 import com.team404.synco.virtualmeeting.repository.RoomRepository;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelMemberRepository;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,20 +30,16 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 @Slf4j
 public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
     private final RoomRepository roomRepository;
-
-    public VirtualMeetingService(VirtualMeetingChannelRepository virtualMeetingChannelRepository,
-                                 VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository, RoomRepository roomRepository) {
-        this.virtualMeetingChannelRepository = virtualMeetingChannelRepository;
-        this.virtualMeetingChannelMemberRepository = virtualMeetingChannelMemberRepository;
-        this.roomRepository = roomRepository;
-    }
+    private final VirtualMeetingRedisService virtualMeetingRedisService;
 
     // ====================================Feign 관련 메서드========================================
+
 
     // 기본 채널 생성
     public Long createBasicChannel(ChannelCreateReqDto channelCreateReqDto) {
@@ -89,7 +87,7 @@ public class VirtualMeetingService {
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(channelInviteReqDto.getWorkSpaceSeq());        // 초대한 사람 권한 검증
         checkChannelAuthority(basicChannel.getVirtualMeetingChannelSeq(), memberSeq);
-        // 워크스페이스 내 모든 채널 조회 (기본 채널 포함)
+        // 프로젝트 내 모든 채널 조회 (기본 채널 포함)
         List<VirtualMeetingChannel> allChannels = virtualMeetingChannelRepository
                 .findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(channelInviteReqDto.getWorkSpaceSeq());
         // 초대할 멤버들을 모든 채널에 추가
@@ -112,12 +110,34 @@ public class VirtualMeetingService {
                 .count();
     }
 
+    // 채널 리스트
+    @Transactional(readOnly = true)
+    public List<ChannelInfoResDto> findChatChannelList(Long workSpaceSeq) {
+        return virtualMeetingChannelRepository.findByWorkSpaceSeq(workSpaceSeq)
+                .stream()
+                .map(virtualMeetingChannel -> {
+                    List<ChannelMemberResDto> channelMemberResDtoList = virtualMeetingChannel.getVirtualMeetingChannelmemberList()
+                            .stream()
+                            .map(virtualMeetingChannelMember -> {
+                                String memberName = virtualMeetingRedisService.getMemberName(virtualMeetingChannelMember.getMemberSeq())
+                                        .replaceAll("^\"|\"$", "");
+                                String memberProfileUrl = virtualMeetingRedisService.getMemberProfileUrl(
+                                        virtualMeetingChannelMember.getMemberSeq()).replaceAll("^\"|\"$", "");
+                                return ChannelMemberResDto.of(virtualMeetingChannelMember, memberName, memberProfileUrl);
+                            })
+                            .toList();
+
+                    return ChannelInfoResDto.of(virtualMeetingChannel, channelMemberResDtoList);
+                })
+                .toList();
+    }
+
     // 채널 전체 삭제(WorkSpace 삭제시)
     public void deleteAllChannel(Long workSpaceSeq) {
         virtualMeetingChannelRepository.deleteAllByWorkSpaceSeq(workSpaceSeq);
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
         // 기본 채널 조회 (권한 검증용)
         VirtualMeetingChannel basicChannel = checkBasicChannel(workSpaceSeq);

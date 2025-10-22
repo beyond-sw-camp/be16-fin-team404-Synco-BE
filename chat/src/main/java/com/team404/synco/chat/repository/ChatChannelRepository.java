@@ -12,4 +12,6 @@ public interface ChatChannelRepository extends JpaRepository<ChatChannel, Long> 
     void deleteAllByWorkSpaceSeq(Long workSpaceSeq);
 
     List<ChatChannel> findByWorkSpaceSeqOrderByChatChannelSeqAsc(Long workSpaceSeq);
+
+    List<ChatChannel> findByWorkSpaceSeq(Long workSpaceSeq);
 }
