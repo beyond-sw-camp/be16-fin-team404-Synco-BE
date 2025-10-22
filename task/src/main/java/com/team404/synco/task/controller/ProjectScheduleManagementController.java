@@ -41,6 +41,7 @@ public class ProjectScheduleManagementController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(scheduleManagementService.createProjectTaskAfterAuthorityCheck(memberSeq, taskCreateReqDto), HttpStatus.CREATED));
     }
 
+    ///  4. workspace 참여 목록조회
     @GetMapping("/memberList/{workSpaceSeq}")
     public ResponseEntity<ResponseDto<?>> getWorkspaceMembers(@PathVariable long workSpaceSeq) {
         return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.ok(scheduleManagementService.getWorkspaceMemberList(workSpaceSeq), HttpStatus.OK));

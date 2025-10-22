@@ -21,8 +21,6 @@ public class TaskCreateReqDto {
     @NotEmpty
     private String taskContents;
     @NotEmpty
-    private String taskStatusDescription;
-    @NotEmpty
     private LocalDate startDate;
     @NotEmpty
     private LocalDate endDate;

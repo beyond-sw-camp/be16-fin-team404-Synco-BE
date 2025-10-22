@@ -24,3 +24,4 @@ public class TaskUpdateReqDto {
     private long picMemberSeq;
     private Long boardSeq;
 }
+

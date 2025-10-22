@@ -29,7 +29,7 @@ public class TaskDetailResDto {
                 .taskStatus(task.getTaskStatus())
                 .startDate(task.getStartDate())
                 .endDate(task.getEndDate())
-                .picMemberSeq(task.getPicMemberSeq().getScheduleManagementChannelMemberSeq())
+                .picMemberSeq(task.getPicMemberSeq().getMemberSeq())
                 .boardSeq(task.getBoard() != null ? task.getBoard().getBoardSeq() : null)
                 .picMemberName("") // member 이름 필요하면 추가
                 .picMemberProfileImageUrl("") // member 프로필 필요하면 추가
