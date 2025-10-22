@@ -14,48 +14,33 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(indexes = {
-    @Index(name = "idx_room_status", columnList = "roomStatus"),
-    @Index(name = "idx_room_channel", columnList = "virtualMeetingChannelSeq")
-})
 public class Room extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "room_seq")
     private Long roomSeq;
 
-    @Column(nullable = false)
-    private Long virtualMeetingChannelSeq;
+    @Column(name = "room_sid", length = 64)
+    private String roomSid;
 
-    @Column(nullable = false, unique = true)
-    private String roomId; // LiveKit Room ID
-
-    @Column(nullable = false)
-    private String roomName;
-
-    @Column(nullable = false, unique = true)
-    private String roomSid; // LiveKit Room SID
+    @Column(name = "name", length = 255)
+    private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 16, nullable = false)
     @Builder.Default
-    private RoomStatus roomStatus = RoomStatus.CREATED;
+    private RoomStatus status = RoomStatus.CREATED;
 
-    @Column(nullable = false)
-    private Long createdByMemberSeq;
-
+    @Column(name = "started_at")
     private LocalDateTime startedAt;
+
+    @Column(name = "ended_at")
     private LocalDateTime endedAt;
-
-    @Builder.Default
-    private Boolean recordingEnabled = false;
-
-    // LiveKit Room 메타데이터
-    @Column(columnDefinition = "TEXT")
-    private String roomMetadata; // JSON 형태의 메타데이터
 
     // 관계 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "virtualMeetingChannelSeq", insertable = false, updatable = false, 
+    @JoinColumn(name = "channel_seq", nullable = false,
                 foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private VirtualMeetingChannel virtualMeetingChannel;
 
@@ -64,42 +49,26 @@ public class Room extends BaseEntity {
     private List<RoomParticipant> roomParticipantList = new ArrayList<>();
 
     @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    private RoomRecording roomRecording;
+    private Recording recording;
 
     // 비즈니스 메서드
     public void startRoom() {
-        this.roomStatus = RoomStatus.ACTIVE;
+        this.status = RoomStatus.ACTIVE;
         this.startedAt = LocalDateTime.now();
     }
 
     public void endRoom() {
-        this.roomStatus = RoomStatus.ENDED;
+        this.status = RoomStatus.ENDED;
         this.endedAt = LocalDateTime.now();
     }
 
     public void failRoom() {
-        this.roomStatus = RoomStatus.FAILED;
+        this.status = RoomStatus.FAILED;
         this.endedAt = LocalDateTime.now();
     }
 
-    public void updateRoomName(String roomName) {
-        this.roomName = roomName;
-    }
-
-    public void enableRecording() {
-        this.recordingEnabled = true;
-    }
-
-    public void disableRecording() {
-        this.recordingEnabled = false;
-    }
-
-    public void updateRoomMetadata(String metadata) {
-        this.roomMetadata = metadata;
-    }
-
     public boolean isActive() {
-        return this.roomStatus == RoomStatus.ACTIVE;
+        return this.status == RoomStatus.ACTIVE;
     }
 
     public boolean hasParticipants() {

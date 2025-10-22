@@ -1,6 +1,5 @@
 package com.team404.synco.virtualmeeting.entity;
 
-import com.team404.synco.common.constant.ParticipantStatus;
 import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,101 +11,56 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(indexes = {
-    @Index(name = "idx_participant_room", columnList = "roomSeq"),
-    @Index(name = "idx_participant_member", columnList = "memberSeq"),
-    @Index(name = "idx_participant_status", columnList = "participantStatus")
-})
+@Table(name = "room_participant", 
+       uniqueConstraints = @UniqueConstraint(columnNames = {"room_seq", "channel_member_seq"}))
 public class RoomParticipant extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "room_participant_seq")
     private Long roomParticipantSeq;
 
-    @Column(nullable = false)
-    private Long roomSeq;
+    @Column(name = "role_in_meeting", length = 16)
+    private String roleInMeeting;
 
-    @Column(nullable = false)
-    private Long memberSeq;
+    @Column(name = "display_name_at_join", length = 255)
+    private String displayNameAtJoin;
 
-    @Column(nullable = false, unique = true)
-    private String participantId; // LiveKit Participant ID
-
-    @Column(nullable = false, unique = true)
-    private String participantSid; // LiveKit Participant SID
-
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ParticipantStatus participantStatus = ParticipantStatus.CONNECTED;
-
-    @Column(nullable = false)
+    @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
+    @Column(name = "left_at")
     private LocalDateTime leftAt;
-
-    // 참가자 메타데이터
-    @Column(columnDefinition = "TEXT")
-    private String participantMetadata; // JSON 형태의 메타데이터
-
-    // 오디오/비디오 상태
-    @Builder.Default
-    private Boolean isMuted = false;
-
-    @Builder.Default
-    private Boolean isVideoEnabled = true;
-
-    @Builder.Default
-    private Boolean isScreenSharing = false;
-
-    // 연결 품질 정보
-    private String connectionQuality; // EXCELLENT, GOOD, FAIR, POOR
 
     // 관계 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "roomSeq", insertable = false, updatable = false,
+    @JoinColumn(name = "room_seq", insertable = false, updatable = false,
                 foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Room room;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_member_seq", nullable = false,
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private VirtualMeetingChannelMember virtualMeetingChannelMember;
+
     // 비즈니스 메서드
-    public void connect() {
-        this.participantStatus = ParticipantStatus.CONNECTED;
+    public void joinRoom() {
         this.joinedAt = LocalDateTime.now();
     }
 
-    public void disconnect() {
-        this.participantStatus = ParticipantStatus.DISCONNECTED;
+    public void leaveRoom() {
         this.leftAt = LocalDateTime.now();
     }
 
-    public void reconnect() {
-        this.participantStatus = ParticipantStatus.RECONNECTING;
+    public boolean isActive() {
+        return this.leftAt == null;
     }
 
-    public void toggleMute() {
-        this.isMuted = !this.isMuted;
+    public void updateRole(String role) {
+        this.roleInMeeting = role;
     }
 
-    public void toggleVideo() {
-        this.isVideoEnabled = !this.isVideoEnabled;
-    }
-
-    public void toggleScreenSharing() {
-        this.isScreenSharing = !this.isScreenSharing;
-    }
-
-    public void updateConnectionQuality(String quality) {
-        this.connectionQuality = quality;
-    }
-
-    public void updateParticipantMetadata(String metadata) {
-        this.participantMetadata = metadata;
-    }
-
-    public boolean isConnected() {
-        return this.participantStatus == ParticipantStatus.CONNECTED;
-    }
-
-    public boolean isDisconnected() {
-        return this.participantStatus == ParticipantStatus.DISCONNECTED;
+    public void updateDisplayName(String displayName) {
+        this.displayNameAtJoin = displayName;
     }
 }

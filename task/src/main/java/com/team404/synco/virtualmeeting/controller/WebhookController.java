@@ -1,13 +1,14 @@
 package com.team404.synco.virtualmeeting.controller;
 
 import com.team404.synco.common.constant.dto.ResponseDto;
-import com.team404.synco.virtualmeeting.dto.LiveKitWebhookDto;
-import com.team404.synco.virtualmeeting.service.RoomService;
+import com.team404.synco.virtualmeeting.service.LiveKitService;
+import io.livekit.server.WebhookReceiver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import livekit.LivekitWebhook.*;
 
 @Slf4j
 @RestController
@@ -15,18 +16,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/webhooks")
 public class WebhookController {
 
-    private final RoomService roomService;
+    private final LiveKitService liveKitService;
+    private final WebhookReceiver webhookReceiver;
 
-    @PostMapping("/livekit")
-    public ResponseEntity<ResponseDto<String>> handleLiveKitWebhook(@RequestBody LiveKitWebhookDto webhookDto) {
+
+    @PostMapping(value = "/livekit", consumes = "application/webhook+json")
+    public ResponseEntity<ResponseDto<String>> handleLiveKitWebhook(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody String body
+    ) {
         try {
-            log.info("LiveKit Webhook 수신: event={}, room={}, participant={}", 
-                webhookDto.getEvent(), 
-                webhookDto.getRoom() != null ? webhookDto.getRoom().getName() : "null",
-                webhookDto.getParticipant() != null ? webhookDto.getParticipant().getIdentity() : "null");
-
-            // 서비스에서 모든 이벤트 처리
-            roomService.handleWebhookEvent(webhookDto);
+            WebhookEvent event = webhookReceiver.receive(body,authHeader);
+            liveKitService.handleWebhook(event);
 
             return ResponseEntity.ok(ResponseDto.ok("Webhook processed successfully", HttpStatus.OK));
             
@@ -35,11 +36,5 @@ public class WebhookController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "Webhook processing failed"));
         }
-    }
-
-    // Webhook 상태 확인용 헬스체크 엔드포인트
-    @GetMapping("/livekit/health")
-    public ResponseEntity<ResponseDto<String>> healthCheck() {
-        return ResponseEntity.ok(ResponseDto.ok("Webhook endpoint is healthy", HttpStatus.OK));
     }
 }

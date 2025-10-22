@@ -27,6 +27,10 @@ public class VirtualMeetingChannelMember extends BaseEntity {
     @JoinColumn(name = "virtual_meeting_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private VirtualMeetingChannel virtualMeetingChannel;
 
+    @OneToMany(mappedBy = "virtualMeetingChannelMember", orphanRemoval = true)
+    @Builder.Default
+    private List<RoomParticipant> roomParticipantList = new ArrayList<>();
+
     public void updateAuthority(Authority authority){
         this.authority = authority;
     }

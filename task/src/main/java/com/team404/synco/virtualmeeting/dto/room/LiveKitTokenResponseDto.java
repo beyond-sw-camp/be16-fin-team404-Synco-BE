@@ -11,7 +11,4 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LiveKitTokenResponseDto {
     private String token;
-    private String roomId;
-    private String participantId;
-    private Long expiresAt;
 }

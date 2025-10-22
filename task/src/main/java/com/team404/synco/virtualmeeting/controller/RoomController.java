@@ -90,18 +90,4 @@ public class RoomController {
         var responseDto = roomService.getRoomInfo(roomId, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
     }
-
-    /**
-     * LiveKit 토큰 생성
-     */
-    @PostMapping("/{roomId}/token")
-    public ResponseEntity<ResponseDto<LiveKitTokenResponseDto>> generateLiveKitToken(
-            @PathVariable String roomId,
-            @RequestHeader("X-Member-Seq") Long memberSeq) {
-        
-        log.info("LiveKit 토큰 생성 요청: roomId={}, memberSeq={}", roomId, memberSeq);
-        
-        var responseDto = roomService.generateLiveKitToken(roomId, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
-    }
 }
