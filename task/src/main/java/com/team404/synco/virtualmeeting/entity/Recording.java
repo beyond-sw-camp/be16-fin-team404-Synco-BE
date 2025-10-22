@@ -3,6 +3,7 @@ package com.team404.synco.virtualmeeting.entity;
 import com.team404.synco.common.constant.RecordingStatus;
 import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import livekit.LivekitEgress;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -22,10 +23,8 @@ public class Recording extends BaseEntity {
     @Column(name = "egress_id", length = 64)
     private String egressId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 16, nullable = false)
-    @Builder.Default
-    private RecordingStatus status = RecordingStatus.STARTED;
+    @Column(name = "filename", columnDefinition = "TEXT")
+    private String filename;
 
     @Column(name = "output_url", columnDefinition = "TEXT")
     private String outputUrl;
@@ -51,39 +50,13 @@ public class Recording extends BaseEntity {
     @OneToOne(mappedBy = "recording", cascade = CascadeType.ALL, orphanRemoval = true)
     private RecordingSummary recordingSummary;
 
-    // 비즈니스 메서드
-    public void startRecording() {
-        this.status = RecordingStatus.STARTED;
-        this.startedAt = LocalDateTime.now();
-    }
-
-    public void endRecording() {
-        this.status = RecordingStatus.ENDED;
-        this.endedAt = LocalDateTime.now();
-    }
-
-    public void failRecording() {
-        this.status = RecordingStatus.FAILED;
-        this.endedAt = LocalDateTime.now();
-    }
-
-    public void updateOutputUrl(String outputUrl) {
-        this.outputUrl = outputUrl;
-    }
-
-    public void updateDuration(Long durationMs) {
-        this.durationMs = durationMs;
-    }
-
-    public void updateFileSize(Long fileSizeBytes) {
-        this.fileSizeBytes = fileSizeBytes;
-    }
-
-    public boolean isCompleted() {
-        return this.status == RecordingStatus.ENDED;
-    }
-
-    public boolean isFailed() {
-        return this.status == RecordingStatus.FAILED;
+    public static Recording fromFileInfo(LivekitEgress.FileInfo fileInfo, Room room) {
+        return Recording.builder()
+                .filename(fileInfo.getFilename())
+                .outputUrl(fileInfo.getLocation())
+                .fileSizeBytes(fileInfo.getSize())
+                .durationMs(fileInfo.getDuration())
+                .room(room)
+                .build();
     }
 }

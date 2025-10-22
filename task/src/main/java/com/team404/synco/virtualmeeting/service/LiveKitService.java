@@ -2,6 +2,9 @@ package com.team404.synco.virtualmeeting.service;
 
 import com.team404.synco.virtualmeeting.entity.Room;
 import com.team404.synco.virtualmeeting.entity.Recording;
+import com.team404.synco.virtualmeeting.entity.RoomParticipant;
+import com.team404.synco.virtualmeeting.repository.RecordingRepository;
+import com.team404.synco.virtualmeeting.repository.RoomParticipantRepository;
 import com.team404.synco.virtualmeeting.repository.RoomRepository;
 import io.livekit.server.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,6 +24,8 @@ import java.util.UUID;
 public class LiveKitService {
 
     private final RoomRepository roomRepository;
+    private final RecordingRepository recordingRepository;
+    private final RoomParticipantRepository roomParticipantRepository;
 
     public void handleWebhook(WebhookEvent event) {
         switch (event.getEvent()) {
@@ -59,11 +64,16 @@ public class LiveKitService {
     private void handleParticipantLeft(WebhookEvent event) {
         log.info("LiveKit_Webhook(participant_left) - {}", event.getRoom());
         log.info("LiveKit_Webhook(participant_left) - {}", event.getParticipant());
+        RoomParticipant participant = roomParticipantRepository.findById(Long.valueOf(event.getParticipant().getIdentity())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 참가자 입니다."));
+        participant.leaveRoom();
     }
 
     private void handleParticipantConnectionAborted(WebhookEvent event) {
         log.info("LiveKit_Webhook(participant_connection_aborted) - {}", event.getRoom());
         log.info("LiveKit_Webhook(participant_connection_aborted) - {}", event.getParticipant());
+
+        RoomParticipant participant = roomParticipantRepository.findById(Long.valueOf(event.getParticipant().getIdentity())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 참가자 입니다."));
+        participant.leaveRoom();
     }
 
     private void handleTrackPublished(WebhookEvent event) {
@@ -93,8 +103,8 @@ public class LiveKitService {
         FileInfo fileInfo = event.getEgressInfo().getFileResults(0);
 
         Room room = roomRepository.findById(Long.valueOf(event.getEgressInfo().getRoomName())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 입니다."));
-        Recording recording = room.getRecording();
-
+        Recording recording = Recording.fromFileInfo(fileInfo,room);
+        recordingRepository.save(recording);
     }
 
     private void handleIngressStarted(WebhookEvent event) {

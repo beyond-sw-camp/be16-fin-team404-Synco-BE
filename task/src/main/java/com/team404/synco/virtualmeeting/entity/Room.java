@@ -7,7 +7,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Entity
@@ -24,13 +26,19 @@ public class Room extends BaseEntity {
     @Column(name = "room_sid", length = 64)
     private String roomSid;
 
-    @Column(name = "name", length = 255)
-    private String name;
+    @Column(name = "room_name", length = 255)
+    private String roomName;
+
+    @Column(name = "room_description", length = 500)
+    private String roomDescription;
+
+    @Column(name = "host_id", nullable = false)
+    private Long hostId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 16, nullable = false)
     @Builder.Default
-    private RoomStatus status = RoomStatus.CREATED;
+    private RoomStatus status = RoomStatus.WAITING;
 
     @Column(name = "started_at")
     private LocalDateTime startedAt;
@@ -40,38 +48,24 @@ public class Room extends BaseEntity {
 
     // 관계 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "channel_seq", nullable = false,
-                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @JoinColumn(name = "channel_seq", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private VirtualMeetingChannel virtualMeetingChannel;
 
     @Builder.Default
     @OneToMany(mappedBy = "room", orphanRemoval = true)
-    private List<RoomParticipant> roomParticipantList = new ArrayList<>();
+    private Set<RoomParticipant> roomParticipantList = new HashSet<>();
 
     @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private Recording recording;
 
     // 비즈니스 메서드
     public void startRoom() {
-        this.status = RoomStatus.ACTIVE;
+        this.status = RoomStatus.IN_SESSION;
         this.startedAt = LocalDateTime.now();
     }
 
     public void endRoom() {
         this.status = RoomStatus.ENDED;
         this.endedAt = LocalDateTime.now();
-    }
-
-    public void failRoom() {
-        this.status = RoomStatus.FAILED;
-        this.endedAt = LocalDateTime.now();
-    }
-
-    public boolean isActive() {
-        return this.status == RoomStatus.ACTIVE;
-    }
-
-    public boolean hasParticipants() {
-        return this.roomParticipantList != null && !this.roomParticipantList.isEmpty();
     }
 }

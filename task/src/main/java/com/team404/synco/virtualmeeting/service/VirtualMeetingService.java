@@ -1,19 +1,24 @@
 package com.team404.synco.virtualmeeting.service;
 
 import com.team404.synco.common.constant.Authority;
+import com.team404.synco.common.constant.RoomStatus;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.ChannelCreateReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.ChannelGrantResDto;
 import com.team404.synco.virtualmeeting.dto.Feign.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.GrantAuthorityReqDto;
+import com.team404.synco.virtualmeeting.dto.Room.RoomActiveListDto;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
+import com.team404.synco.virtualmeeting.repository.RoomRepository;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelMemberRepository;
 import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
@@ -27,11 +32,13 @@ import java.util.Optional;
 public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
+    private final RoomRepository roomRepository;
 
     public VirtualMeetingService(VirtualMeetingChannelRepository virtualMeetingChannelRepository,
-                                 VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository) {
+                                 VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository, RoomRepository roomRepository) {
         this.virtualMeetingChannelRepository = virtualMeetingChannelRepository;
         this.virtualMeetingChannelMemberRepository = virtualMeetingChannelMemberRepository;
+        this.roomRepository = roomRepository;
     }
 
     // ====================================Feign 관련 메서드========================================
@@ -149,6 +156,17 @@ public class VirtualMeetingService {
         return ChannelGrantResDto.fromEntity(superMember, grantMember);
     }
 
+
+    // 활성화된 화상회의 목록 조회
+    @Transactional(readOnly = true)
+    public Page<RoomActiveListDto> getActiveRooms(Long channelSeq, Long memberSeq, Pageable pageable) {
+        // 채널 멤버인지 검증
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(channelSeq, memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+        // 활성화된 룸 목록 조회
+        roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable);
+        return roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable)
+                .map(RoomActiveListDto::fromEntity);
+    }
 
 
     // ====================================검증 메서드========================================

@@ -15,14 +15,13 @@ public class RecordingSummary extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "recording_summary_seq")
     private Long recordingSummarySeq;
 
-    @Column(name = "title", length = 255)
-    private String title;
+    @Column(name = "summary", columnDefinition = "TEXT")
+    private String summary;
 
-    @Column(name = "content", columnDefinition = "TEXT")
-    private String content;
+    @Column(name = "transcript", nullable = true, columnDefinition = "LONGTEXT")
+    private String transcript;
 
     // 관계 설정
     @OneToOne(fetch = FetchType.LAZY)
