@@ -1,6 +1,7 @@
 package com.team404.synco.chat.controller;
 
 import com.team404.synco.chat.dto.*;
+import com.team404.synco.chat.dto.channel.*;
 import com.team404.synco.chat.entity.WorkSpaceType;
 import com.team404.synco.chat.service.ChatService;
 import com.team404.synco.common.dto.ResponseDto;

@@ -1,30 +1,21 @@
 package com.team404.synco.chat.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.chat.dto.*;
-import com.team404.synco.chat.dto.ChannelCreateReqDto;
-import com.team404.synco.chat.dto.ChannelInviteReqDto;
-import com.team404.synco.chat.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.chat.dto.GrantAuthorityReqDto;
-import com.team404.synco.chat.dto.*;
+import com.team404.synco.chat.dto.channel.*;
+import com.team404.synco.chat.dto.channel.DelegateSuperAuthorityReqDto;
+import com.team404.synco.chat.dto.channel.GrantAuthorityReqDto;
 import com.team404.synco.chat.entity.*;
 import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.chat.repository.ChatMessageRepository;
 import com.team404.synco.common.constant.Authority;
-import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
