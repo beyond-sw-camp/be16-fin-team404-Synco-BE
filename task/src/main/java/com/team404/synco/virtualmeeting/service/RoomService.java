@@ -2,6 +2,7 @@ package com.team404.synco.virtualmeeting.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
@@ -57,7 +58,7 @@ public class RoomService {
     private final RoomServiceClient roomServiceClient; // LiveKit 서버 SDK
     private final EgressServiceClient egressServiceClient; // (선택) 자동 녹화용
     private final ObjectMapper objectMapper;
-    private final VirtualMeetingRedisService virtualMeetingRedisService;
+    private final MemberRedisComponent memberRedisComponent;
 
     // 화상회의 방 생성
     public RoomSessionResDto createImmediateRoom(Long memberSeq, RoomCreateReqDto roomCreateReqDto) {
@@ -100,7 +101,7 @@ public class RoomService {
             throw new IllegalStateException("화상회의 방에 참가할 수 없습니다.");
         }
 
-        String memberName = virtualMeetingRedisService.getMemberName(memberSeq);
+        String memberName = memberRedisComponent.getMemberName(memberSeq);
 
         Optional<RoomParticipant> participant = participantRepository.findById(memberSeq);
         if(participant.isEmpty()){

@@ -1,17 +1,20 @@
 package com.team404.synco.task.service;
 
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
+import com.team404.synco.task.dto.ChannelMemberResDto;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import com.team404.synco.task.repository.ScheduleManagementChannelMemberRepository;
 import com.team404.synco.virtualmeeting.dto.Feign.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.GrantAuthorityReqDto;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Member;
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
@@ -23,9 +26,11 @@ import java.util.Optional;
 @Slf4j
 public class TaskService {
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
+    private final MemberRedisComponent memberRedisComponent;
 
-    public TaskService(ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository) {
+    public TaskService(ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository, MemberRedisComponent memberRedisComponent) {
         this.scheduleManagementChannelMemberRepository = scheduleManagementChannelMemberRepository;
+        this.memberRedisComponent = memberRedisComponent;
     }
 
     // 팀 task 생성
@@ -112,7 +117,7 @@ public class TaskService {
                 .count();
     }
 
-    // 워크스페이스 탈퇴
+    // 프로젝트 탈퇴
     public void deleteMemberFromWorkSpace(Long workSpaceSeq, Long memberSeq){
         // 멤버가 채널에 있는지 확인 / 채널에 있는 모든 멤버 행 다 가져오기
         scheduleManagementChannelMemberRepository.findByWorkSpaceSeqAndMemberSeq(workSpaceSeq,
@@ -121,11 +126,29 @@ public class TaskService {
         scheduleManagementChannelMemberRepository.deleteByChannelAndMember(workSpaceSeq, memberSeq);
     }
 
-    // 내 워크스페이스 목록
+
+
+    // 멤버 목록
+    @Transactional(readOnly = true)
+    public List<ChannelMemberResDto> findTaskChannelMember(Long workSpaceSeq) {
+        return scheduleManagementChannelMemberRepository.findByWorkSpaceSeq(workSpaceSeq)
+                .stream()
+                .map(member -> {
+                    String memberName = memberRedisComponent.getMemberName(member.getMemberSeq())
+                            .replaceAll("^\"|\"$", "");
+                    String memberProfileUrl = memberRedisComponent.getMemberProfileUrl(member.getMemberSeq())
+                            .replaceAll("^\"|\"$", "");
+                    return ChannelMemberResDto.of(member, memberName, memberProfileUrl);
+                })
+                .toList();
+    }
+
+    // 내 프로젝트 목록
+    @Transactional(readOnly = true)
     public List<Long> myWorkSpaceList(Long memberSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByMemberSeq(memberSeq)
-                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 프로젝트 목록이 없습니다."));
 
         return myWorkSpaceList.stream()
                 .map(ScheduleManagementChannelMember::getWorkSpaceSeq)
@@ -133,7 +156,7 @@ public class TaskService {
                 .toList();
     }
 
-    // 워크스페이스 멤버 목록
+    // 프로젝트 멤버 목록
     public List<Long> workSpaceMemberList(Long workSpaceSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)

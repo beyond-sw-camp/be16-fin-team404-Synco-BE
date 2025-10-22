@@ -1,5 +1,6 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
@@ -36,8 +37,7 @@ public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
     private final RoomRepository roomRepository;
-    private final VirtualMeetingRedisService virtualMeetingRedisService;
-
+    private final MemberRedisComponent memberRedisComponent;
     // ====================================Feign 관련 메서드========================================
 
 
@@ -119,9 +119,9 @@ public class VirtualMeetingService {
                     List<ChannelMemberResDto> channelMemberResDtoList = virtualMeetingChannel.getVirtualMeetingChannelmemberList()
                             .stream()
                             .map(virtualMeetingChannelMember -> {
-                                String memberName = virtualMeetingRedisService.getMemberName(virtualMeetingChannelMember.getMemberSeq())
+                                String memberName = memberRedisComponent.getMemberName(virtualMeetingChannelMember.getMemberSeq())
                                         .replaceAll("^\"|\"$", "");
-                                String memberProfileUrl = virtualMeetingRedisService.getMemberProfileUrl(
+                                String memberProfileUrl = memberRedisComponent.getMemberProfileUrl(
                                         virtualMeetingChannelMember.getMemberSeq()).replaceAll("^\"|\"$", "");
                                 return ChannelMemberResDto.of(virtualMeetingChannelMember, memberName, memberProfileUrl);
                             })
