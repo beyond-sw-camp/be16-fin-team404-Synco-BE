@@ -291,17 +291,11 @@ public class ChatService {
     public ChatMessageResDto saveMessage(Long channelSeq, ChatMessageReqDto dto) {
         log.info("===========채팅 메시지 저장 시작===========");
 
-        // 1️⃣ 채널 검증
+        // 채널 검증
         ChatChannel chatChannel = chatChannelRepository.findById(channelSeq)
                 .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
 
-//        // 2️⃣ Redis에서 발신자 정보 확인
-//        String memberKey = "memberSeq:" + dto.getSenderSeq();
-//        String memberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
-////        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "profileImageUrl");
-//        String profileImageUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
-
-        // 2️⃣ Redis에서 발신자 정보 확인
+        // Redis에서 발신자 정보 확인
         String memberKey = "memberSeq:" + dto.getSenderSeq();
         String rawMemberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
         String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
@@ -314,16 +308,16 @@ public class ChatService {
             throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
         }
 
-        // 3️⃣ 채널 참여자 여부 확인
+        // 채널 참여자 여부 확인
         ChatChannelMember sender = chatChannelMemberRepository
                 .findByChatChannelAndMemberSeq(chatChannel, dto.getSenderSeq())
                 .orElseThrow(
                         () -> new EntityNotFoundException("해당 채널에 참여하지 않은 사용자입니다. memberSeq=" + dto.getSenderSeq()));
 
-        // 4️⃣ 파일 URL 문자열 그대로 저장
+        // 파일 URL 문자열 그대로 저장
         String fileUrls = dto.getChatMessageFileUrls();
 
-        // 5️⃣ 메시지 엔티티 생성 및 저장
+        // 메시지 엔티티 생성 및 저장
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatChannelMember(sender)
                 .chatMessageText(dto.getChatMessageText())
@@ -357,6 +351,41 @@ public class ChatService {
         }
         // S3 경로 규칙: chat/{channelSeq}
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
+    }
+
+    // 채팅 참여자 목록 조회
+    @Transactional(readOnly = true)
+    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+        // 1️⃣ 접근 권한 확인
+        if (!isChannelParticipant(memberSeq, channelSeq)) {
+            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
+        }
+
+        // 2️⃣ 채널 존재 확인
+        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 3️⃣ 채널의 멤버 목록 조회
+        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+
+        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
+        return members.stream()
+                .map(m -> {
+                    String key = "memberSeq:" + m.getMemberSeq();
+                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
+                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "profileImageUrl");
+
+                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
+                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
+                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
+
+                    return ChannelMemberResDto.builder()
+                            .memberSeq(m.getMemberSeq())
+                            .memberName(memberName)
+                            .profileImageUrl(profileImageUrl)
+                            .build();
+                })
+                .toList();
     }
 
     // 채팅목록 조회 (개인워크스페이스)
