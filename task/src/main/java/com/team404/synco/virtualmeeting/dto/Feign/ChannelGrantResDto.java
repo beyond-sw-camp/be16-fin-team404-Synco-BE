@@ -1,4 +1,4 @@
-package com.team404.synco.virtualmeeting.dto;
+package com.team404.synco.virtualmeeting.dto.Feign;
 
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
