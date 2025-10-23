@@ -127,6 +127,16 @@ public class ChatController {
         return ResponseEntity.ok(ResponseDto.ok(members, HttpStatus.OK));
     }
 
+    // 채팅 메시지 삭제 (hard-delete)
+    @DeleteMapping("/messages/{chatMessageSeq}")
+    public ResponseEntity<ResponseDto<?>> deleteChatMessage(
+            @PathVariable Long chatMessageSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+
+        chatService.deleteChatMessage(chatMessageSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("메시지가 영구 삭제되었습니다.", HttpStatus.OK));
+    }
+
     // 채팅목록 조회 (개인워크스페이스)
     @GetMapping("/channels/personal")
     public ResponseEntity<List<MyChatListResDto>> getPersonalChatChannels(
@@ -135,17 +145,14 @@ public class ChatController {
         return ResponseEntity.ok(result);
     }
 
-    // 채팅목록 조회 (프로젝트워크스페이스)
-    @GetMapping("/channels/project/{workspaceSeq}")
-    public ResponseEntity<List<MyChatListResDto>> getProjectChatChannels(
-            @RequestHeader("X-Member-Seq") Long memberSeq,
-            @PathVariable Long workspaceSeq) {
-        List<MyChatListResDto> result = chatService.getMyChatChannelsByProjectWorkspace(memberSeq, workspaceSeq);
-        return ResponseEntity.ok(result);
-    }
-
-    // 채팅 메시지 삭제 (hard-delete)
-
+//    // 채팅목록 조회 (프로젝트워크스페이스)
+//    @GetMapping("/channels/project/{workspaceSeq}")
+//    public ResponseEntity<List<MyChatListResDto>> getProjectChatChannels(
+//            @RequestHeader("X-Member-Seq") Long memberSeq,
+//            @PathVariable Long workspaceSeq) {
+//        List<MyChatListResDto> result = chatService.getMyChatChannelsByProjectWorkspace(memberSeq, workspaceSeq);
+//        return ResponseEntity.ok(result);
+//    }
 
     // // 내 채팅목록 조회
     // @GetMapping("/my/channels")

@@ -422,6 +422,23 @@ public class ChatService {
                 .toList();
     }
 
+    // 채팅 메시지 삭제 (hard-delete)
+    public void deleteChatMessage(Long chatMessageSeq, Long memberSeq) throws AccessDeniedException {
+        // 메시지 존재 여부 확인
+        ChatMessage chatMessage = chatMessageRepository.findById(chatMessageSeq)
+                .orElseThrow(() -> new EntityNotFoundException("메시지를 찾을 수 없습니다. chatMessageSeq=" + chatMessageSeq));
+
+        // 본인 메시지인지 확인
+        if (memberSeq == null ||  chatMessage.getChatChannelMember().getMemberSeq() != memberSeq) {
+            throw new AccessDeniedException("자신이 보낸 메시지만 삭제할 수 있습니다.");
+        }
+
+        // 삭제
+        chatMessageRepository.delete(chatMessage);
+
+        log.info("💥 메시지 영구 삭제 완료 - chatMessageSeq={}, memberSeq={}", chatMessageSeq, memberSeq);
+    }
+
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)
     public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, WorkSpaceType workSpaceType) {
@@ -430,13 +447,13 @@ public class ChatService {
         return mapToDtoList(chatChannelMembers);
     }
 
-    // 채팅목록 조회 (프로젝트워크스페이스)
-    @Transactional(readOnly = true)
-    public List<MyChatListResDto> getMyChatChannelsByProjectWorkspace(Long memberSeq, Long workspaceSeq) {
-        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
-                .findByMemberSeqAndChatChannel_WorkSpaceSeq(memberSeq, workspaceSeq);
-        return mapToDtoList(chatChannelMembers);
-    }
+//    // 채팅목록 조회 (프로젝트워크스페이스)
+//    @Transactional(readOnly = true)
+//    public List<MyChatListResDto> getMyChatChannelsByProjectWorkspace(Long memberSeq, Long workspaceSeq) {
+//        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
+//                .findByMemberSeqAndChatChannel_WorkSpaceSeq(memberSeq, workspaceSeq);
+//        return mapToDtoList(chatChannelMembers);
+//    }
 
     // 채널목록 조회용 공통 DTO 매핑
     private List<MyChatListResDto> mapToDtoList(List<ChatChannelMember> chatChannelMembers) {
