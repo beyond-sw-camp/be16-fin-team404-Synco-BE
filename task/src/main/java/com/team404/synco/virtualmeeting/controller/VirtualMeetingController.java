@@ -80,7 +80,7 @@ public class VirtualMeetingController {
     // =====================================일반 채널 관련 메서드=======================================
 
     // 채널 권한 설정
-    @PostMapping("/changeChannelAuthority")
+    @PatchMapping("/changeChannelAuthority")
     public ResponseEntity<ResponseDto<?>> changeChannelAuthority(@RequestBody GrantAuthorityReqDto grantAuthorityReqDto,
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);

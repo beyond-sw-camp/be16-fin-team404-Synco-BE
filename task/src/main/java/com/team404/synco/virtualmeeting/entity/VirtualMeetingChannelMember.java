@@ -22,6 +22,7 @@ public class VirtualMeetingChannelMember extends BaseEntity {
     private long memberSeq;
     @Column(nullable = false)
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     private Authority authority = Authority.SUPER;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "virtual_meeting_channel_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
