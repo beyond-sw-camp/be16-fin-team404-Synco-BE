@@ -1,5 +1,6 @@
-package com.team404.synco.chat.dto;
+package com.team404.synco.chat.dto.channel;
 
+import com.team404.synco.chat.dto.ChannelMemberResDto;
 import com.team404.synco.chat.entity.ChatChannel;
 import lombok.Builder;
 import lombok.Getter;
