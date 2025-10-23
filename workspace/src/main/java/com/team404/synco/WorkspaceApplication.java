@@ -11,9 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @SpringBootApplication(scanBasePackages = "com.team404.synco")
 public class WorkspaceApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(WorkspaceApplication.class, args);
 	}
-
 }

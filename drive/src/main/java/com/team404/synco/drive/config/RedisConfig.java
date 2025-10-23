@@ -129,7 +129,7 @@ public class RedisConfig {
     }
 
     // ================================
-    // 워크스페이스 멤버 조회용 (DB 2: Workspace Service와 공유)
+    // 프로젝트 멤버 조회용 (DB 2: Workspace Service와 공유)
     // ================================
     @Bean
     @Qualifier("workspaceMembers")
@@ -137,7 +137,7 @@ public class RedisConfig {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(redisHost);
         configuration.setPort(redisPort);
-        configuration.setDatabase(2); // 워크스페이스 서비스 DB
+        configuration.setDatabase(2); // 프로젝트 서비스 DB
         return new LettuceConnectionFactory(configuration);
     }
 

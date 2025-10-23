@@ -178,7 +178,7 @@ public class ProjectDriveController {
         return ResponseEntity.ok(ResponseDto.ok(locks, HttpStatus.OK));
     }
 
-    // 팀 드라이브 삭제(워크스페이스 삭제시)
+    // 팀 드라이브 삭제(프로젝트 삭제시)
     @DeleteMapping("/deleteDrive/{workSpaceSeq}")
     public void deleteAllChannel(@PathVariable Long workSpaceSeq) {
         projectDriveService.deleteDrive(workSpaceSeq);
