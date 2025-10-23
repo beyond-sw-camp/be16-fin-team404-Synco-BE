@@ -1,7 +1,7 @@
 package com.team404.synco.task.service;
 
 import com.team404.synco.common.constant.Authority;
-import com.team404.synco.task.common.component.MemberRedisComponent;
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.task.constant.TaskStatus;
 import com.team404.synco.task.dto.request.BoardCreateReqDto;
 import com.team404.synco.task.dto.request.TaskCreateReqDto;

@@ -1,4 +1,4 @@
-package com.team404.synco.task.common.component;
+package com.team404.synco.common.component;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;

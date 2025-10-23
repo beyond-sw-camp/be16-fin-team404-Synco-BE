@@ -1,8 +1,8 @@
 package com.team404.synco.task.service;
 
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.task.common.component.MemberRedisComponent;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import com.team404.synco.task.repository.ScheduleManagementChannelMemberRepository;

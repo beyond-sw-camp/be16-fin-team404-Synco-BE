@@ -1,8 +1,8 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
-import com.team404.synco.task.common.component.MemberRedisComponent;
 import com.team404.synco.virtualmeeting.dto.*;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
