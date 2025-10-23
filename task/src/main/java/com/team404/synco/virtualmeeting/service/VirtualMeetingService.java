@@ -208,6 +208,12 @@ public class VirtualMeetingService {
         }
     }
 
+    // 워크스페이스 멤버 목록 조회
+    @Transactional(readOnly = true)
+    public List<MemberInfoDto> getWorkSpaceMemberList(Long workSpaceSeq) {
+        return memberRedisComponent.getWorkSpaceMemberList(workSpaceSeq);
+    }
+
     // SUPER 권한 검증
     private VirtualMeetingChannelMember checkAuthorityIsSuper(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         // 기본 채널 멤버 조회

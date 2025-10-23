@@ -4,6 +4,7 @@ import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
+import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomSessionResDto;
 import com.team404.synco.virtualmeeting.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+import java.util.List;
 
 @Slf4j
 @RestController

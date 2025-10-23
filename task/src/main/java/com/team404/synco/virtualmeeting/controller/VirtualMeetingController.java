@@ -3,6 +3,7 @@ package com.team404.synco.virtualmeeting.controller;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
 import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.virtualmeeting.dto.Feign.*;
+import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomActiveListDto;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -83,6 +85,13 @@ public class VirtualMeetingController {
                                                                  @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
         ChannelGrantResDto channelGrantResDto = virtualMeetingService.grantToMember(grantAuthorityReqDto, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(channelGrantResDto, HttpStatus.OK));
+    }
+
+    // 워크스페이스 멤버 목록 조회
+    @GetMapping("/workspace/{workSpaceSeq}/members")
+    public ResponseEntity<ResponseDto<?>> getWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq) {
+        List<MemberInfoDto> memberList = virtualMeetingService.getWorkSpaceMemberList(workSpaceSeq);
+        return ResponseEntity.ok(ResponseDto.ok(memberList, HttpStatus.OK));
     }
 
     // =====================================LiveKit 룸 관련 메서드=======================================

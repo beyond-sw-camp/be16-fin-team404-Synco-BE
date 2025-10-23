@@ -8,6 +8,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -48,7 +49,32 @@ public class RedisConfig {
         return template;
     }
 
-    // ✅ 3. 기본 RedisTemplate (내부용 Bean)
+    // WorkSpace 관련 redis 설정 (워크스페이스와 동일)
+    @Bean
+    @Qualifier("workSpaceInventory")
+    public RedisConnectionFactory workSpaceConnectionFactory(){
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        configuration.setDatabase(2);
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    // workSpace 관련 redisTemplate 생성 (워크스페이스와 동일)
+    @Bean
+    @Qualifier("workSpaceInventory")
+    public RedisTemplate<String, Object> workSpaceRedisTemplate(
+            @Qualifier("workSpaceInventory") RedisConnectionFactory workSpaceConnectionFactory) {
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setConnectionFactory(workSpaceConnectionFactory);
+        return redisTemplate;
+    }
+
+    // ✅ 4. 기본 RedisTemplate (내부용 Bean)
     @Bean
     public RedisTemplate<String, Object> redisTemplate(@Qualifier("memberInventory") RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

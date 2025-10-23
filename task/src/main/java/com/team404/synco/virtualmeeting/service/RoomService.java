@@ -8,6 +8,7 @@ import com.team404.synco.common.constant.RoomStatus;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
+import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomSessionResDto;
 import com.team404.synco.virtualmeeting.entity.Message;
 import com.team404.synco.virtualmeeting.entity.Room;
@@ -35,6 +36,7 @@ import retrofit2.internal.EverythingIsNonNull;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -251,4 +253,6 @@ public class RoomService {
             throw new RuntimeException("LiveKit 자동 녹화 시작 실패");
         }
     }
+
+
 }
