@@ -439,6 +439,9 @@ public class ChatService {
         log.info("💥 메시지 영구 삭제 완료 - chatMessageSeq={}, memberSeq={}", chatMessageSeq, memberSeq);
     }
 
+    // 이전 메시지 조회
+    // 채팅메시지 읽음처리
+
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)
     public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, WorkSpaceType workSpaceType) {
@@ -446,14 +449,6 @@ public class ChatService {
                 .findByMemberSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceType);
         return mapToDtoList(chatChannelMembers);
     }
-
-//    // 채팅목록 조회 (프로젝트워크스페이스)
-//    @Transactional(readOnly = true)
-//    public List<MyChatListResDto> getMyChatChannelsByProjectWorkspace(Long memberSeq, Long workspaceSeq) {
-//        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
-//                .findByMemberSeqAndChatChannel_WorkSpaceSeq(memberSeq, workspaceSeq);
-//        return mapToDtoList(chatChannelMembers);
-//    }
 
     // 채널목록 조회용 공통 DTO 매핑
     private List<MyChatListResDto> mapToDtoList(List<ChatChannelMember> chatChannelMembers) {
@@ -467,7 +462,7 @@ public class ChatService {
             Long unreadCount = (lastReadSeq == null)
                     ? chatMessageRepository.countByChatChannelMember_ChatChannel(channel)
                     : chatMessageRepository.countByChatChannelMember_ChatChannelAndChatMessageSeqGreaterThan(channel,
-                            lastReadSeq);
+                    lastReadSeq);
 
             dtos.add(MyChatListResDto.builder()
                     .channelSeq(channel.getChatChannelSeq())
@@ -480,9 +475,5 @@ public class ChatService {
         }
         return dtos;
     }
-}
 
-// 이전 메시지 조회
-// 채팅메시지 읽음처리
-// 채널 나가기
-// 1:1채팅방 개설 또는 기존 channelSeq return
+}

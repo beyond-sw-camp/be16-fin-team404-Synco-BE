@@ -145,16 +145,35 @@ public class ChatController {
         return ResponseEntity.ok(result);
     }
 
-//    // 채팅목록 조회 (프로젝트워크스페이스)
-//    @GetMapping("/channels/project/{workspaceSeq}")
-//    public ResponseEntity<List<MyChatListResDto>> getProjectChatChannels(
-//            @RequestHeader("X-Member-Seq") Long memberSeq,
-//            @PathVariable Long workspaceSeq) {
-//        List<MyChatListResDto> result = chatService.getMyChatChannelsByProjectWorkspace(memberSeq, workspaceSeq);
-//        return ResponseEntity.ok(result);
-//    }
+     // 이전 메시지 조회
+     @GetMapping("history/{channelSeq}")
+     public ResponseEntity<ResponseDto<?>> getChatHistory(
+             @PathVariable Long channelSeq,
+             @RequestHeader("X-Member-Seq") Long memberSeq) {
+     List<ChatMessageDto> chatMessageDtos =
+     chatService.getChatHistory(channelSeq);
+     return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료 "));
+     }
+    @GetMapping("/channels/{channelSeq}/unread-count")
+    public ResponseEntity<ResponseDto<?>> getUnreadCount(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
 
-    // // 내 채팅목록 조회
+        int unreadCount = chatService.getUnreadCount(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(unreadCount, HttpStatus.OK));
+    }
+
+     // 채팅메시지 읽음처리
+     @PostMapping("/channel/{channelSeq}/read")
+     public ResponseEntity<ResponseDto<?>> markMessagesAsRead(
+             @PathVariable Long channelSeq,
+             @RequestHeader("X-Member-Seq") Long memberSeq) {
+
+         chatService.markMessagesAsRead(channelSeq, memberSeq);
+         return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료", HttpStatus.OK));
+     }
+
+    // 1:1 채팅목록 조회
     // @GetMapping("/my/channels")
     // public ResponseEntity<?> getMyChannels() {
     // List<MyChatChannelListDto> MychatChannelListDtos =
@@ -162,29 +181,13 @@ public class ChatController {
     // return new ResponseEntity<>(MychatChannelListDtos, HttpStatus.OK);
     // }
     //
-    // // 이전 메시지 조회
-    // @GetMapping("history/{channelSeq}")
-    // public ResponseEntity<?> getChatHistory(@PathVariable Long channelSeq) {
-    // List<ChatMessageDto> chatMessageDtos =
-    // chatService.getChatHistory(channelSeq);
-    // return new ResponseEntity<>(chatMessageDtos, HttpStatus.OK);
-    // }
-    //
-    // // 채팅메시지 읽음처리
-    // @PostMapping("/room/{channelSeq}/read")
-    // public ResponseEntity messageRead(@PathVariable Long channelSeq) {
-    // chatService.messageRead(channelSeq);
-    // return ResponseEntity.ok().build();
-    // }
-    //
-    // // 채널 나가기
+    // 1:1 채널 나가기
     // @DeleteMapping("/room/group/{channelSeq}/leave")
     // public ResponseEntity<?> leaveGroupChatRoom(@PathVariable Long channelSeq) {
     // chatService.leaveGroupChatRoom(channelSeq);
     // return ResponseEntity.ok().build();
     // }
-
-    // // 1:1채팅방 개설 또는 기존 channelSeq return
+    // // 1:1 채팅방 개설 또는 기존 channelSeq return
     // @PostMapping("/room/private/create")
     // public ResponseEntity<?> getOrCreatePrivateRoom(@RequestParam Long
     // otherMemberId) {
