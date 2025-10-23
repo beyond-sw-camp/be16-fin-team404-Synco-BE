@@ -82,12 +82,10 @@ public class RedisConfig {
             @Qualifier("memberInventory") RedisConnectionFactory memberConnectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(memberConnectionFactory);
-
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new StringRedisSerializer());
         template.setValueSerializer(new StringRedisSerializer());
-
         template.afterPropertiesSet();
         return template;
     }

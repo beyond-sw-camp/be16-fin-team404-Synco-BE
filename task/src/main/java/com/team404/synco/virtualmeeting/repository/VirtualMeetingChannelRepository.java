@@ -14,4 +14,6 @@ public interface VirtualMeetingChannelRepository extends JpaRepository<VirtualMe
     void deleteAllByWorkSpaceSeq(Long workSpaceSeq);
 
     List<VirtualMeetingChannel> findByWorkSpaceSeqOrderByVirtualMeetingChannelSeqAsc(Long workSpaceSeq);
+
+    List<VirtualMeetingChannel> findByWorkSpaceSeq(Long workSpaceSeq);
 }
