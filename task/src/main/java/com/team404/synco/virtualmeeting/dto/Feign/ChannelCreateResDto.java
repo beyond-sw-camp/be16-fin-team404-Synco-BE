@@ -1,4 +1,4 @@
-package com.team404.synco.virtualmeeting.dto;
+package com.team404.synco.virtualmeeting.dto.Feign;
 
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
 import lombok.Builder;
@@ -6,13 +6,15 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class ChannelEditResDto {
+public class ChannelCreateResDto {
     private Long channelSeq;
+    private Long workSpaceSeq;
     private String channelName;
 
-    public static ChannelEditResDto fromEntity(VirtualMeetingChannel virtualMeetingChannel){
-        return ChannelEditResDto.builder()
+    public static ChannelCreateResDto fromEntity(VirtualMeetingChannel virtualMeetingChannel){
+        return ChannelCreateResDto.builder()
                 .channelSeq(virtualMeetingChannel.getVirtualMeetingChannelSeq())
+                .workSpaceSeq(virtualMeetingChannel.getWorkSpaceSeq())
                 .channelName(virtualMeetingChannel.getVirtualMeetingChannelName())
                 .build();
     }

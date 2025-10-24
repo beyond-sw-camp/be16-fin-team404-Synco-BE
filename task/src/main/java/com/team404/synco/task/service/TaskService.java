@@ -3,28 +3,35 @@ package com.team404.synco.task.service;
 import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.dto.DelegateSuperAuthorityReqDto;
+import com.team404.synco.task.dto.ChannelMemberResDto;
 import com.team404.synco.task.dto.TaskChannelMemberCreateReqDto;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import com.team404.synco.task.repository.ScheduleManagementChannelMemberRepository;
-import com.team404.synco.virtualmeeting.dto.ChannelInviteReqDto;
-import com.team404.synco.task.dto.ChannelMemberResDto;
-import com.team404.synco.virtualmeeting.dto.GrantAuthorityReqDto;
+import com.team404.synco.virtualmeeting.dto.Feign.ChannelInviteReqDto;
+import com.team404.synco.virtualmeeting.dto.Feign.GrantAuthorityReqDto;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Member;
 import java.nio.file.AccessDeniedException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
 @Slf4j
 public class TaskService {
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
     private final MemberRedisComponent memberRedisComponent;
+
+    public TaskService(ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository, MemberRedisComponent memberRedisComponent) {
+        this.scheduleManagementChannelMemberRepository = scheduleManagementChannelMemberRepository;
+        this.memberRedisComponent = memberRedisComponent;
+    }
 
     // 팀 task 생성
     public void createTaskChannel(TaskChannelMemberCreateReqDto taskChannelMemberCreateReqDto) {
@@ -119,6 +126,8 @@ public class TaskService {
         scheduleManagementChannelMemberRepository.deleteByChannelAndMember(workSpaceSeq, memberSeq);
     }
 
+
+
     // 멤버 목록
     @Transactional(readOnly = true)
     public List<ChannelMemberResDto> findTaskChannelMember(Long workSpaceSeq) {
@@ -148,11 +157,10 @@ public class TaskService {
     }
 
     // 프로젝트 멤버 목록
-    @Transactional(readOnly = true)
     public List<Long> workSpaceMemberList(Long workSpaceSeq) {
         List<ScheduleManagementChannelMember> myWorkSpaceList =
                 scheduleManagementChannelMemberRepository.findAllByWorkSpaceSeq(workSpaceSeq)
-                        .orElseThrow(() -> new EntityNotFoundException("조회되는 프로젝트 목록이 없습니다."));
+                        .orElseThrow(() -> new EntityNotFoundException("조회되는 워크스페이스 목록이 없습니다."));
 
         return myWorkSpaceList.stream()
                 .map(ScheduleManagementChannelMember::getMemberSeq)

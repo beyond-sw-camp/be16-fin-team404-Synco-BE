@@ -1,4 +1,4 @@
-package com.team404.synco.virtualmeeting.dto;
+package com.team404.synco.virtualmeeting.dto.Feign;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ChannelEditReqDto {
+public class GrantAuthorityReqDto {
+    private Long workSpaceSeq;
+    private Long grantMemberSeq;
     private Long channelSeq;
-    private String channelName;
+    private String authority;
 }

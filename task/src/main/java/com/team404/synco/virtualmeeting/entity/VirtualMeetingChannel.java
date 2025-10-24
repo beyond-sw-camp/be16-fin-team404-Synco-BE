@@ -25,7 +25,7 @@ public class VirtualMeetingChannel extends BaseEntity {
     @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true)
     private List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = new ArrayList<>();
 
-    public void updateChannelName(String virtualMeetingChannelName){
-        this.virtualMeetingChannelName = virtualMeetingChannelName;
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true)
+    private List<Room> roomList = new ArrayList<>();
 }
