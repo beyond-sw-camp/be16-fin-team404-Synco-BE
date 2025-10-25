@@ -383,6 +383,12 @@ public class ChatService {
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 없습니다.");
         }
+
+        // 파일 개수 제한 체크 (20개)
+        if (files.size() >20 ) {
+            throw new IllegalArgumentException("파일은 최대 20개까지만 첨부할 수 있습니다. 현재 요청된 파일 수: " + files.size());
+        }
+
         // S3 경로 규칙: chat/{channelSeq}
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
     }

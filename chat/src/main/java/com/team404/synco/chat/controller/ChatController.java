@@ -111,11 +111,22 @@ public class ChatController {
     /////////////////////////////////////////// 채팅기능////////////////////////////////////////////////
     // 첨부파일 업로드
     @PostMapping("/files/upload/{channelSeq}")
-    public ResponseEntity<Map<String, List<String>>> uploadFiles(
+//    public ResponseEntity<Map<String, List<String>>> uploadFiles(
+    public ResponseEntity<?> uploadFiles(
             @PathVariable Long channelSeq,
             @RequestPart("files") List<MultipartFile> files) {
-        List<String> urls = chatService.uploadChatFiles(channelSeq, files); // S3 업로드 + URL 반환
-        return ResponseEntity.ok(Map.of("uploadedUrls", urls));
+        try {
+            List<String> urls = chatService.uploadChatFiles(channelSeq, files); // S3 업로드 + URL 반환
+            return ResponseEntity.ok(Map.of("uploadedUrls", urls));
+        } catch (IllegalArgumentException e) {
+            // 파일 개수 제한 초과 시
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            // 기타 오류
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "파일 업로드 중 오류가 발생했습니다."));
+        }
     }
 
     // 채팅 참여자 목록 조회
@@ -137,6 +148,34 @@ public class ChatController {
         return ResponseEntity.ok(ResponseDto.ok("메시지가 영구 삭제되었습니다.", HttpStatus.OK));
     }
 
+//     // 이전 메시지 조회
+//     @GetMapping("history/{channelSeq}")
+//     public ResponseEntity<ResponseDto<?>> getChatHistory(
+//             @PathVariable Long channelSeq,
+//             @RequestHeader("X-Member-Seq") Long memberSeq) {
+//     List<ChatMessageDto> chatMessageDtos =
+//     chatService.getChatHistory(channelSeq);
+//     return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료 "));
+//     }
+//    @GetMapping("/channels/{channelSeq}/unread-count")
+//    public ResponseEntity<ResponseDto<?>> getUnreadCount(
+//            @PathVariable Long channelSeq,
+//            @RequestHeader("X-Member-Seq") Long memberSeq) {
+//
+//        int unreadCount = chatService.getUnreadCount(channelSeq, memberSeq);
+//        return ResponseEntity.ok(ResponseDto.ok(unreadCount, HttpStatus.OK));
+//    }
+//
+//     // 채팅메시지 읽음처리
+//     @PostMapping("/channel/{channelSeq}/read")
+//     public ResponseEntity<ResponseDto<?>> markMessagesAsRead(
+//             @PathVariable Long channelSeq,
+//             @RequestHeader("X-Member-Seq") Long memberSeq) {
+//
+//         chatService.markMessagesAsRead(channelSeq, memberSeq);
+//         return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료", HttpStatus.OK));
+//     }
+
     // 채팅목록 조회 (개인워크스페이스)
     @GetMapping("/channels/personal")
     public ResponseEntity<List<MyChatListResDto>> getPersonalChatChannels(
@@ -144,34 +183,6 @@ public class ChatController {
         List<MyChatListResDto> result = chatService.getMyChatChannelsByWorkspace(memberSeq, WorkSpaceType.INDIVIDUAL);
         return ResponseEntity.ok(result);
     }
-
-     // 이전 메시지 조회
-     @GetMapping("history/{channelSeq}")
-     public ResponseEntity<ResponseDto<?>> getChatHistory(
-             @PathVariable Long channelSeq,
-             @RequestHeader("X-Member-Seq") Long memberSeq) {
-     List<ChatMessageDto> chatMessageDtos =
-     chatService.getChatHistory(channelSeq);
-     return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료 "));
-     }
-    @GetMapping("/channels/{channelSeq}/unread-count")
-    public ResponseEntity<ResponseDto<?>> getUnreadCount(
-            @PathVariable Long channelSeq,
-            @RequestHeader("X-Member-Seq") Long memberSeq) {
-
-        int unreadCount = chatService.getUnreadCount(channelSeq, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(unreadCount, HttpStatus.OK));
-    }
-
-     // 채팅메시지 읽음처리
-     @PostMapping("/channel/{channelSeq}/read")
-     public ResponseEntity<ResponseDto<?>> markMessagesAsRead(
-             @PathVariable Long channelSeq,
-             @RequestHeader("X-Member-Seq") Long memberSeq) {
-
-         chatService.markMessagesAsRead(channelSeq, memberSeq);
-         return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료", HttpStatus.OK));
-     }
 
     // 1:1 채팅목록 조회
     // @GetMapping("/my/channels")
