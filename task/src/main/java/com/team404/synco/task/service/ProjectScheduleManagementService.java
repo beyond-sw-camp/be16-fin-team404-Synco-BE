@@ -9,6 +9,7 @@ import com.team404.synco.task.dto.request.TaskStatusUpdateReqDto;
 import com.team404.synco.task.dto.request.TaskUpdateReqDto;
 import com.team404.synco.task.dto.request.BoardChangeReqDto;
 import com.team404.synco.task.dto.request.BoardUpdateReqDto;
+import com.team404.synco.task.dto.request.BoardOrderUpdateReqDto;
 import com.team404.synco.task.dto.response.BoardResDto;
 import com.team404.synco.task.dto.response.TasksResDto;
 import com.team404.synco.task.dto.response.WorkspaceMemberDto;
@@ -202,7 +203,9 @@ public class ProjectScheduleManagementService {
                 .findByMemberSeqAndWorkSpaceSeq(requesterMemberSeq, scheduleManagementChannelMember.getWorkSpaceSeq())
                 .orElseThrow(() -> new EntityNotFoundException("해당 워크스페이스에 참여하지 않은 사용자입니다."));
 
-        long maxOrder = boardRepository.findMaxOrderByWorkSpaceSeq(scheduleManagementChannelMember.getWorkSpaceSeq())
+        long maxOrder = boardRepository.findMaxOrderByMemberAndWorkSpace(
+                scheduleManagementChannelMember.getMemberSeq(), 
+                scheduleManagementChannelMember.getWorkSpaceSeq())
                 .orElse(0L);
 
         Board board = boardCreateReqDto.toEntity(scheduleManagementChannelMember, maxOrder + 1);
@@ -297,12 +300,41 @@ public class ProjectScheduleManagementService {
             throw new ForbiddenException("해당 Board의 생성자가 아닙니다.");
         }
         
+        long deletedOrder = board.getOrders();
+        long boardMemberSeq = board.getScheduleManagementChannelMember().getMemberSeq();
+        long workSpaceSeq = board.getScheduleManagementChannelMember().getWorkSpaceSeq();
+        
         // 해당 Board에 속한 모든 Task들의 board를 null로 변경
         List<Task> tasksInBoard = board.getTaskList();
         for (Task task : tasksInBoard) {
             task.updateBoard(null);
         }
         
+        // 보드 삭제
         boardRepository.delete(board);
+        
+        // 삭제된 보드보다 큰 orders를 가진 보드들의 orders를 1씩 감소
+        List<Board> boardsToUpdate = boardRepository.findBoardsWithOrdersGreaterThan(
+            boardMemberSeq, workSpaceSeq, deletedOrder);
+        
+        for (Board boardToUpdate : boardsToUpdate) {
+            boardToUpdate.updateOrders(boardToUpdate.getOrders() - 1);
+        }
+    }
+
+    // 보드 순서 변경
+    @Transactional
+    public void updateBoardOrders(List<BoardOrderUpdateReqDto> boardOrderUpdates, long memberSeq) {
+        for (BoardOrderUpdateReqDto update : boardOrderUpdates) {
+            Board board = boardRepository.findById(update.getBoardSeq())
+                    .orElseThrow(() -> new EntityNotFoundException("보드를 찾을 수 없습니다."));
+            
+            // 권한 검증
+            if (board.getScheduleManagementChannelMember().getMemberSeq() != memberSeq) {
+                throw new ForbiddenException("본인이 생성한 보드만 순서를 변경할 수 있습니다.");
+            }
+            
+            board.updateOrders(update.getNewOrders());
+        }
     }
 }

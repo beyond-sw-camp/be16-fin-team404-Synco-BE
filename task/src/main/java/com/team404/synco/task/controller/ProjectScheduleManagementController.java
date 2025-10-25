@@ -7,12 +7,14 @@ import com.team404.synco.task.dto.request.TaskUpdateReqDto;
 import com.team404.synco.task.dto.request.TaskStatusUpdateReqDto;
 import com.team404.synco.task.dto.request.BoardChangeReqDto;
 import com.team404.synco.task.dto.request.BoardUpdateReqDto;
+import com.team404.synco.task.dto.request.BoardOrderUpdateReqDto;
 import com.team404.synco.task.service.ProjectScheduleManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -130,5 +132,13 @@ public class ProjectScheduleManagementController {
                                                       @PathVariable long boardSeq) {
         scheduleManagementService.deleteBoard(boardSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok("Board가 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    /// 15. Board 순서 변경 (개인화면용 - 드래그 앤 드롭)
+    @PatchMapping("/boards/orders")
+    public ResponseEntity<ResponseDto<?>> updateBoardOrders(@RequestHeader("X-Member-seq") long memberSeq,
+                                                           @RequestBody List<BoardOrderUpdateReqDto> boardOrderUpdates) {
+        scheduleManagementService.updateBoardOrders(boardOrderUpdates, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("Board 순서가 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 }

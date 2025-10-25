@@ -19,6 +19,7 @@ public class TasksResDto {
     public static class TaskResDto {
         private long taskSeq;
         private String taskTitle;
+        private String taskContent;
         private TaskStatus taskStatus;
         private LocalDate startDate;
         private LocalDate endDate;
@@ -30,6 +31,7 @@ public class TasksResDto {
             return TaskResDto.builder()
                     .taskSeq(task.getTaskSeq())
                     .taskTitle(task.getTaskTitle())
+                    .taskContent(task.getTaskContent())
                     .taskStatus(task.getTaskStatus())
                     .startDate(task.getStartDate())
                     .endDate(task.getEndDate())

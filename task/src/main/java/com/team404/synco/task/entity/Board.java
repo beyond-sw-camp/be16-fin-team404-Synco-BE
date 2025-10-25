@@ -35,4 +35,8 @@ public class Board extends BaseEntity {
         this.boardName = boardUpdateReqDto.getBoardName();
         this.colors = boardUpdateReqDto.getColors();
     }
+
+    public void updateOrders(long newOrders) {
+        this.orders = newOrders;
+    }
 }
