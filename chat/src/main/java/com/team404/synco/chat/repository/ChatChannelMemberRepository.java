@@ -30,10 +30,32 @@ public interface ChatChannelMemberRepository extends JpaRepository<ChatChannelMe
             "WHERE m.chatChannel.chatChannelSeq = :chatChannelSeq " +
             "AND m.memberSeq = :memberSeq")
     void deleteByChannelAndMember(@Param("chatChannelSeq") Long chatChannelSeq, @Param("memberSeq") Long memberSeq);
-//    boolean existsMember(@Param("channelSeq") Long channelSeq, @Param("memberSeq") Long memberSeq);
+
     boolean existsByChatChannelAndMemberSeq(ChatChannel chatChannel, Long memberSeq);
     Optional<ChatChannelMember> findByChatChannelAndMemberSeq(ChatChannel chatChannel, Long memberSeq);
     List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceType(Long memberSeq, WorkSpaceType workSpaceType);
-    List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceSeq(Long memberSeq, Long workspaceSeq);
     List<ChatChannelMember> findByChatChannel(ChatChannel chatChannel);
+//    @Query("""
+//    select ccm.lastReadChatMessageSeq
+//      from ChatChannelMember ccm
+//     where ccm.chatChannel.chatChannelSeq = :channelSeq
+//       and ccm.memberSeq = :memberSeq
+//    """)
+//    Long findLastReadSeq(Long channelSeq, Long memberSeq);
+    Optional<ChatChannelMember> findByChatChannel_ChatChannelSeqAndMemberSeq(Long channelSeq, Long memberSeq);
+
+    // ✅ 마지막 읽은 메시지 업데이트
+    @Modifying
+    @Query("""
+    UPDATE ChatChannelMember ccm
+       SET ccm.lastReadChatMessageSeq = :latestSeq
+     WHERE ccm.memberSeq = :memberSeq
+       AND ccm.chatChannel.chatChannelSeq = :channelSeq
+    """)
+    int updateLastRead(
+            @Param("memberSeq") Long memberSeq,
+            @Param("channelSeq") Long channelSeq,
+            @Param("latestSeq") Long latestSeq
+    );
+
 }

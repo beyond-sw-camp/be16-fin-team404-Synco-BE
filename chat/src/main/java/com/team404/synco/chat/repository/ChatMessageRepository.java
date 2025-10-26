@@ -25,4 +25,35 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             Pageable pageable
     );
 
+    // ✅ 마지막 읽은 메시지 이후 조회
+    @Query("""
+    SELECT m FROM ChatMessage m
+    WHERE m.chatChannelMember.chatChannel.chatChannelSeq = :channelSeq
+      AND m.chatMessageSeq > :lastReadSeq
+    ORDER BY m.chatMessageSeq ASC
+    """)
+    List<ChatMessage> findMessagesAfterLastRead(
+            @Param("channelSeq") Long channelSeq,
+            @Param("lastReadSeq") Long lastReadSeq,
+            Pageable pageable);
+
+
+    // ✅ 최신 메시지 조회 (처음 입장)
+    @Query("""
+    SELECT m FROM ChatMessage m
+    WHERE m.chatChannelMember.chatChannel.chatChannelSeq = :channelSeq
+    ORDER BY m.chatMessageSeq DESC
+    """)
+    List<ChatMessage> findLatestMessages(
+            @Param("channelSeq") Long channelSeq,
+            Pageable pageable);
+
+    // ✅ 최신 메시지 seq 조회
+    @Query("""
+    SELECT MAX(m.chatMessageSeq)
+    FROM ChatMessage m
+    WHERE m.chatChannelMember.chatChannel.chatChannelSeq = :channelSeq
+    """)
+    Long findLatestSeqByChannel(@Param("channelSeq") Long channelSeq);
+
 }

@@ -481,9 +481,59 @@ public class ChatService {
                 .toList();
     }
 
+    // 마지막 읽은 이후 메시지 조회
+    @Transactional(readOnly = true)
+    public List<ChatMessageResDto> getMessagesAfterLastRead(Long channelSeq, Long memberSeq) {
 
+        ChatChannelMember ccm = chatChannelMemberRepository.findByChatChannel_ChatChannelSeqAndMemberSeq(channelSeq, memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널에 참여하지 않은 사용자입니다."));
 
-    // 채팅메시지 읽음처리
+        Long lastReadSeq = ccm.getLastReadChatMessageSeq();
+
+        Pageable pageable = PageRequest.of(0, 50);
+
+        List<ChatMessage> list;
+
+        if (lastReadSeq == null) {
+            list = chatMessageRepository.findLatestMessages(channelSeq, pageable);
+        } else {
+            list = chatMessageRepository.findMessagesAfterLastRead(channelSeq, lastReadSeq, pageable);
+        }
+
+        return list.stream().map(m -> {
+            Long senderSeq = m.getChatChannelMember().getMemberSeq();
+
+            String key = "memberSeq:" + senderSeq;
+            String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
+            String rawProfile = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+
+            return ChatMessageResDto.builder()
+                    .chatMessageSeq(m.getChatMessageSeq())
+                    .channelSeq(channelSeq)
+                    .senderSeq(senderSeq)
+                    .senderName(rawName != null ? rawName.replace("\"", "") : "알 수 없음")
+                    .senderProfileImageUrl(rawProfile != null ? rawProfile.replace("\"", "") : null)
+                    .chatMessageText(m.getChatMessageText())
+                    .chatMessageFileUrls(m.getChatMessageFileUrls())
+                    .replyToSeq(m.getChatMessageParentSeq())
+                    .messageType(m.getMessageType())
+                    .createdAt(m.getCreatedAt())
+                    .build();
+        }).toList();
+    }
+
+    // 마지막 읽은 메시지 업데이트
+    public void updateLastRead(Long channelSeq, Long memberSeq) {
+
+        Long latestMsgSeq = chatMessageRepository.findLatestSeqByChannel(channelSeq);
+        if (latestMsgSeq == null) return;
+
+        chatChannelMemberRepository.updateLastRead(
+                memberSeq,
+                channelSeq,
+                latestMsgSeq
+        );
+    }
 
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)

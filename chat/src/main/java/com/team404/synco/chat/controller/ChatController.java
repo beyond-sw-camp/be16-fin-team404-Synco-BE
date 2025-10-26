@@ -148,7 +148,7 @@ public class ChatController {
         return ResponseEntity.ok(ResponseDto.ok("메시지가 영구 삭제되었습니다.", HttpStatus.OK));
     }
 
-     // 이전 메시지 조회
+     // 이전 메시지 조회 (무한스크롤)
      @GetMapping("/channels/{channelSeq}/messages")
      public ResponseEntity<?> loadMoreMessages(
              @PathVariable Long channelSeq,
@@ -156,16 +156,24 @@ public class ChatController {
          return ResponseEntity.ok(chatService.loadMoreMessages(channelSeq, lastId));
      }
 
+     // 마지막 읽은 이후 메시지 조회
+     @GetMapping("/channels/{channelSeq}/messages/after-last-read")
+     public ResponseEntity<?> getMessagesAfterLastRead(
+             @PathVariable Long channelSeq,
+             @RequestHeader("X-Member-Seq") Long memberSeq) {
 
-//     // 채팅메시지 읽음처리
-//     @PostMapping("/channel/{channelSeq}/read")
-//     public ResponseEntity<ResponseDto<?>> markMessagesAsRead(
-//             @PathVariable Long channelSeq,
-//             @RequestHeader("X-Member-Seq") Long memberSeq) {
-//
-//         chatService.markMessagesAsRead(channelSeq, memberSeq);
-//         return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료", HttpStatus.OK));
-//     }
+         return ResponseEntity.ok(chatService.getMessagesAfterLastRead(channelSeq, memberSeq));
+     }
+
+     // 마지막 읽은 메시지 업데이트
+     @PostMapping("/channels/{channelSeq}/read")
+     public ResponseEntity<?> updateLastRead(
+             @PathVariable Long channelSeq,
+             @RequestHeader("X-Member-Seq") Long memberSeq) {
+
+         chatService.updateLastRead(channelSeq, memberSeq);
+         return ResponseEntity.ok(ResponseDto.ok("UPDATED", HttpStatus.OK));
+     }
 
     // 채팅목록 조회 (개인워크스페이스)
     @GetMapping("/channels/personal")
