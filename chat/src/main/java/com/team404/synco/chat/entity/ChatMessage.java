@@ -32,4 +32,9 @@ public class ChatMessage extends BaseEntity {
 
     @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private ChatVote chatVote;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MessageType messageType = MessageType.TEXT;
 }

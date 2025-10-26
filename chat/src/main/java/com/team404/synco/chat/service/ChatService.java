@@ -14,6 +14,8 @@ import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -446,6 +449,40 @@ public class ChatService {
     }
 
     // 이전 메시지 조회
+    @Transactional(readOnly = true)
+    public List<ChatMessageResDto> loadMoreMessages(Long channelSeq, Long lastId) {
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        List<ChatMessage> list = chatMessageRepository.findMessages(channelSeq, lastId, pageable);
+
+        return list.stream()
+                .map(m -> {
+                    String key = "memberSeq:" + m.getChatChannelMember().getMemberSeq();
+                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
+                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+
+                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
+                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
+
+                    return ChatMessageResDto.builder()
+                            .chatMessageSeq(m.getChatMessageSeq())
+                            .channelSeq(channelSeq)
+                            .senderSeq(m.getChatChannelMember().getMemberSeq())
+                            .senderName(memberName)
+                            .senderProfileImageUrl(profileImageUrl)
+                            .chatMessageText(m.getChatMessageText())
+                            .chatMessageFileUrls(m.getChatMessageFileUrls())
+                            .replyToSeq(m.getChatMessageParentSeq())
+                            .messageType(m.getMessageType())
+                            .createdAt(m.getCreatedAt())
+                            .build();
+                })
+                .toList();
+    }
+
+
+
     // 채팅메시지 읽음처리
 
     // 채팅목록 조회 (개인워크스페이스)

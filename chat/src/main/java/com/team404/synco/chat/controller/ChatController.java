@@ -148,24 +148,15 @@ public class ChatController {
         return ResponseEntity.ok(ResponseDto.ok("메시지가 영구 삭제되었습니다.", HttpStatus.OK));
     }
 
-//     // 이전 메시지 조회
-//     @GetMapping("history/{channelSeq}")
-//     public ResponseEntity<ResponseDto<?>> getChatHistory(
-//             @PathVariable Long channelSeq,
-//             @RequestHeader("X-Member-Seq") Long memberSeq) {
-//     List<ChatMessageDto> chatMessageDtos =
-//     chatService.getChatHistory(channelSeq);
-//     return ResponseEntity.ok(ResponseDto.ok("읽음 처리 완료 "));
-//     }
-//    @GetMapping("/channels/{channelSeq}/unread-count")
-//    public ResponseEntity<ResponseDto<?>> getUnreadCount(
-//            @PathVariable Long channelSeq,
-//            @RequestHeader("X-Member-Seq") Long memberSeq) {
-//
-//        int unreadCount = chatService.getUnreadCount(channelSeq, memberSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(unreadCount, HttpStatus.OK));
-//    }
-//
+     // 이전 메시지 조회
+     @GetMapping("/channels/{channelSeq}/messages")
+     public ResponseEntity<?> loadMoreMessages(
+             @PathVariable Long channelSeq,
+             @RequestParam(required = false) Long lastId) {
+         return ResponseEntity.ok(chatService.loadMoreMessages(channelSeq, lastId));
+     }
+
+
 //     // 채팅메시지 읽음처리
 //     @PostMapping("/channel/{channelSeq}/read")
 //     public ResponseEntity<ResponseDto<?>> markMessagesAsRead(

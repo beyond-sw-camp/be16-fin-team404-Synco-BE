@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -23,4 +24,6 @@ public class ChatMessageResDto {
     private String chatMessageText; // 메시지 내용
     private Long replyToSeq; // 답장 대상 메시지 ID (nullable)
     private String chatMessageFileUrls; // 다중 파일 업로드 (optional)
+    private LocalDateTime createdAt;
+
 }
