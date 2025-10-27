@@ -28,4 +28,6 @@ public interface VirtualMeetingChannelMemberRepository extends JpaRepository<Vir
             "AND m.memberSeq = :memberSeq")
     void deleteByChannelAndMember(@Param("virtualMeetingChannelSeq")Long virtualMeetingChannelSeq,
                                                       @Param("memberSeq")Long memberSeq);
+
+    Optional<VirtualMeetingChannelMember> findByMemberSeq(long memberSeq);
 }

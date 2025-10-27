@@ -70,4 +70,20 @@ public class RoomController {
         Page<ChatMessageRes> res = roomService.getMessageList(memberId, roomId, pageable);
         return ResponseEntity.ok(ResponseDto.ok(res, HttpStatus.OK));
     }
+
+    // 녹화 시작
+    @PostMapping("/{roomId}/recording/start")
+    public ResponseEntity<ResponseDto<?>> startRecording(@RequestHeader("X-Member-Seq") Long memberId,
+                                                           @PathVariable Long roomId) {
+        roomService.startRecording(memberId, roomId);
+        return ResponseEntity.ok(ResponseDto.ok("녹화가 시작되었습니다.", HttpStatus.OK));
+    }
+
+    // 녹화 중지
+    @PostMapping("/{roomId}/recording/stop")
+    public ResponseEntity<ResponseDto<?>> stopRecording(@RequestHeader("X-Member-Seq") Long memberId,
+                                                        @PathVariable Long roomId) {
+        roomService.stopRecording(memberId, roomId);
+        return ResponseEntity.ok(ResponseDto.ok("녹화가 중지되었습니다.", HttpStatus.OK));
+    }
 }

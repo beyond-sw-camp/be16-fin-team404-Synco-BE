@@ -179,12 +179,14 @@ public class VirtualMeetingService {
 
     // 활성화된 화상회의 목록 조회
     @Transactional(readOnly = true)
-    public Page<RoomActiveListDto> getActiveRooms(Long channelSeq, Long memberSeq, Pageable pageable) {
+    public Page<RoomActiveListDto> getActiveRooms(Long workSpaceSeq, Long memberSeq, Pageable pageable) {
+        // 드라이브 채널조회
+        VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findFirstByWorkSpaceSeq(workSpaceSeq).orElseThrow(() -> new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
+
         // 채널 멤버인지 검증
-        virtualMeetingChannelMemberRepository.findByChannelAndMember(channelSeq, memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(virtualMeetingChannel.getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
         // 활성화된 룸 목록 조회
-        roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable);
-        return roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable)
+        return roomRepository.findByChannelSeqAndStatus(virtualMeetingChannel.getVirtualMeetingChannelSeq(), RoomStatus.IN_SESSION, pageable)
                 .map(RoomActiveListDto::fromEntity);
     }
 
