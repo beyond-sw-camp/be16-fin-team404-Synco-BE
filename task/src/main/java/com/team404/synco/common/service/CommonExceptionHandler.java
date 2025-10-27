@@ -2,6 +2,7 @@ package com.team404.synco.common.service;
 
 import com.team404.synco.common.constant.dto.ResponseDto;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.ws.rs.ForbiddenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -60,6 +61,12 @@ public class CommonExceptionHandler {
     public ResponseEntity<ResponseDto<?>> handleAccessDeniedException(AccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ResponseDto.fail(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ResponseDto<?>> handleForbiddenException(ForbiddenException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ResponseDto.fail(HttpStatus.FORBIDDEN, e.getMessage()));
     }
 
     @ExceptionHandler(MultipartException.class)

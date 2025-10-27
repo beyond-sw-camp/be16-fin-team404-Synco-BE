@@ -2,6 +2,7 @@ package com.team404.synco.task.entity;
 
 import com.team404.synco.task.constant.TaskStatus;
 import com.team404.synco.task.dto.request.TaskUpdateReqDto;
+import com.team404.synco.task.dto.request.PersonalTaskUpdateReqDto;
 import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -56,5 +57,14 @@ public class Task extends BaseEntity {
 
     public void updateBoard(Board board) {
         this.board = board;
+    }
+
+    // 개인 스케줄 수정용 메서드 (board는 null로 유지)
+    public void updatePersonalTask(PersonalTaskUpdateReqDto updateReqDto) {
+        this.taskTitle = updateReqDto.getTaskTitle();
+        this.taskContent = updateReqDto.getTaskContent();
+        this.taskStatus = updateReqDto.getTaskStatus();
+        this.startDate = updateReqDto.getStartDate();
+        this.endDate = updateReqDto.getEndDate();
     }
 }
