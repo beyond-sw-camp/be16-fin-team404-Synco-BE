@@ -1,6 +1,7 @@
 package com.team404.synco.task.entity;
 
-import com.team404.synco.common.constant.TaskStatus;
+import com.team404.synco.task.constant.TaskStatus;
+import com.team404.synco.task.dto.request.TaskUpdateReqDto;
 import com.team404.synco.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,4 +40,21 @@ public class Task extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "task", orphanRemoval = true)
     private List<Comment> commentList = new ArrayList<>();
+
+    public void updateTask(TaskUpdateReqDto taskUpdateReqDto, ScheduleManagementChannelMember picMemberSeq, Board board) {
+        this.taskTitle = taskUpdateReqDto.getTaskTitle();
+        this.taskContent = taskUpdateReqDto.getTaskContent();
+        this.startDate = taskUpdateReqDto.getStartDate();
+        this.endDate = taskUpdateReqDto.getEndDate();
+        this.picMemberSeq = picMemberSeq;
+        this.board = board;
+    }
+
+    public void updateTaskStatus(TaskStatus taskStatus) {
+        this.taskStatus = taskStatus;
+    }
+
+    public void updateBoard(Board board) {
+        this.board = board;
+    }
 }

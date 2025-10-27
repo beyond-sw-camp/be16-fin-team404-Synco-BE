@@ -35,11 +35,13 @@ public class MemberRedisComponent {
     }
 
     public String getMemberName(final long memberSeq) {
-        return Objects.requireNonNull(memberRedisTemplate.opsForHash().get(MEMBER_KEY_PREFIX + memberSeq, "memberName")).toString();
+        String memberName = Objects.requireNonNull(memberRedisTemplate.opsForHash().get(MEMBER_KEY_PREFIX + memberSeq, "memberName")).toString();
+        return parseJsonString(memberName);
     }
 
     public String getMemberProfileUrl(final long memberSeq) {
-        return Objects.requireNonNull(memberRedisTemplate.opsForHash().get(MEMBER_KEY_PREFIX + memberSeq, MEMBER_PROFILE_URL)).toString();
+        String profileUrl = Objects.requireNonNull(memberRedisTemplate.opsForHash().get(MEMBER_KEY_PREFIX + memberSeq, "memberProfileUrl")).toString();
+        return parseJsonString(profileUrl);
     }
 
     /**
@@ -49,7 +51,7 @@ public class MemberRedisComponent {
         try {
             String memberKey = MEMBER_KEY_PREFIX + memberSeq;
             Map<Object, Object> info = memberRedisTemplate.opsForHash().entries(memberKey);
-            
+
             if (info.isEmpty()) {
                 log.warn("Redis에서 회원 정보를 찾을 수 없습니다. (memberSeq={})", memberSeq);
                 return null;
@@ -124,6 +126,20 @@ public class MemberRedisComponent {
         } catch (Exception e) {
             log.warn("Redis 조회 예외 (workSpaceSeq={}): {}", workSpaceSeq, e.getMessage());
             return Collections.emptyList();
+        }
+
+    }
+
+    private String parseJsonString(String jsonString) {
+        try {
+            // JSON 문자열인 경우 파싱하여 따옴표 제거
+            if (jsonString.startsWith("\"") && jsonString.endsWith("\"")) {
+                return objectMapper.readValue(jsonString, String.class);
+            }
+            return jsonString;
+        } catch (Exception e) {
+            // JSON 파싱 실패 시 원본 문자열 반환
+            return jsonString;
         }
     }
 }

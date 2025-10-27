@@ -13,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface ScheduleManagementChannelMemberRepository extends JpaRepository<ScheduleManagementChannelMember, Long> {
     void deleteByWorkSpaceSeq(Long workSpaceSeq);
+    Optional<ScheduleManagementChannelMember> findByMemberSeqAndWorkSpaceSeq(long memberSeq, long workSpaceSeq);
     Optional<ScheduleManagementChannelMember> findByWorkSpaceSeqAndMemberSeq(Long workSpaceSeq, Long memberSeq);
     Optional<List<ScheduleManagementChannelMember>> findAllByMemberSeq(Long memberSeq);
     Optional<List<ScheduleManagementChannelMember>> findAllByWorkSpaceSeq(Long workSpaceSeq);
