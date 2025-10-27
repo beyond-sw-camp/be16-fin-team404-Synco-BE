@@ -1,6 +1,7 @@
 package com.team404.synco.task.entity;
 
 import com.team404.synco.common.entity.BaseEntity;
+import com.team404.synco.task.dto.request.BoardUpdateReqDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,15 @@ public class Board extends BaseEntity {
     @JoinColumn(name = "schedule_management_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ScheduleManagementChannelMember scheduleManagementChannelMember;
     @Builder.Default
-    @OneToMany(mappedBy = "board", orphanRemoval = true)
+    @OneToMany(mappedBy = "board")
     private List<Task> taskList = new ArrayList<>();
+
+    public void updateBoard(BoardUpdateReqDto boardUpdateReqDto) {
+        this.boardName = boardUpdateReqDto.getBoardName();
+        this.colors = boardUpdateReqDto.getColors();
+    }
+
+    public void updateOrders(long newOrders) {
+        this.orders = newOrders;
+    }
 }

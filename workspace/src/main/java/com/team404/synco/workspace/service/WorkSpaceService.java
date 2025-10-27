@@ -126,54 +126,11 @@ public class WorkSpaceService {
 
     // 개인 워크스페이스 대시보드 조회
     @Transactional(readOnly = true)
-    public PersonalDashBoardResDto findMyDashBoard(Long workSpaceSeq, Long memberSeq) {
-        // ToDo : 담당 개발자님이 개발(가져온 다음에 PersonalDashBoardResDto에 추가) or 개발되면 제가 API 가져와서 쓰겠습니다.
-        // 1. 상단 통계 부분 개발
-        // 진행중인 업무
-        // 친구 요청
-        // 읽지않은 메시지
-        // ToDo : 이 부분은 알람 기능 개발하면서 제가 같이 개발하도록 하겠습니다.
-        // 다가오는 일정(개인)
-
-        // 2. 빠른 작업
-        // ToDo : 빠른 작업은 이동 또는 기능 호출이므로 프론트에서 모두 처리하겠습니다.
-
-        // 3. 최근 활동
-        // ToDo : 이 부분은 알람 기능 개발하면서 제가 같이 개발하도록 하겠습니다.dkff
-
-        // 4. 내가 참여중인 프로젝트 목록
-        List<WorkSpaceInfoResDto> myWorkSpaceList = findMyWorkSpaceList(memberSeq);
-
-        return PersonalDashBoardResDto.of(myWorkSpaceList);
-    }
-
-    // 팀 프로젝트 대시보드 조회
-    @Transactional(readOnly = true)
-    public TeamDashBoardResDto findTeamDashBoard(Long workSpaceSeq) {
-        // ToDo : 담당 개발자님이 개발(가져온 다음에 TeamDashBoardResDto에 추가) or 개발되면 제가 API 가져와서 쓰겠습니다.
-        // 1. 상단 통계 부분 개발
-        // 전체 프로젝트 진행률
-        // 진행중인 업무
-        // 완료된 업무
-        // 팀 멤버수 조회
-        Long memberCount = findWorkSpaceMemberList(workSpaceSeq).stream().count();
-
-        // 2. 프로젝트 진행 흐름
-        // 전체 진행흐름(계획 / 실제 진행률)
-        // 필터(월/주/일/사용자 지정)
-        // 상세 진행 현황
-
-        // 3. 마감일 / 마일스톤
-        // 마감일 임박 업무(마감 5일전 업무)
-        // 다가오는 마일스톤 목록
-
-        // 4. 담당자별 업무 현황
-        // 내 업무 현황
-        // 다른 사용자의 업무 현황(필터)
-
-        // 5. 최근 활동
-        // ToDo : 이 부분은 알람 기능 개발하면서 같이 개발하도록 하겠습니다.
-        return TeamDashBoardResDto.of();
+    public WorkSpaceInfoResDto findPersonalWorkSpace(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("회원정보가 존재하지 않습니다."));
+        WorkSpace workSpace = workSpaceRepository.findByMemberAndWorkSpaceType(member, WorkSpaceType.INDIVIDUAL)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 개인 워크스페이스입니다."));
+        return WorkSpaceInfoResDto.fromEntity(workSpace);
     }
 
     // 내 프로젝트 목록 조회
