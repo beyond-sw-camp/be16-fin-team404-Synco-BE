@@ -28,4 +28,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "and m.memberSeq = :assigneeMemberSeq " +
            "order by t.createdAt asc")
     List<Task> findTasksByAssigneeAndWorkSpace(@Param("assigneeMemberSeq") long assigneeMemberSeq, @Param("workSpaceSeq") long workSpaceSeq);
+
+    // 개인 스케줄 조회: picMemberSeq로 조회 (workSpaceSeq가 다르므로 개인/프로젝트 구분됨)
+    @Query("select t from Task t " +
+           "where t.picMemberSeq.scheduleManagementChannelMemberSeq = :scheduleManagementChannelMemberSeq " +
+           "order by t.createdAt desc")
+    List<Task> findByPicMemberSeq(@Param("scheduleManagementChannelMemberSeq") Long scheduleManagementChannelMemberSeq);
 }
