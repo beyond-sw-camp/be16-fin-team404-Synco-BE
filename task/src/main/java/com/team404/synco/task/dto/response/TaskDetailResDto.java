@@ -17,6 +17,7 @@ public class TaskDetailResDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private long picMemberSeq;
+    private long picScheduleManagementChannelMemberSeq;
     private Long boardSeq;
     private String picMemberName;
     private String picMemberProfileImageUrl;
@@ -30,6 +31,7 @@ public class TaskDetailResDto {
                 .startDate(task.getStartDate())
                 .endDate(task.getEndDate())
                 .picMemberSeq(task.getPicMemberSeq().getMemberSeq())
+                .picScheduleManagementChannelMemberSeq(task.getPicMemberSeq().getScheduleManagementChannelMemberSeq())
                 .boardSeq(task.getBoard() != null ? task.getBoard().getBoardSeq() : null)
                 .picMemberName("") // member 이름 필요하면 추가
                 .picMemberProfileImageUrl("") // member 프로필 필요하면 추가

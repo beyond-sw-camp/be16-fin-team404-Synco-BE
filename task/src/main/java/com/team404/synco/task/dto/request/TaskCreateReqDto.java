@@ -19,7 +19,7 @@ public class TaskCreateReqDto {
     @NotEmpty
     private String taskTitle;
     @NotEmpty
-    private String taskContents;
+    private String taskContent;
     @NotEmpty
     private LocalDate startDate;
     @NotEmpty
@@ -32,7 +32,7 @@ public class TaskCreateReqDto {
         return Task.builder()
                 .taskStatus(this.taskStatus)
                 .taskTitle(this.taskTitle)
-                .taskContent(this.taskContents)
+                .taskContent(this.taskContent)
                 .startDate(this.startDate)
                 .endDate(this.endDate)
                 .picMemberSeq(scheduleManagementChannelMember)
