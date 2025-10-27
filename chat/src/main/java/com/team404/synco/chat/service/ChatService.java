@@ -1,5 +1,7 @@
 package com.team404.synco.chat.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.chat.dto.*;
 import com.team404.synco.chat.dto.channel.*;
 import com.team404.synco.chat.dto.channel.DelegateSuperAuthorityReqDto;
@@ -38,6 +40,7 @@ public class ChatService {
     private final MemberRedisComponent memberRedisComponent;
     private final ChatMessageRepository chatMessageRepository;
     private final S3Uploader s3Uploader;
+    private final RedisPubSubService redisPubSubService;
     private final String folderNamePrefix = "chat/";
 
     // 기본 채널 생성
@@ -442,10 +445,25 @@ public class ChatService {
             throw new AccessDeniedException("자신이 보낸 메시지만 삭제할 수 있습니다.");
         }
 
+        // 프론트 브로드캐스트용 채널 식별자 추출
+        Long channelSeq = chatMessage.getChatChannelMember().getChatChannel().getChatChannelSeq();
+
         // 삭제
         chatMessageRepository.delete(chatMessage);
-
         log.info("💥 메시지 영구 삭제 완료 - chatMessageSeq={}, memberSeq={}", chatMessageSeq, memberSeq);
+
+        // ✅ Redis를 통해 브로드캐스트 (메시지 전송과 동일한 방식!)
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> deleteEvent = Map.of(
+                "action", "DELETE",
+                "chatMessageSeq", chatMessageSeq,
+                "channelSeq", channelSeq
+        );
+        try {
+            redisPubSubService.publish("chat", objectMapper.writeValueAsString(deleteEvent));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // 이전 메시지 조회

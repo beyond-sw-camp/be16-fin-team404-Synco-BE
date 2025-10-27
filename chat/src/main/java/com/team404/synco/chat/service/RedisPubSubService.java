@@ -3,6 +3,7 @@ package com.team404.synco.chat.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.chat.dto.ChatMessageResDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -10,7 +11,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
+@Slf4j
 public class RedisPubSubService implements MessageListener {
     private final StringRedisTemplate stringRedisTemplate;
     private final SimpMessageSendingOperations messageTemplate;
@@ -33,6 +37,18 @@ public class RedisPubSubService implements MessageListener {
         System.out.println("payload : " + payload);
         ObjectMapper objectMapper = new ObjectMapper();
         try {
+            // ✅ 삭제 이벤트인지 확인
+            if (payload.contains("\"action\"")) {
+                // 삭제 이벤트 처리
+                Map<String, Object> deleteEvent = objectMapper.readValue(payload, Map.class);
+                String channelSeq = deleteEvent.get("channelSeq").toString();
+
+                log.info("🗑️ 삭제 이벤트 브로드캐스트: chatMessageSeq={}", deleteEvent.get("chatMessageSeq"));
+                messageTemplate.convertAndSend("/topic/" + channelSeq, deleteEvent); // 해당 채널 구독자에게 WebSocket 브로드캐스트
+                return;
+            }
+
+            // 일반 메시지 브로드캐스트
             ChatMessageResDto chatMessageResDto = objectMapper.readValue(payload, ChatMessageResDto.class);  // String -> dto 역직렬화
 //            STOMP(WebSocket)으로 해당 방의 구독자들에게 메시지를 전송.
             messageTemplate.convertAndSend("/topic/"+chatMessageResDto.getChannelSeq(), chatMessageResDto);
