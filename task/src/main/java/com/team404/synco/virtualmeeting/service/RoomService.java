@@ -56,6 +56,7 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomParticipantRepository participantRepository;
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
+    private final RecordingRepository recordingRepository;
     private final MessageRepository messageRepository; // 텍스트 히스토리 DB
     private final RoomServiceClient roomServiceClient; // LiveKit 서버 SDK
     private final EgressServiceClient egressServiceClient; // (선택) 자동 녹화용
@@ -86,8 +87,18 @@ public class RoomService {
         String token = createToken(room.getRoomSeq(), memberSeq);
         room.startRoom();
 
+        RoomParticipant participant = RoomParticipant.builder()
+                .virtualMeetingChannelMember(virtualMeetingChannelMember)
+                .room(room)
+                .firstJoinedAt(LocalDateTime.now())
+                .joinedAt(LocalDateTime.now())
+                .displayNameAtJoin(memberRedisComponent.getMemberName(memberSeq))
+                .build();
+        participantRepository.save(participant);
+
         return RoomSessionResDto.builder()
                 .roomId(room.getRoomSeq())
+                .hostId(room.getHostId())
                 .token(token)
                 .build();
     }
@@ -95,9 +106,9 @@ public class RoomService {
     // 화상회의 방 참여
     public RoomSessionResDto joinRoom(Long memberSeq, Long roomId) {
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 화상회의 방입니다."));
-        
+
         VirtualMeetingChannelMember virtualMeetingChannelMember = virtualMeetingChannelMemberRepository.findByChannelAndMember(
-                room.getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), 
+                room.getVirtualMeetingChannel().getVirtualMeetingChannelSeq(),
                 memberSeq
         ).orElseThrow(()-> new EntityNotFoundException("화상회의 채널 멤버가 아닙니다."));
 
@@ -108,7 +119,7 @@ public class RoomService {
         // LiveKit에서 참가자 조회 - 404는 정상 (참가자가 아직 없음)
         try{
             Response<LivekitModels.ParticipantInfo> response = roomServiceClient.getParticipant(room.getRoomSeq().toString(), memberSeq.toString()).execute();
-            
+
             // 성공하면 이미 LiveKit에 등록된 참가자
             if(response.isSuccessful()){
                 log.warn("이미 LiveKit에 등록된 참가자: roomSeq={}, memberSeq={}", room.getRoomSeq(), memberSeq);
@@ -118,15 +129,21 @@ public class RoomService {
             log.debug("LiveKit 참가자 조회 완료: roomSeq={}, memberSeq={}", room.getRoomSeq(), memberSeq);
         }
 
-        Optional<RoomParticipant> existingParticipant = participantRepository.findByRoomAndVirtualMeetingChannelMember_MemberSeq(room, memberSeq);
-        if(existingParticipant.isPresent()){
-            throw new IllegalStateException("이미 참가한 방입니다.");
-        }
-
         String memberName = memberRedisComponent.getMemberName(memberSeq);
 
-        Optional<RoomParticipant> participant = participantRepository.findById(memberSeq);
-        if(participant.isEmpty()){
+        // 기존 participant를 room과 memberSeq로 찾기
+        Optional<RoomParticipant> existingParticipant = participantRepository.findByRoomAndVirtualMeetingChannelMember_MemberSeq(room, memberSeq);
+        
+        if(existingParticipant.isPresent()){
+            RoomParticipant participant = existingParticipant.get();
+            // 이미 참가 중이고 나간 적이 없으면 에러
+            if(participant.getLeftAt() == null){
+                throw new IllegalStateException("이미 참가한 방입니다.");
+            }
+            // 다시 참가하는 경우
+            participant.joinRoom();
+        } else {
+            // 새로운 참가자 생성
             RoomParticipant newParticipant = RoomParticipant.builder()
                     .virtualMeetingChannelMember(virtualMeetingChannelMember)
                     .room(room)
@@ -135,14 +152,12 @@ public class RoomService {
                     .displayNameAtJoin(memberName)
                     .build();
             participantRepository.save(newParticipant);
-        } else{
-            RoomParticipant existParticipant = participant.get();
-            existParticipant.joinRoom();
         }
 
         String token = createToken(roomId, memberSeq);
         return RoomSessionResDto.builder()
                 .roomId(room.getRoomSeq())
+                .hostId(room.getHostId())
                 .token(token)
                 .build();
     }
@@ -248,60 +263,60 @@ public class RoomService {
         return token.toJwt();
     }
 
-    // 녹화 시작
     public void startRecording(Long memberSeq, Long roomId) {
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 화상회의 방입니다."));
-        
-        // 호스트 권한 확인
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 화상회의 방입니다."));
+
+        // 1. 권한 체크
         if (!room.getHostId().equals(memberSeq)) {
             throw new IllegalStateException("호스트만 녹화를 시작할 수 있습니다.");
         }
 
-        // 이미 녹화 중인지 확인
+        // 2. 이미 녹화 중인지 확인
         if (room.getRecording() != null) {
             throw new IllegalStateException("이미 녹화 중입니다.");
         }
 
+        // 3. LiveKit에 egress 요청
         LivekitEgress.EncodedFileOutput fileOutput = LivekitEgress.EncodedFileOutput.newBuilder()
                 .setFileType(LivekitEgress.EncodedFileType.MP4)
                 .setFilepath("recordings/{room_name}/{time}.mp4")
                 .setS3(s3Upload)
                 .build();
 
+        Response<LivekitEgress.EgressInfo> response;
         try {
-            egressServiceClient.startRoomCompositeEgress(
-                            room.getRoomSeq().toString(),
-                            fileOutput,
-                            "speaker")
-                    .execute();
-            log.info("✅ 녹화 시작 성공: roomSeq={}", room.getRoomSeq());
+            response = egressServiceClient.startRoomCompositeEgress(
+                    room.getRoomSeq().toString(), // roomName 으로 들어감
+                    fileOutput,
+                    "speaker",      // layout
+                    null,           // options - 필요없으면 null
+                    null,           // audioPreset/videoPreset 등 커스텀 없으면 null
+                    true            // advanced - 현재 SDK 시그니처에 맞추는 자리
+            ).execute();
         } catch (IOException e) {
             log.error("녹화 시작 실패: {}", e.getMessage());
             throw new RuntimeException("녹화 시작 실패");
         }
+
+        if (!response.isSuccessful() || response.body() == null) {
+            throw new RuntimeException("LiveKit egress 시작 응답 실패: " + response.code());
+        }
+
+        LivekitEgress.EgressInfo egressInfo = response.body();
+        String egressId = egressInfo.getEgressId();
+
+        log.info("✅ 녹화 시작 성공: roomSeq={}, egressId={}", room.getRoomSeq(), egressId);
+
+        // 4. Recording 엔티티 생성 & 저장
+        Recording recording = Recording.builder()
+                .egressId(egressId)
+                .room(room)
+                .startedAt(LocalDateTime.now()) // 또는 egressInfo.getStartedAt() 변환 가능하면 그걸 사용
+                .build();
+
+        room.attachRecording(recording);
+
+        recordingRepository.save(recording);
     }
-
-    // 녹화 중지
-    public void stopRecording(Long memberSeq, Long roomId) {
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 화상회의 방입니다."));
-        
-        // 호스트 권한 확인
-        if (!room.getHostId().equals(memberSeq)) {
-            throw new IllegalStateException("호스트만 녹화를 중지할 수 있습니다.");
-        }
-
-        if (room.getRecording() == null) {
-            throw new IllegalStateException("녹화 중이 아닙니다.");
-        }
-
-        try {
-            egressServiceClient.stopEgress(room.getRecording().getEgressId()).execute();
-            log.info("✅ 녹화 중지 성공: roomSeq={}, egressId={}", room.getRoomSeq(), room.getRecording().getEgressId());
-        } catch (IOException e) {
-            log.error("녹화 중지 실패: {}", e.getMessage());
-            throw new RuntimeException("녹화 중지 실패");
-        }
-    }
-
-
 }
