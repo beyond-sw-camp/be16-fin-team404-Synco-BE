@@ -30,9 +30,6 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "chat_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannelMember chatChannelMember;
 
-    @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private ChatVote chatVote;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

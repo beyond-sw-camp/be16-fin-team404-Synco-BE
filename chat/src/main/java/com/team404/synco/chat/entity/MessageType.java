@@ -4,5 +4,4 @@ public enum MessageType {
     TEXT,       // 일반 텍스트 메시지
     FILE,       // 파일
     REPLY,      // 답장
-    VOTE        // ✅ 투표 메시지
 }
