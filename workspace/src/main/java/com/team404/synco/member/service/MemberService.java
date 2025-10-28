@@ -5,10 +5,10 @@ import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.service.EmailService;
+import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.friend.repository.FriendRepository;
-import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.common.service.EmailService;
 import com.team404.synco.member.dto.*;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
@@ -373,5 +373,4 @@ public class MemberService {
         member.updateActiveStatus(reqDto.getActiveStatus());
         workSpaceRedisService.addMemberInfo(member);
     }
-
 }

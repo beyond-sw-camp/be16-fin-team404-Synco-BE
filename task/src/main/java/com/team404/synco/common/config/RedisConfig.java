@@ -81,4 +81,27 @@ public class RedisConfig {
         template.setConnectionFactory(connectionFactory);
         return template;
     }
+
+    // redis-pub/sub용 redis 설정
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisConnectionFactory sseFactory(){
+
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        // redis pub/sub 기능은 db에 값을 저장하는 기능이 아니므로, 특정 db에 의존적이지 않음
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    // redis-pub/sub용 redisTemplate 생성
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisTemplate<String, String> sseRedisTemplate(@Qualifier("ssePubSub") RedisConnectionFactory redisConnectionFactory){
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
 }

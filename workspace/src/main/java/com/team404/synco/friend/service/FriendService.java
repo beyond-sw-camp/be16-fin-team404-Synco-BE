@@ -1,5 +1,7 @@
 package com.team404.synco.friend.service;
 
+import com.team404.synco.alarm.service.AlarmService;
+import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.friend.dto.FriendReqDto;
 import com.team404.synco.friend.dto.FriendResDto;
@@ -8,6 +10,7 @@ import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final AlarmService alarmService;
 
     // 1. 친구 요청 보내기
     public void requestFriend(Long memberSeq, FriendReqDto friendReqDto) {
@@ -60,6 +64,7 @@ public class FriendService {
                 .build();
 
         friendRepository.save(newRequest);
+        sendAlarm(receiver.getMemberSeq(), requester.getName() + "님이 친구 요청을 보냈습니다.");
     }
 
     // 2. 친구 요청 수락하기
@@ -96,6 +101,9 @@ public class FriendService {
                 .build();
 
         friendRepository.save(acceptedRelationship);
+        // 알림을 보내기 위한 멤버 조회
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("존재하지 않은 멤버입니다."));
+        sendAlarm(friendSeq, member.getName() + "님이 친구 요청을 수락했습니다.");
     }
 
     // 3. 친구 요청 거절하기
@@ -211,5 +219,11 @@ public class FriendService {
         Friend friendRelation = friendRepository.findByMemberAndFriendMemberAndFriendStatus(friend, me, FriendStatus.APPROVE)
                 .orElseThrow(() -> new IllegalArgumentException("친구 관계를 찾을 수 없습니다."));
         friendRepository.delete(friendRelation);
+    }
+
+    // 알림 전송
+    private void sendAlarm(Long memberSeq, String message){
+        alarmService.createAlarm(memberSeq,
+                AlarmType.FRIEND, message);
     }
 }
