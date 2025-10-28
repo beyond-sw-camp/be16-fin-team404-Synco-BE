@@ -363,6 +363,7 @@ public class ChatService {
                 .chatMessageText(dto.getChatMessageText())
                 .chatMessageFileUrls(fileUrls) // ← 그대로 저장
                 .chatMessageParentSeq(dto.getReplyToSeq())
+                .messageType(dto.getMessageType())
                 .build();
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
@@ -553,6 +554,38 @@ public class ChatService {
         );
     }
 
+    // 타이핑 인디케이터
+    public void publishTyping(ChatTypingDto dto) {
+
+        if (dto.getChannelSeq() == null || dto.getSenderSeq() == null) {
+            log.warn("🚫 Typing DTO invalid: {}", dto);
+            return;
+        }
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            Map<String, Object> payload = Map.of(
+                    "action", "TYPING",
+                    "channelSeq", dto.getChannelSeq(),
+                    "senderSeq", dto.getSenderSeq(),
+                    "senderName", dto.getSenderName(),
+                    "typing", dto.isTyping()
+            );
+
+            // ✅ 채널별 토픽으로 publish
+            redisPubSubService.publish(
+                    "chat:" + dto.getChannelSeq(),   // ✅ 채널별 토픽 분리
+                    objectMapper.writeValueAsString(payload)
+            );
+
+            log.debug("⌨️ Typing publish: {}", payload);
+
+        } catch (Exception e) {
+            log.error("❌ Typing publish failed", e);
+        }
+    }
+
     // 채팅목록 조회 (개인워크스페이스)
     @Transactional(readOnly = true)
     public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, WorkSpaceType workSpaceType) {
@@ -586,5 +619,4 @@ public class ChatService {
         }
         return dtos;
     }
-
 }

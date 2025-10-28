@@ -37,14 +37,22 @@ public class RedisPubSubService implements MessageListener {
         System.out.println("payload : " + payload);
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            // ✅ 삭제 이벤트인지 확인
+            // ✅ action 필드 확인 (TYPING 또는 DELETE)
             if (payload.contains("\"action\"")) {
-                // 삭제 이벤트 처리
-                Map<String, Object> deleteEvent = objectMapper.readValue(payload, Map.class);
-                String channelSeq = deleteEvent.get("channelSeq").toString();
+                Map<String, Object> event = objectMapper.readValue(payload, Map.class);
+                String action = event.get("action").toString();
+                String channelSeq = event.get("channelSeq").toString();
 
-                log.info("🗑️ 삭제 이벤트 브로드캐스트: chatMessageSeq={}", deleteEvent.get("chatMessageSeq"));
-                messageTemplate.convertAndSend("/topic/" + channelSeq, deleteEvent); // 해당 채널 구독자에게 WebSocket 브로드캐스트
+                if ("DELETE".equals(action)) {
+                    log.info("🗑️ DELETE broadcast: {}", payload);
+                }
+
+                if ("TYPING".equals(action)) {
+                    log.info("⌨️ TYPING broadcast: {}", payload);
+                }
+
+                // ✅ 공통 처리: 해당 채널 subscriber 에게 broadcast
+                messageTemplate.convertAndSend("/topic/" + channelSeq, event);
                 return;
             }
 
@@ -52,8 +60,8 @@ public class RedisPubSubService implements MessageListener {
             ChatMessageResDto chatMessageResDto = objectMapper.readValue(payload, ChatMessageResDto.class);  // String -> dto 역직렬화
 //            STOMP(WebSocket)으로 해당 방의 구독자들에게 메시지를 전송.
             messageTemplate.convertAndSend("/topic/"+chatMessageResDto.getChannelSeq(), chatMessageResDto);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.error("❌ Redis message handling failed", e);
         }
     }
 }

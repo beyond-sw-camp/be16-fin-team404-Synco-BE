@@ -111,7 +111,6 @@ public class ChatController {
     /////////////////////////////////////////// 채팅기능////////////////////////////////////////////////
     // 첨부파일 업로드
     @PostMapping("/files/upload/{channelSeq}")
-//    public ResponseEntity<Map<String, List<String>>> uploadFiles(
     public ResponseEntity<?> uploadFiles(
             @PathVariable Long channelSeq,
             @RequestPart("files") List<MultipartFile> files) {
