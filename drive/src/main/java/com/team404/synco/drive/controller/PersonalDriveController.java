@@ -121,15 +121,6 @@ public class PersonalDriveController {
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
-//    // 개인 드라이브 공유문서 상세 조회
-//    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}")
-//    public ResponseEntity<ResponseDto<?>> getPersonalDocument(
-//            @PathVariable Long driveChannelSeq,
-//            @PathVariable Long documentSeq) {
-//        DocumentDetailDto document = personalDriveService.getPersonalDocument(driveChannelSeq, documentSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
-//    }
-
     // 개인 드라이브 공유문서 잠금/해제 토글
     @PatchMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
@@ -150,6 +141,9 @@ public class PersonalDriveController {
         personalDriveService.renamePersonalDocument(renameDocumentReqDto);
         return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
+
+    // 개인 공유문서 프로젝트 드라이브로 복사
+
 
     // ==================== 개인 공유문서 라인 관리 ====================
 
@@ -214,5 +208,14 @@ public class PersonalDriveController {
             @RequestBody EditorMessageDto message) {
         personalDriveService.deletePersonalDocumentLines(driveChannelSeq, message);
         return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 개인 공유문서를 프로젝트 공유문서로 이동
+    @PostMapping("/move-to-project")
+    public ResponseEntity<ResponseDto<?>> movePersonalToProject(
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @RequestBody MovePersonalToProjectReqDto reqDto) {
+        DriveItemDto movedDocument = personalDriveService.movePersonalToProject(userId, reqDto);
+        return ResponseEntity.ok(ResponseDto.ok(movedDocument, HttpStatus.OK));
     }
 }

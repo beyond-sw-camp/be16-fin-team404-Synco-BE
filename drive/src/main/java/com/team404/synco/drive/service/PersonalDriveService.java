@@ -131,23 +131,8 @@ public class PersonalDriveService {
         commonDriveService.deleteItem(personalDrive, userId, itemType, itemId);
     }
 
-//    // 개인 드라이브 공유문서 상세 조회
-//    @Transactional(readOnly = true)
-//    public DocumentDetailDto getPersonalDocument(Long driveChannelSeq, Long documentSeq) {
-//        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
-//                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
-//
-//        // 개인 드라이브 채널인지 확인
-//        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
-//            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
-//        }
-//
-//        // DB에서 조회
-//        List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-//
-//        // 응답 (계층 구조 고려한 정렬)
-//        return DocumentDetailDto.fromEntity(document, documentLines);
-//    }
+    // 개인 공유문서 프로젝트 드라이브로 복사
+    
 
     // 개인 드라이브 공유문서 잠금/해제 토글
     public DriveItemDto togglePersonalDocumentLock(ToggleReqDto toggleReqDto) {
@@ -321,23 +306,6 @@ public class PersonalDriveService {
         return channel;
     }
 
-//    // 문서 내용 조회
-//    private String getDocumentContent(Document document) {
-//        try {
-//            List<DocumentLine> documentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document.getDocumentSeq());
-//
-//            if (documentLines.isEmpty()) {
-//                return "문서 내용이 없습니다.";
-//            }
-//
-//            return documentLines.stream()
-//                    .map(DocumentLine::getDocumentContent)
-//                    .collect(Collectors.joining("\n"));
-//        } catch (Exception e) {
-//            return "문서 내용을 불러올 수 없습니다.";
-//        }
-//    }
-
     // 개인 드라이브 폴더 트리 조회 
     @Transactional(readOnly = true)
     public List<FolderTreeDto> getPersonalFolderTree(Long driveChannelSeq) {
@@ -349,6 +317,58 @@ public class PersonalDriveService {
     public void renamePersonalDocument(RenameDocumentReqDto renameDocumentReqDto) {
         DriveChannel driveChannel = getPersonalDriveChannel(renameDocumentReqDto.getDriveChannelSeq());
         commonDriveService.renameDocument(driveChannel, renameDocumentReqDto.getDocumentSeq(), renameDocumentReqDto.getNewDocumentName());
+    }
+
+    // ==================== 개인 공유문서를 프로젝트로 이동 ====================
+
+    /**
+     * 개인 공유문서를 프로젝트 공유문서로 이동
+     */
+    public DriveItemDto movePersonalToProject(Long userId, MovePersonalToProjectReqDto reqDto) {
+        log.info("📋 개인 공유문서 이동 시작 - PersonalDocumentSeq: {}, ProjectDriveChannelSeq: {}", 
+                reqDto.getPersonalDocumentSeq(), reqDto.getProjectDriveChannelSeq());
+        
+        // 1. 개인 공유문서 조회 및 검증
+        Document document = validatePersonalDocument(
+                reqDto.getPersonalDriveChannelSeq(), 
+                reqDto.getPersonalDocumentSeq()
+        );
+        
+        // 2. 프로젝트 드라이브 채널 조회 및 검증
+        DriveChannel projectDriveChannel = driveChannelRepository.findById(reqDto.getProjectDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("프로젝트 드라이브 채널을 찾을 수 없습니다: " + reqDto.getProjectDriveChannelSeq()));
+        
+        if (projectDriveChannel.getWorkSpaceType() != WorkSpaceType.PROJECT) {
+            throw new IllegalArgumentException("프로젝트 드라이브 채널이 아닙니다: " + reqDto.getProjectDriveChannelSeq());
+        }
+        
+        // 3. 새 문서 이름 결정 (없으면 원본 이름 사용)
+        String newDocumentName = reqDto.getNewDocumentName() != null && !reqDto.getNewDocumentName().isEmpty()
+                ? reqDto.getNewDocumentName()
+                : document.getDocumentName();
+
+        // 4. 최상위 루트에 동일 이름의 문서가 있는지 확인 (현재 문서 제외)
+        documentRepository.findTopLevelDocumentByNameAndChannelExcluding(
+                newDocumentName, document.getDocumentSeq(), projectDriveChannel.getDriveChannelSeq()
+        ).ifPresent(existingDoc -> {
+            throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다: " + newDocumentName);
+        });
+
+        // 5. 문서 이름 변경 (새 이름이 있으면)
+        if (reqDto.getNewDocumentName() != null && !reqDto.getNewDocumentName().isEmpty()) {
+            document.updateDocumentName(newDocumentName);
+        }
+
+        // 6. 최상위 루트로 이동 (folder = null)
+        document.updateFolder(null);
+        
+        // 7. 드라이브 채널 변경 (라인들은 자동으로 따라감)
+        document.updateDriveChannel(projectDriveChannel);
+                
+        log.info("✅ 개인 공유문서 이동 완료 - DocumentSeq: {}, ProjectDriveChannelSeq: {}, DocumentName: {}", 
+                document.getDocumentSeq(), projectDriveChannel.getDriveChannelSeq(), newDocumentName);
+        
+        return DriveItemDto.fromDocument(document);
     }
 
     // ==================== 개인 드라이브 공유문서 라인 관리 ====================
