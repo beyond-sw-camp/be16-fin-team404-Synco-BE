@@ -112,7 +112,8 @@ public class WorkSpaceService {
                     workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
                     workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
                     // 초대 대상 멤버에게 알림 전달
-                    sendAlarm(inviteMember.getMemberSeq(),workSpace.getWorkSpaceName() + "에 초대되었습니다!");
+                    sendAlarm(inviteMember.getMemberSeq(),workSpace.getWorkSpaceName() + "에 초대되었습니다!",
+                            workSpace.getWorkSpaceSeq());
                 });
 
         return WorkSpaceResDto.fromEntity(workSpace);
@@ -295,7 +296,7 @@ public class WorkSpaceService {
         taskFeign.kickFromWorkSpaceVirtualMeeting(kickMemberFromWorkSpaceReqDto);
 
         // 대상 멤버에게 알림 전달
-        sendAlarm(kickMemberFromWorkSpaceReqDto.getMemberSeq(),workSpace.getWorkSpaceName() + "에서 강제 탈퇴되었습니다.");
+        sendAlarm(kickMemberFromWorkSpaceReqDto.getMemberSeq(),workSpace.getWorkSpaceName() + "에서 강제 탈퇴되었습니다.", workSpace.getWorkSpaceSeq());
     }
 
 
@@ -337,7 +338,7 @@ public class WorkSpaceService {
             workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
 
             // 대상 멤버에게 알림 전달
-            sendAlarm(inviteMember.getMemberSeq(),workSpace.getWorkSpaceName() + "프로젝트에 초대되었습니다.");
+            sendAlarm(inviteMember.getMemberSeq(),workSpace.getWorkSpaceName() + "프로젝트에 초대되었습니다.", workSpace.getWorkSpaceSeq());
         });
 
         chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
@@ -367,7 +368,7 @@ public class WorkSpaceService {
         taskFeign.delegateVirtualMeetChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
 
         // 대상 멤버에게 알림 전달
-        sendAlarm(delegateMember.getMemberSeq(),workSpace.getWorkSpaceName() + "프로젝트의 SUPER 권한이 회원님에게 위임되었습니다");
+        sendAlarm(delegateMember.getMemberSeq(),workSpace.getWorkSpaceName() + "프로젝트의 SUPER 권한이 회원님에게 위임되었습니다", workSpace.getWorkSpaceSeq());
     }
 
     // SUPER 권한 검증
@@ -378,9 +379,9 @@ public class WorkSpaceService {
     }
 
     // 알림 전송
-    private void sendAlarm(Long memberSeq, String message){
+    private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq){
         alarmService.createAlarm(memberSeq,
-                AlarmType.PROJECT, message);
+                AlarmType.PROJECT, message, workSpaceSeq);
     }
 //
 //

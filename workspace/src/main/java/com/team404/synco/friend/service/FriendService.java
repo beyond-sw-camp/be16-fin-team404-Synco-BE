@@ -3,6 +3,7 @@ package com.team404.synco.friend.service;
 import com.team404.synco.alarm.service.AlarmService;
 import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.FriendStatus;
+import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.friend.dto.FriendReqDto;
 import com.team404.synco.friend.dto.FriendResDto;
 import com.team404.synco.friend.dto.ReceivedReqDto;
@@ -10,6 +11,8 @@ import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
+import com.team404.synco.workspace.entity.WorkSpace;
+import com.team404.synco.workspace.repository.WorkSpaceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final WorkSpaceRepository workSpaceRepository;
     private final AlarmService alarmService;
 
     // 1. 친구 요청 보내기
@@ -40,6 +44,9 @@ public class FriendService {
 
         Member receiver = memberRepository.findByMemberId(friendReqDto.getFriendMemberId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 회원을 찾을 수 없습니다."));
+
+        WorkSpace workSpace = workSpaceRepository.findByMemberAndWorkSpaceType(receiver, WorkSpaceType.INDIVIDUAL)
+                .orElseThrow(() -> new EntityNotFoundException("해당 개인 워크스페이스가 존재하지 않습니다."));
 
         if (requester.equals(receiver)) {
             throw new IllegalArgumentException("자신에게는 친구 요청을 보낼 수 없습니다.");
@@ -64,13 +71,19 @@ public class FriendService {
                 .build();
 
         friendRepository.save(newRequest);
-        sendAlarm(receiver.getMemberSeq(), requester.getName() + "님이 친구 요청을 보냈습니다.");
+        sendAlarm(receiver.getMemberSeq(), requester.getName() + "님이 친구 요청을 보냈습니다.", workSpace.getWorkSpaceSeq());
     }
 
     // 2. 친구 요청 수락하기
     public void acceptFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
+
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+
+        WorkSpace workSpace = workSpaceRepository.findByMemberAndWorkSpaceType(member, WorkSpaceType.INDIVIDUAL)
+                .orElseThrow(() -> new EntityNotFoundException("해당 개인 워크스페이스가 존재하지 않습니다."));
 
         if (!pendingRequest.getFriendMember().getMemberSeq().equals(memberSeq)) {
             throw new IllegalArgumentException("권한이 없는 요청입니다.");
@@ -102,8 +115,7 @@ public class FriendService {
 
         friendRepository.save(acceptedRelationship);
         // 알림을 보내기 위한 멤버 조회
-        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("존재하지 않은 멤버입니다."));
-        sendAlarm(friendSeq, member.getName() + "님이 친구 요청을 수락했습니다.");
+        sendAlarm(friendSeq, member.getName() + "님이 친구 요청을 수락했습니다.", workSpace.getWorkSpaceSeq());
     }
 
     // 3. 친구 요청 거절하기
@@ -222,8 +234,8 @@ public class FriendService {
     }
 
     // 알림 전송
-    private void sendAlarm(Long memberSeq, String message){
+    private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq){
         alarmService.createAlarm(memberSeq,
-                AlarmType.FRIEND, message);
+                AlarmType.FRIEND, message, workSpaceSeq);
     }
 }

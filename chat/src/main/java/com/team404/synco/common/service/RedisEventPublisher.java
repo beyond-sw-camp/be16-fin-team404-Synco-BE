@@ -1,6 +1,6 @@
 package com.team404.synco.common.service;
 
-import com.team404.synco.common.constant.dto.AlarmResDto;
+import com.team404.synco.common.dto.AlarmResDto;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

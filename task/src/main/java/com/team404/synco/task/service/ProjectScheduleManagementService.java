@@ -2,6 +2,8 @@ package com.team404.synco.task.service;
 
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.component.MemberRedisComponent;
+import com.team404.synco.common.constant.dto.AlarmResDto;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.task.constant.TaskStatus;
 import com.team404.synco.task.dto.request.BoardCreateReqDto;
 import com.team404.synco.task.dto.request.TaskCreateReqDto;
@@ -39,6 +41,7 @@ public class ProjectScheduleManagementService {
     private final TaskRepository taskRepository;
     private final MemberRedisComponent memberRedisComponent;
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
+    private final RedisEventPublisher redisEventPublisher;
 
     // 워크스페이스의 모든 Task를 상태별로 그룹화해서 반환 (팀일정 화면용)
     @Transactional(readOnly = true)
@@ -83,6 +86,12 @@ public class ProjectScheduleManagementService {
                 throw new EntityNotFoundException("일정관리 채널 보드를 찾을 수 없습니다.");
             }
         }
+
+        // 담당자에게 알림 전송
+        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(picMember.getMemberSeq()),
+                "alarm-task", "새로운 업무가 등록되었습니다.",
+                picMember.getWorkSpaceSeq(), picMember.getScheduleManagementChannelMemberSeq());
+        redisEventPublisher.publish("alarm-task", alarmResDto);
         return taskRepository.save(taskCreateReqDto.toEntity(picMember, board)).getTaskSeq();
     }
 
@@ -333,7 +342,6 @@ public class ProjectScheduleManagementService {
             if (board.getScheduleManagementChannelMember().getMemberSeq() != memberSeq) {
                 throw new ForbiddenException("본인이 생성한 보드만 순서를 변경할 수 있습니다.");
             }
-            
             board.updateOrders(update.getNewOrders());
         }
     }

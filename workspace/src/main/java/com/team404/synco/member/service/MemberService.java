@@ -1,12 +1,11 @@
 package com.team404.synco.member.service;
 
+import com.team404.synco.alarm.service.AlarmService;
 import com.team404.synco.common.auth.JwtTokenProvider;
-import com.team404.synco.common.constant.ActiveStatus;
-import com.team404.synco.common.constant.FriendStatus;
-import com.team404.synco.common.constant.SocialType;
-import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.constant.*;
 import com.team404.synco.common.service.EmailService;
 import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.common.service.SseService;
 import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.member.dto.*;
@@ -26,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +47,8 @@ public class MemberService {
     private final KakaoService kakaoService;
     private final NaverService naverService;
     private final WorkSpaceRedisService workSpaceRedisService;
+    private final AlarmService alarmService;
+    private final SseService sseService;
     private final FriendRepository friendRepository;
 
     public Long createMemberWithValidation(CreateMemberDto createMemberDto) {
@@ -187,21 +189,21 @@ public class MemberService {
         workSpaceService.createIndividualWorkSpace(member.getMemberSeq());
     }
 
-    public LoginResDto googleLogin(RedirectDto redirectDto) {
+    public LoginResDto googleLogin(RedirectDto redirectDto) throws IOException {
         AccessTokenDto accessTokenDto = googleService.getAccessToken(redirectDto.getCode());
         GoogleProfileDto googleProfile = googleService.getGoogleProfile(accessTokenDto.getAccessToken());
 
         return socialLoginProcess(SocialType.GOOGLE, googleProfile.getSub(), googleProfile.getEmail(), googleProfile.getName(), googleProfile.getPicture());
     }
 
-    public LoginResDto kakaoLogin(RedirectDto redirectDto) {
+    public LoginResDto kakaoLogin(RedirectDto redirectDto) throws IOException {
         AccessTokenDto accessTokenDto = kakaoService.getAccessToken(redirectDto.getCode());
         KakaoProfileDto kakaoProfile = kakaoService.getKakaoProfile(accessTokenDto.getAccessToken());
 
         return socialLoginProcess(SocialType.KAKAO, kakaoProfile.getId(), kakaoProfile.getKakaoAccount().getEmail(), kakaoProfile.getKakaoAccount().getProfile().getNickname(), kakaoProfile.getKakaoAccount().getProfile().getProfileImageUrl());
     }
 
-    public LoginResDto naverLogin(RedirectDto redirectDto) {
+    public LoginResDto naverLogin(RedirectDto redirectDto) throws IOException {
         AccessTokenDto accessTokenDto = naverService.getAccessToken(redirectDto.getCode(), redirectDto.getState());
         NaverProfileDto naverProfile = naverService.getNaverProfile(accessTokenDto.getAccessToken());
         NaverProfileDto.Response response = naverProfile.getResponse();
@@ -209,7 +211,7 @@ public class MemberService {
         return socialLoginProcess(SocialType.NAVER, response.getId(), response.getEmail(), response.getName(), response.getProfileImage());
     }
 
-    private LoginResDto socialLoginProcess(SocialType socialType, String socialId, String email, String name, String profileImageUrl) {
+    private LoginResDto socialLoginProcess(SocialType socialType, String socialId, String email, String name, String profileImageUrl) throws IOException {
         Member member = memberRepository.findBySocialId(socialId)
                 .orElseGet(() -> {
                     Member newMember = Member.builder()
@@ -236,7 +238,7 @@ public class MemberService {
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
         workSpaceRedisService.addMemberInfo(member);
-
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberSeq(), member.getLastActiveStatus()));
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)

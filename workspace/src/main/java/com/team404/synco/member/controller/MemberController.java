@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/member")
 @RequiredArgsConstructor
@@ -96,7 +98,7 @@ public class MemberController {
     }
 
     @PostMapping("/google/doLogin")
-    public ResponseEntity<ResponseDto<?>> googleLogin(@RequestBody RedirectDto redirectDto) {
+    public ResponseEntity<ResponseDto<?>> googleLogin(@RequestBody RedirectDto redirectDto) throws IOException {
         LoginResDto loginResDto = memberService.googleLogin(redirectDto);
         
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
@@ -107,7 +109,7 @@ public class MemberController {
     }
 
     @PostMapping("/kakao/doLogin")
-    public ResponseEntity<ResponseDto<?>> kakaoLogin(@RequestBody RedirectDto redirectDto) {
+    public ResponseEntity<ResponseDto<?>> kakaoLogin(@RequestBody RedirectDto redirectDto) throws IOException {
         LoginResDto loginResDto = memberService.kakaoLogin(redirectDto);
         
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());
@@ -118,7 +120,7 @@ public class MemberController {
     }
 
     @PostMapping("/naver/doLogin")
-    public ResponseEntity<ResponseDto<?>> naverLogin(@RequestBody RedirectDto redirectDto) {
+    public ResponseEntity<ResponseDto<?>> naverLogin(@RequestBody RedirectDto redirectDto) throws IOException {
         LoginResDto loginResDto = memberService.naverLogin(redirectDto);
         
         ResponseCookie refreshTokenCookie = cookieUtil.createRefreshTokenCookie(loginResDto.getRefreshToken());

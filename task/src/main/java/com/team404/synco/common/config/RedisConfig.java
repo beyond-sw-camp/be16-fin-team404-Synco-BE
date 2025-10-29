@@ -21,7 +21,7 @@ public class RedisConfig {
     private int port;
 
     /* --------------------------------------------------------
-      ✅ 2. Member 정보 조회용 (workspace와 공유) - DB 1
+    2. Member 정보 조회용 (workspace와 공유) - DB 1
     -------------------------------------------------------- */
     @Bean
     @Qualifier("memberInventory")
@@ -74,7 +74,7 @@ public class RedisConfig {
         return redisTemplate;
     }
 
-    // ✅ 4. 기본 RedisTemplate (내부용 Bean)
+    // 4. 기본 RedisTemplate (내부용 Bean)
     @Bean
     public RedisTemplate<String, Object> redisTemplate(@Qualifier("memberInventory") RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -84,23 +84,21 @@ public class RedisConfig {
 
     // redis-pub/sub용 redis 설정
     @Bean
-    @Qualifier("ssePubSub")
+    @Qualifier("sseFactory")
     public RedisConnectionFactory sseFactory(){
-
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
         configuration.setHostName(host);
         configuration.setPort(port);
-        // redis pub/sub 기능은 db에 값을 저장하는 기능이 아니므로, 특정 db에 의존적이지 않음
         return new LettuceConnectionFactory(configuration);
     }
 
     // redis-pub/sub용 redisTemplate 생성
     @Bean
     @Qualifier("ssePubSub")
-    public RedisTemplate<String, String> sseRedisTemplate(@Qualifier("ssePubSub") RedisConnectionFactory redisConnectionFactory){
-        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+    public RedisTemplate<String, Object> sseRedisTemplate(@Qualifier("sseFactory") RedisConnectionFactory redisConnectionFactory){
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         return redisTemplate;
     }
