@@ -25,5 +25,7 @@ public class ChatMessageResDto {
     private Long replyToSeq; // 답장 대상 메시지 ID (nullable)
     private String chatMessageFileUrls; // 다중 파일 업로드 (optional)
     private LocalDateTime createdAt;
-
+//    private Integer readCount;        // 읽은 사람 수
+//    private Integer unreadCount;      // 안 읽은 사람 수
+//    private Integer totalMemberCount;  // 전체 멤버 수
 }

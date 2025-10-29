@@ -15,13 +15,20 @@ public class ChatRedisService {
 
     private static final String MEMBER_KEY_PREFIX = "memberSeq:"; // 키 규칙: memberSeq:{멤버ID}
 
+    // 따옴표 제거
+    private String cleanValue(Object value) {
+        if (value == null) return null;
+        return value.toString().replace("\"", "");
+    }
+
     /**
      * Redis에서 멤버 이름 조회
      */
     public String getMemberName(Long memberSeq) {
-        String key = MEMBER_KEY_PREFIX + memberSeq;  // 예: memberSeq:5
-        Object value = memberRedisTemplate.opsForHash().get(key, "memberName"); // HGET memberSeq:5 memberName
-        return value != null ? value.toString() : "Unknown"; // 없으면 기본값 반환
+        String key = MEMBER_KEY_PREFIX + memberSeq;
+        Object value = memberRedisTemplate.opsForHash().get(key, "memberName");
+        String name = cleanValue(value);
+        return name != null ? name : "알 수 없음";
     }
 
     /**
@@ -29,7 +36,7 @@ public class ChatRedisService {
      */
     public String getMemberProfileUrl(Long memberSeq) {
         String key = MEMBER_KEY_PREFIX + memberSeq;
-        Object value = memberRedisTemplate.opsForHash().get(key, "memberProfileUrl"); // HGET memberSeq:5 memberProfileUrl
-        return value != null ? value.toString() : null; // 없으면 null (프론트에서 기본 이미지 처리)
+        Object value = memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+        return cleanValue(value);
     }
 }

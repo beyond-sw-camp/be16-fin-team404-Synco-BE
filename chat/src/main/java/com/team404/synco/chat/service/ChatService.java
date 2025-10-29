@@ -41,6 +41,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final S3Uploader s3Uploader;
     private final RedisPubSubService redisPubSubService;
+    private final ChatRedisService chatRedisService;
     private final String folderNamePrefix = "chat/";
 
     // 기본 채널 생성
@@ -477,19 +478,16 @@ public class ChatService {
 
         return list.stream()
                 .map(m -> {
-                    String key = "memberSeq:" + m.getChatChannelMember().getMemberSeq();
-                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
-
-                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
-                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
+                    long senderSeq = m.getChatChannelMember().getMemberSeq();
+                    String senderName = chatRedisService.getMemberName(senderSeq);
+                    String profileUrl = chatRedisService.getMemberProfileUrl(senderSeq);
 
                     return ChatMessageResDto.builder()
                             .chatMessageSeq(m.getChatMessageSeq())
                             .channelSeq(channelSeq)
-                            .senderSeq(m.getChatChannelMember().getMemberSeq())
-                            .senderName(memberName)
-                            .senderProfileImageUrl(profileImageUrl)
+                            .senderSeq(senderSeq)
+                            .senderName(senderName)
+                            .senderProfileImageUrl(profileUrl)
                             .chatMessageText(m.getChatMessageText())
                             .chatMessageFileUrls(m.getChatMessageFileUrls())
                             .replyToSeq(m.getChatMessageParentSeq())
@@ -520,18 +518,16 @@ public class ChatService {
         }
 
         return list.stream().map(m -> {
-            Long senderSeq = m.getChatChannelMember().getMemberSeq();
-
-            String key = "memberSeq:" + senderSeq;
-            String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-            String rawProfile = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+            long senderSeq = m.getChatChannelMember().getMemberSeq();
+            String senderName = chatRedisService.getMemberName(senderSeq);
+            String profileUrl = chatRedisService.getMemberProfileUrl(senderSeq);
 
             return ChatMessageResDto.builder()
                     .chatMessageSeq(m.getChatMessageSeq())
                     .channelSeq(channelSeq)
                     .senderSeq(senderSeq)
-                    .senderName(rawName != null ? rawName.replace("\"", "") : "알 수 없음")
-                    .senderProfileImageUrl(rawProfile != null ? rawProfile.replace("\"", "") : null)
+                    .senderName(senderName)
+                    .senderProfileImageUrl(profileUrl)
                     .chatMessageText(m.getChatMessageText())
                     .chatMessageFileUrls(m.getChatMessageFileUrls())
                     .replyToSeq(m.getChatMessageParentSeq())
