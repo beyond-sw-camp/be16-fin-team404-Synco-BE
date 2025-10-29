@@ -17,6 +17,9 @@ public class RecordingSummary extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long recordingSummarySeq;
 
+    @Column(name = "title", length = 255)
+    private String title;
+
     @Column(name = "summary", columnDefinition = "TEXT")
     private String summary;
 

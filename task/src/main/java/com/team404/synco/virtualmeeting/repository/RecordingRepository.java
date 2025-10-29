@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface RecordingRepository extends JpaRepository<Recording, Long> {
     
     Optional<Recording> findByEgressId(String egressId);
+
+    Optional<Recording> findByRoom_RoomSeq(Long roomRoomSeq);
 }
