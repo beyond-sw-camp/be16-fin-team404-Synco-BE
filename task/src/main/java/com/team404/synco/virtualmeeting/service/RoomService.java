@@ -72,6 +72,12 @@ public class RoomService {
             throw new IllegalStateException("화상회의 방 생성 권한이 없습니다.");
         }
 
+        // 이미 참여중인 화상회의가 있는지 확인
+        List<RoomParticipant> activeParticipants = participantRepository.findByVirtualMeetingChannelMember_MemberSeqAndLeftAtIsNull(memberSeq);
+        if(!activeParticipants.isEmpty()){
+            throw new IllegalStateException("이미 참여중인 화상회의 방이 있습니다.");
+        }
+
         Room room = roomCreateReqDto.toEntity(memberSeq,virtualMeetingChannelMember.getVirtualMeetingChannel());
         roomRepository.save(room);
 
@@ -114,6 +120,12 @@ public class RoomService {
 
         if(room.getStatus() != RoomStatus.IN_SESSION){
             throw new IllegalStateException("진행중인 화상회의 방이 아닙니다.");
+        }
+
+        // 이미 참여중인 화상회의가 있는지 확인
+        List<RoomParticipant> activeParticipants = participantRepository.findByVirtualMeetingChannelMember_MemberSeqAndLeftAtIsNull(memberSeq);
+        if(!activeParticipants.isEmpty()){
+            throw new IllegalStateException("이미 참여중인 화상회의 방이 있습니다.");
         }
 
         // LiveKit에서 참가자 조회 - 404는 정상 (참가자가 아직 없음)

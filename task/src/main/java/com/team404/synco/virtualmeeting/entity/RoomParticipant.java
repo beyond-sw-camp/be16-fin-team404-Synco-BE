@@ -45,9 +45,9 @@ public class RoomParticipant extends BaseEntity {
 
     public void joinRoom() {
         this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
     }
 
     public void leaveRoom() {
-        this.leftAt = LocalDateTime.now();
     }
 }
