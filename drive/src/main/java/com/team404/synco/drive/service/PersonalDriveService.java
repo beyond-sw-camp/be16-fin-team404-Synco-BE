@@ -350,4 +350,162 @@ public class PersonalDriveService {
         DriveChannel driveChannel = getPersonalDriveChannel(renameDocumentReqDto.getDriveChannelSeq());
         commonDriveService.renameDocument(driveChannel, renameDocumentReqDto.getDocumentSeq(), renameDocumentReqDto.getNewDocumentName());
     }
+
+    // ==================== 개인 드라이브 공유문서 라인 관리 ====================
+
+    /**
+     * 단일 라인 생성
+     */
+    public void createPersonalDocumentLine(Long driveChannelSeq, EditorMessageDto message) {
+        Document document = validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+        
+        // 중간에 끼어들어갈 경우 순서 바꿔주기
+        Optional<DocumentLine> existingLine = documentLineRepository.findByPrevId(message.getPrevLineId());
+        existingLine.ifPresent(line -> line.updatePrevId(message.getLineId()));
+
+        DocumentLine newDocumentLine = DocumentLine.builder()
+                .prevId(message.getPrevLineId())
+                .document(document)
+                .lineId(message.getLineId())
+                .documentContent(message.getContent())
+                .build();
+
+        documentLineRepository.save(newDocumentLine);
+        log.info("✅ 개인 공유문서 라인 생성 - DocumentSeq: {}, LineId: {}", document.getDocumentSeq(), message.getLineId());
+    }
+
+    /**
+     * 단일 라인 수정
+     */
+    public void updatePersonalDocumentLine(Long driveChannelSeq, EditorMessageDto message) {
+        validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+        
+        DocumentLine documentLine = documentLineRepository.findByLineId(message.getLineId())
+                .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다: " + message.getLineId()));
+        
+        documentLine.updateContent(message.getContent());
+        log.info("✅ 개인 공유문서 라인 수정 - LineId: {}", message.getLineId());
+    }
+
+    /**
+     * 단일 라인 삭제
+     */
+    public void deletePersonalDocumentLine(Long driveChannelSeq, EditorMessageDto message) {
+        validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+        
+        // 뒷 라인이 있다면 앞단과 연결
+        Optional<DocumentLine> nextLine = documentLineRepository.findByPrevId(message.getLineId());
+        nextLine.ifPresent(line -> line.updatePrevId(message.getPrevLineId()));
+        
+        // 현재 라인 삭제
+        DocumentLine documentLine = documentLineRepository.findByLineId(message.getLineId())
+                .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다: " + message.getLineId()));
+        documentLineRepository.delete(documentLine);
+        log.info("✅ 개인 공유문서 라인 삭제 - LineId: {}", message.getLineId());
+    }
+
+    /**
+     * 배치 라인 생성
+     */
+    public void createPersonalDocumentLines(Long driveChannelSeq, EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
+        }
+
+        Document document = validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            // 중간에 끼어들어갈 경우 순서 바꿔주기
+            Optional<DocumentLine> existingLine = documentLineRepository.findByPrevId(change.getPrevLineId());
+            existingLine.ifPresent(line -> line.updatePrevId(change.getLineId()));
+
+            DocumentLine newDocumentLine = DocumentLine.builder()
+                    .prevId(change.getPrevLineId())
+                    .document(document)
+                    .lineId(change.getLineId())
+                    .documentContent(change.getContent())
+                    .build();
+
+            documentLineRepository.save(newDocumentLine);
+        }
+        log.info("✅ 개인 공유문서 배치 라인 생성 - DocumentSeq: {}, 개수: {}", document.getDocumentSeq(), message.getChanges().size());
+    }
+
+    /**
+     * 배치 라인 수정
+     */
+    public void updatePersonalDocumentLines(Long driveChannelSeq, EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
+        }
+
+        validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            DocumentLine documentLine = documentLineRepository.findByLineId(change.getLineId())
+                    .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다: " + change.getLineId()));
+            documentLine.updateContent(change.getContent());
+        }
+        log.info("✅ 개인 공유문서 배치 라인 수정 - DocumentSeq: {}, 개수: {}", message.getDocumentId(), message.getChanges().size());
+    }
+
+    /**
+     * 배치 라인 삭제
+     */
+    public void deletePersonalDocumentLines(Long driveChannelSeq, EditorMessageDto message) {
+        if (message.getChanges() == null || message.getChanges().isEmpty()) {
+            return;
+        }
+
+        validatePersonalDocument(driveChannelSeq, Long.valueOf(message.getDocumentId()));
+
+        for (EditorMessageDto.LineChange change : message.getChanges()) {
+            // 뒷 라인이 있다면 앞단과 연결
+            Optional<DocumentLine> nextLine = documentLineRepository.findByPrevId(change.getLineId());
+            nextLine.ifPresent(line -> line.updatePrevId(change.getPrevLineId()));
+            
+            // 현재 라인 삭제
+            DocumentLine documentLine = documentLineRepository.findByLineId(change.getLineId())
+                    .orElseThrow(() -> new EntityNotFoundException("해당 라인이 존재하지 않습니다: " + change.getLineId()));
+            documentLineRepository.delete(documentLine);
+        }
+        log.info("✅ 개인 공유문서 배치 라인 삭제 - DocumentSeq: {}, 개수: {}", message.getDocumentId(), message.getChanges().size());
+    }
+
+    /**
+     * 개인 공유문서 조회 (라인 포함)
+     */
+    @Transactional(readOnly = true)
+    public List<DocDetailListResDto> getPersonalSharedDocuments(Long driveChannelSeq, Long documentSeq) {
+        log.info("개인 공유문서 목록 조회 시작 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannelSeq, documentSeq);
+        
+        Document document = validatePersonalDocument(driveChannelSeq, documentSeq);
+        
+        // 공유문서 목록 조회
+        List<DocDetailListResDto> result = commonDriveService.getSharedDoc(document.getDriveChannel(), documentSeq);
+        
+        log.info("개인 공유문서 목록 조회 완료 - DriveChannelSeq: {}, DocumentSeq: {}, 라인 수: {}", 
+                driveChannelSeq, documentSeq, result.size());
+        return result;
+    }
+
+    /**
+     * 개인 드라이브 문서 검증 (개인 드라이브 문서인지 확인)
+     */
+    private Document validatePersonalDocument(Long driveChannelSeq, Long documentSeq) {
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentSeq));
+
+        // 개인 드라이브 채널인지 확인
+        if (document.getDriveChannel().getWorkSpaceType() != WorkSpaceType.INDIVIDUAL) {
+            throw new IllegalArgumentException("개인 드라이브 문서가 아닙니다: " + documentSeq);
+        }
+        
+        // 공유문서인지 확인
+        if (document.getDocumentType() != DocumentType.CUSTOM) {
+            throw new IllegalArgumentException("공유문서가 아닙니다: " + documentSeq);
+        }
+
+        return document;
+    }
 }
