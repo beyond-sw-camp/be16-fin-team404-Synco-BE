@@ -68,4 +68,8 @@ public class Room extends BaseEntity {
         this.status = RoomStatus.ENDED;
         this.endedAt = LocalDateTime.now();
     }
+
+    public void attachRecording(Recording recording) {
+        this.recording = recording;
+    }
 }

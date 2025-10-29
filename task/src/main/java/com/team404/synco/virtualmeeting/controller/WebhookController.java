@@ -13,26 +13,28 @@ import livekit.LivekitWebhook.*;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/webhooks")
+@RequestMapping("/livekit")
 public class WebhookController {
 
     private final LiveKitService liveKitService;
     private final WebhookReceiver webhookReceiver;
 
 
-    @PostMapping(value = "/livekit", consumes = "application/webhook+json")
+    @PostMapping(value = "/webhook", consumes = "application/webhook+json")
     public ResponseEntity<ResponseDto<String>> handleLiveKitWebhook(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody String body
     ) {
         try {
-            WebhookEvent event = webhookReceiver.receive(body,authHeader);
+            WebhookEvent event = webhookReceiver.receive(body, authHeader);
+            log.info("✅ 웹훅 이벤트 타입: {}", event.getEvent());
+            
             liveKitService.handleWebhook(event);
 
             return ResponseEntity.ok(ResponseDto.ok("Webhook processed successfully", HttpStatus.OK));
             
         } catch (Exception e) {
-            log.error("Webhook 처리 중 오류 발생: {}", e.getMessage(), e);
+            log.error("❌ 웹훅 처리 중 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "Webhook processing failed"));
         }

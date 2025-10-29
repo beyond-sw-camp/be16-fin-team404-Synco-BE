@@ -49,14 +49,18 @@ public class Recording extends BaseEntity {
 
     @OneToOne(mappedBy = "recording", cascade = CascadeType.ALL, orphanRemoval = true)
     private RecordingSummary recordingSummary;
-
-    public static Recording fromFileInfo(LivekitEgress.FileInfo fileInfo, Room room) {
-        return Recording.builder()
-                .filename(fileInfo.getFilename())
-                .outputUrl(fileInfo.getLocation())
-                .fileSizeBytes(fileInfo.getSize())
-                .durationMs(fileInfo.getDuration())
-                .room(room)
-                .build();
+    
+    // 파일 정보로 Recording 업데이트
+    public void updateFromFileInfo(LivekitEgress.FileInfo fileInfo) {
+        this.filename = fileInfo.getFilename();
+        this.outputUrl = fileInfo.getLocation();
+        this.fileSizeBytes = fileInfo.getSize();
+        this.durationMs = fileInfo.getDuration();
+        this.endedAt = LocalDateTime.now();
+    }
+    
+    // 녹화 종료 시간만 업데이트
+    public void markAsEnded() {
+        this.endedAt = LocalDateTime.now();
     }
 }

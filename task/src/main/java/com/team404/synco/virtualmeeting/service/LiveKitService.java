@@ -1,5 +1,6 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.virtualmeeting.dto.kafka.RecordingCompletedEvent;
 import com.team404.synco.virtualmeeting.entity.Room;
 import com.team404.synco.virtualmeeting.entity.Recording;
 import com.team404.synco.virtualmeeting.entity.RoomParticipant;
@@ -8,6 +9,7 @@ import com.team404.synco.virtualmeeting.repository.RoomParticipantRepository;
 import com.team404.synco.virtualmeeting.repository.RoomRepository;
 import io.livekit.server.*;
 import jakarta.persistence.EntityNotFoundException;
+import livekit.LivekitEgress;
 import livekit.LivekitEgress.*;
 import livekit.LivekitWebhook.*;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -26,6 +30,7 @@ public class LiveKitService {
     private final RoomRepository roomRepository;
     private final RecordingRepository recordingRepository;
     private final RoomParticipantRepository roomParticipantRepository;
+    private final RecordingEventPublisher recordingEventPublisher;
 
     public void handleWebhook(WebhookEvent event) {
         switch (event.getEvent()) {
@@ -64,16 +69,61 @@ public class LiveKitService {
     private void handleParticipantLeft(WebhookEvent event) {
         log.info("LiveKit_Webhook(participant_left) - {}", event.getRoom());
         log.info("LiveKit_Webhook(participant_left) - {}", event.getParticipant());
-        RoomParticipant participant = roomParticipantRepository.findById(Long.valueOf(event.getParticipant().getIdentity())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 참가자 입니다."));
-        participant.leaveRoom();
+        
+        // EGRESS (녹화기)는 identity가 "EG_"로 시작하므로 스킵
+        if (event.getParticipant() != null && event.getParticipant().getIdentity() != null && event.getParticipant().getIdentity().startsWith("EG_")) {
+            log.info("EGRESS 녹화기는 참가자가 아니므로 스킵: identity={}", event.getParticipant().getIdentity());
+            return;
+        }
+        
+        // room과 identity로 participant 찾기
+        Long roomSeq = Long.valueOf(event.getRoom().getName());
+        Long memberSeq = Long.valueOf(event.getParticipant().getIdentity());
+        
+        Room room = roomRepository.findById(roomSeq).orElse(null);
+        if (room == null) {
+            log.warn("⚠️ Room을 찾을 수 없음: roomSeq={}", roomSeq);
+            return;
+        }
+        
+        Optional<RoomParticipant> participantOpt = roomParticipantRepository.findByRoomAndVirtualMeetingChannelMember_MemberSeq(room, memberSeq);
+        
+        if (participantOpt.isPresent()) {
+            participantOpt.get().leaveRoom();
+            log.info("✅ 참가자 퇴장 처리: roomSeq={}, memberSeq={}", roomSeq, memberSeq);
+        } else {
+            log.warn("⚠️ 참가자 정보를 찾을 수 없음: roomSeq={}, memberSeq={}", roomSeq, memberSeq);
+        }
     }
 
     private void handleParticipantConnectionAborted(WebhookEvent event) {
         log.info("LiveKit_Webhook(participant_connection_aborted) - {}", event.getRoom());
         log.info("LiveKit_Webhook(participant_connection_aborted) - {}", event.getParticipant());
 
-        RoomParticipant participant = roomParticipantRepository.findById(Long.valueOf(event.getParticipant().getIdentity())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 참가자 입니다."));
-        participant.leaveRoom();
+        // EGRESS (녹화기)는 identity가 "EG_"로 시작하므로 스킵
+        if (event.getParticipant() != null && event.getParticipant().getIdentity() != null && event.getParticipant().getIdentity().startsWith("EG_")) {
+            log.info("EGRESS 녹화기는 참가자가 아니므로 스킵: identity={}", event.getParticipant().getIdentity());
+            return;
+        }
+
+        // room과 identity로 participant 찾기
+        Long roomSeq = Long.valueOf(event.getRoom().getName());
+        Long memberSeq = Long.valueOf(event.getParticipant().getIdentity());
+        
+        Room room = roomRepository.findById(roomSeq).orElse(null);
+        if (room == null) {
+            log.warn("⚠️ Room을 찾을 수 없음: roomSeq={}", roomSeq);
+            return;
+        }
+        
+        Optional<RoomParticipant> participantOpt = roomParticipantRepository.findByRoomAndVirtualMeetingChannelMember_MemberSeq(room, memberSeq);
+        
+        if (participantOpt.isPresent()) {
+            participantOpt.get().leaveRoom();
+            log.info("✅ 참가자 연결 중단 처리: roomSeq={}, memberSeq={}", roomSeq, memberSeq);
+        } else {
+            log.warn("⚠️ 참가자 정보를 찾을 수 없음: roomSeq={}, memberSeq={}", roomSeq, memberSeq);
+        }
     }
 
     private void handleTrackPublished(WebhookEvent event) {
@@ -90,6 +140,18 @@ public class LiveKitService {
 
     private void handleEgressStarted(WebhookEvent event) {
         log.info("LiveKit_Webhook(egress_started) - {}", event.getEgressInfo());
+        
+        String egressId = event.getEgressInfo().getEgressId();
+        Long roomSeq = Long.valueOf(event.getEgressInfo().getRoomName());
+        
+        // Recording은 REST에서 이미 생성됨 - 웹훅에서는 확인만
+        Optional<Recording> existingRecording = recordingRepository.findByEgressId(egressId);
+        
+        if (existingRecording.isPresent()) {
+            log.info("✅ Recording 이미 존재 (REST에서 생성됨): roomSeq={}, egressId={}", roomSeq, egressId);
+        } else {
+            log.warn("⚠️ Recording이 존재하지 않음 - REST에서 생성되지 않았거나 웹훅이 먼저 도착함: roomSeq={}, egressId={}", roomSeq, egressId);
+        }
     }
 
     private void handleEgressUpdated(WebhookEvent event) {
@@ -98,13 +160,34 @@ public class LiveKitService {
 
     private void handleEgressEnded(WebhookEvent event) {
         log.info("LiveKit_Webhook(egress_ended) - {}", event.getEgressInfo());
-        if (event.getEgressInfo().getStatus() != EgressStatus.EGRESS_COMPLETE) return;
 
-        FileInfo fileInfo = event.getEgressInfo().getFileResults(0);
+        String egressId = event.getEgressInfo().getEgressId();
+        Recording recording = recordingRepository.findByEgressId(egressId)
+                .orElseThrow(() -> new EntityNotFoundException("Recording을 찾을 수 없습니다: egressId=" + egressId));
 
-        Room room = roomRepository.findById(Long.valueOf(event.getEgressInfo().getRoomName())).orElseThrow(() -> new EntityNotFoundException("없는 화상회의 입니다."));
-        Recording recording = Recording.fromFileInfo(fileInfo,room);
-        recordingRepository.save(recording);
+        if (event.getEgressInfo().getStatus() != EgressStatus.EGRESS_COMPLETE) {
+            log.warn("녹화가 정상 완료되지 않음: egressId={}, status={}", egressId, event.getEgressInfo().getStatus());
+            recording.markAsEnded();
+            return;
+        }
+
+        // 정상 완료 케이스
+        LivekitEgress.FileInfo fileInfo = event.getEgressInfo().getFileResults(0); // index 0로 넘어오는 첫 파일
+        recording.updateFromFileInfo(fileInfo);
+
+        log.info("✅ Recording 완료 업데이트: roomSeq={}, egressId={}, filename={}",
+                recording.getRoom().getRoomSeq(), egressId, fileInfo.getFilename());
+
+        // STT 처리를 위한 카프카 이벤트 발행
+        RecordingCompletedEvent eventDto = RecordingCompletedEvent.builder()
+                .recordingSeq(recording.getRecordingSeq())
+                .egressId(egressId)
+                .outputUrl(fileInfo.getLocation())
+                .filename(fileInfo.getFilename())
+                .roomSeq(recording.getRoom().getRoomSeq())
+                .build();
+
+        recordingEventPublisher.publishRecordingCompleted(eventDto);
     }
 
     private void handleIngressStarted(WebhookEvent event) {
