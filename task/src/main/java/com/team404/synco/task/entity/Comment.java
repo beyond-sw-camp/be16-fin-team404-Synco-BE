@@ -1,6 +1,7 @@
 package com.team404.synco.task.entity;
 
 import com.team404.synco.common.entity.BaseEntity;
+import com.team404.synco.task.dto.request.CommentUpdateReqDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,4 +25,7 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "task_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Task task;
 
+    public void updateComment(CommentUpdateReqDto commentUpdateReqDto) {
+        this.commentContent = commentUpdateReqDto.getCommentContent();
+    }
 }

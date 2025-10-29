@@ -27,6 +27,13 @@ public class WorkSpaceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(workSpaceResDto, HttpStatus.CREATED));
     }
 
+    // 개인 워크스페이스 정보 조회
+    @GetMapping("/personal")
+    public ResponseEntity<ResponseDto<?>> getPersonalWorkSpace(@RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+        WorkSpaceInfoResDto myPersonalWorkSpaceInfoResDto = workSpaceService.findPersonalWorkSpace(memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(myPersonalWorkSpaceInfoResDto, HttpStatus.OK));
+    }
+
     // 내 프로젝트 목록 조회
     @GetMapping("/me")
     public ResponseEntity<ResponseDto<?>> myWorkSpaceList(@RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
@@ -39,20 +46,6 @@ public class WorkSpaceController {
     public ResponseEntity<ResponseDto<?>> getWorkSpaceMemberList(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
         List<WorkSpaceMemberInfoResDto> workSpaceMemberListResDto = workSpaceService.findWorkSpaceMemberList(workSpaceSeq);
         return ResponseEntity.ok(ResponseDto.ok(workSpaceMemberListResDto, HttpStatus.OK));
-    }
-
-    // 내 프로젝트 대시보드
-    @GetMapping("/personal/{workSpaceSeq}")
-    public ResponseEntity<ResponseDto<?>> personalDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
-        List<WorkSpaceInfoResDto> myWorkSpaceListResDto = workSpaceService.findMyWorkSpaceList(workSpaceSeq);
-        return ResponseEntity.ok(ResponseDto.ok(myWorkSpaceListResDto, HttpStatus.OK));
-    }
-
-    // 팀 프로젝트 대시보드
-    @GetMapping("/teams/{workSpaceSeq}")
-    public ResponseEntity<ResponseDto<?>> teamDashBoardDetail(@PathVariable("workSpaceSeq") Long workSpaceSeq) throws AccessDeniedException {
-        TeamDashBoardResDto teamDashBoardResDto = workSpaceService.findTeamDashBoard(workSpaceSeq);
-        return ResponseEntity.ok(ResponseDto.ok(teamDashBoardResDto, HttpStatus.OK));
     }
 
     // 프로젝트 수정
