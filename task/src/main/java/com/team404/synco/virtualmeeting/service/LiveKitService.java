@@ -1,5 +1,6 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.virtualmeeting.dto.kafka.RecordingCompletedEvent;
 import com.team404.synco.virtualmeeting.entity.Room;
 import com.team404.synco.virtualmeeting.entity.Recording;
 import com.team404.synco.virtualmeeting.entity.RoomParticipant;
@@ -29,6 +30,7 @@ public class LiveKitService {
     private final RoomRepository roomRepository;
     private final RecordingRepository recordingRepository;
     private final RoomParticipantRepository roomParticipantRepository;
+    private final RecordingEventPublisher recordingEventPublisher;
 
     public void handleWebhook(WebhookEvent event) {
         switch (event.getEvent()) {
@@ -175,6 +177,17 @@ public class LiveKitService {
 
         log.info("✅ Recording 완료 업데이트: roomSeq={}, egressId={}, filename={}",
                 recording.getRoom().getRoomSeq(), egressId, fileInfo.getFilename());
+
+        // STT 처리를 위한 카프카 이벤트 발행
+        RecordingCompletedEvent eventDto = RecordingCompletedEvent.builder()
+                .recordingSeq(recording.getRecordingSeq())
+                .egressId(egressId)
+                .outputUrl(fileInfo.getLocation())
+                .filename(fileInfo.getFilename())
+                .roomSeq(recording.getRoom().getRoomSeq())
+                .build();
+
+        recordingEventPublisher.publishRecordingCompleted(eventDto);
     }
 
     private void handleIngressStarted(WebhookEvent event) {
