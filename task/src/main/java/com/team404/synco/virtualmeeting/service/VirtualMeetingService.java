@@ -206,16 +206,52 @@ public class VirtualMeetingService {
     // 종료된 화상회의 요약 상세 정보 조회
     @Transactional(readOnly = true)
     public RoomDetailDto getRoomDetail(Long roomSeq, Long memberSeq) {
-        Recording recording = recordingRepository.findByRoom_RoomSeq(roomSeq).orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 정보를 찾을 수 없습니다."));
+        Optional<Recording> recording = recordingRepository.findByRoom_RoomSeq(roomSeq);
 
-        RecordingSummary recordingSummary = recordingSummaryRepository.findByRecording_RecordingSeq(recording.getRecordingSeq()).orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 요약 정보를 찾을 수 없습니다."));
+        // 녹화를 안했을경우 녹화 관련 제외하고 참여자
+        if(recording.isEmpty()) {
+            Room room = roomRepository.findById(roomSeq).orElseThrow(() -> new EntityNotFoundException("해당 화상회의 정보를 찾을 수 없습니다."));
+            // 채널 멤버인지 검증
+            virtualMeetingChannelMemberRepository.findByChannelAndMember(room.getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+            // 참가자 리스트 조회
+            List<RoomDetailDto.ParticipantDto> participantDtoList = room.getRoomParticipantList()
+                    .stream()
+                    .map(roomParticipant -> {
+                        String participantName = memberRedisComponent.getMemberName(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+                        String participantProfileUrl = memberRedisComponent.getMemberProfileUrl(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+                        return RoomDetailDto.ParticipantDto.builder()
+                                .participantId(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq())
+                                .participantName(participantName)
+                                .participantProfileUrl(participantProfileUrl)
+                                .build();
+                    })
+                    .toList();
+            if(participantDtoList.isEmpty()) {
+                participantDtoList = Collections.emptyList();
+            }
+
+            return RoomDetailDto.builder()
+                    .roomId(room.getRoomSeq())
+                    .roomName(room.getRoomName())
+                    .roomDescription(room.getRoomDescription())
+                    .hostId(room.getHostId())
+                    .createdAt(room.getCreatedAt())
+                    .duration(0L)
+                    .summaryContent("")
+                    .participants(participantDtoList)
+                    .participantCount(participantDtoList.size())
+                    .build();
+        }
+
+
+        RecordingSummary recordingSummary = recordingSummaryRepository.findByRecording_RecordingSeq(recording.get().getRecordingSeq()).orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 요약 정보를 찾을 수 없습니다."));
 
         // 채널 멤버인지 검증
-        virtualMeetingChannelMemberRepository.findByChannelAndMember(recording.getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(recording.get().getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
 
 
         // 참가자 리스트 조회
-        List<RoomDetailDto.ParticipantDto> participantDtoList = recording.getRoom().getRoomParticipantList()
+        List<RoomDetailDto.ParticipantDto> participantDtoList = recording.get().getRoom().getRoomParticipantList()
                 .stream()
                 .map(roomParticipant -> {
                     String participantName = memberRedisComponent.getMemberName(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
@@ -229,6 +265,7 @@ public class VirtualMeetingService {
                 })
                 .toList();
 
+
         return RoomDetailDto.builder()
                 .roomId(recordingSummary.getRecording().getRoom().getRoomSeq())
                 .roomName(recordingSummary.getRecording().getRoom().getRoomName())
@@ -236,6 +273,7 @@ public class VirtualMeetingService {
                 .hostId(recordingSummary.getRecording().getRoom().getHostId())
                 .createdAt(recordingSummary.getRecording().getRoom().getCreatedAt())
                 .duration(recordingSummary.getRecording().getDurationMs())
+                .summaryContent(recordingSummary.getSummary())
                 .participants(participantDtoList)
                 .participantCount(participantDtoList.size())
                 .build();
