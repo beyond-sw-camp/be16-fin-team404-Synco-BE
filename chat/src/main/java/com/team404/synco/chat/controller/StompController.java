@@ -41,9 +41,10 @@ public class StompController {
     }
 
     // 타이핑 이벤트
-    @MessageMapping("/typing")
-    public void typing(ChatTypingDto dto) {
+    @MessageMapping("/typing/{channelSeq}")
+    public void typing(@DestinationVariable Long channelSeq, ChatTypingDto dto) {
         log.debug("⌨️ Typing event: {}", dto);
+        dto.setChannelSeq(channelSeq);
         chatService.publishTyping(dto);
     }
 }
