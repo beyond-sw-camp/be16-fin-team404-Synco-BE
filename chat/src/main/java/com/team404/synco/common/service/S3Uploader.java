@@ -106,9 +106,9 @@ public class S3Uploader {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("파일이 비어있습니다.");
         }
-        long maxSize = 100 * 1024 * 1024; // 100MB
+        long maxSize = 200 * 1024 * 1024; // 200MB
         if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("파일 크기는 100MB를 초과할 수 없습니다.");
+            throw new IllegalArgumentException("파일 크기는 200MB를 초과할 수 없습니다.");
         }
     }
 
