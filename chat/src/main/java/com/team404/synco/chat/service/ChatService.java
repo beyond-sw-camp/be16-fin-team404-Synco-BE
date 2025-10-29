@@ -462,7 +462,7 @@ public class ChatService {
                 "channelSeq", channelSeq
         );
         try {
-            redisPubSubService.publish("chat", objectMapper.writeValueAsString(deleteEvent));
+            redisPubSubService.publish( "chat:" + channelSeq, objectMapper.writeValueAsString(deleteEvent));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
