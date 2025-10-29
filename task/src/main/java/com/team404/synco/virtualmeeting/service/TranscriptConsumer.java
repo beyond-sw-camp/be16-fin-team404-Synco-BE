@@ -44,7 +44,6 @@ public class TranscriptConsumer {
             String summaryText = summaryService.generateSummary(event.getTranscript());
             
             summary.updateSummary(summaryText);
-            recordingSummaryRepository.save(summary);
             log.info("✅ 요약 생성 완료: recordingSeq={}", event.getRecordingSeq());
 
             acknowledgment.acknowledge();
