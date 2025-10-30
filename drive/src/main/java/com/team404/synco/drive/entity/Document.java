@@ -31,7 +31,7 @@ public class Document extends BaseEntity {
     private Long fileSize; // 파일 크기 (바이트 단위)
     @Column(nullable = false)
     @Builder.Default
-    private String ynLock = YnColumn.IS_FALSE;;
+    private String ynLock = YnColumn.IS_FALSE;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folder_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = true)
     private Folder folder;
@@ -52,5 +52,9 @@ public class Document extends BaseEntity {
 
     public void updateDocumentName(String newDocumentName) {
         this.documentName = newDocumentName;
+    }
+
+    public void updateDriveChannel(DriveChannel driveChannel) {
+        this.driveChannel = driveChannel;
     }
 }

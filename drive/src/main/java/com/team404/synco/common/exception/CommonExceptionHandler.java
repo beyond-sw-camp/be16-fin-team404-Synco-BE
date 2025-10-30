@@ -170,20 +170,6 @@ public class CommonExceptionHandler {
      * ======================== 파일 업로드 관련 예외 ========================
      */
 
-    // 파일 업로드 크기 초과
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<?> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
-        log.error("[MaxUploadSizeExceededException] {}", e.getMessage());
-        return buildError(HttpStatus.PAYLOAD_TOO_LARGE, "업로드 파일 크기가 제한을 초과했습니다. 파일 크기를 확인해주세요.");
-    }
-
-    // Multipart 요청 처리 중 오류
-    @ExceptionHandler(MultipartException.class)
-    public ResponseEntity<?> handleMultipartException(MultipartException e) {
-        log.error("[MultipartException] {}", e.getMessage(), e);
-        return buildError(HttpStatus.BAD_REQUEST, "파일 업로드 처리 중 오류가 발생했습니다. 파일을 다시 선택해주세요.");
-    }
-
     // 요청 body나 multipart 데이터 누락 (파일 관련)
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<?> handleMissingServletRequestPart(MissingServletRequestPartException e) {

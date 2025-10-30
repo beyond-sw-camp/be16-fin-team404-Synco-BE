@@ -121,15 +121,6 @@ public class PersonalDriveController {
         return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
     }
 
-//    // 개인 드라이브 공유문서 상세 조회
-//    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}")
-//    public ResponseEntity<ResponseDto<?>> getPersonalDocument(
-//            @PathVariable Long driveChannelSeq,
-//            @PathVariable Long documentSeq) {
-//        DocumentDetailDto document = personalDriveService.getPersonalDocument(driveChannelSeq, documentSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
-//    }
-
     // 개인 드라이브 공유문서 잠금/해제 토글
     @PatchMapping("/documents/lock")
     public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
@@ -149,5 +140,82 @@ public class PersonalDriveController {
     public ResponseEntity<ResponseDto<?>> renamePersonalDocument(@RequestBody RenameDocumentReqDto renameDocumentReqDto) {
         personalDriveService.renamePersonalDocument(renameDocumentReqDto);
         return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
+    }
+
+    // 개인 공유문서 프로젝트 드라이브로 복사
+
+
+    // ==================== 개인 공유문서 라인 관리 ====================
+
+    // 개인 공유문서 라인 목록 조회
+    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/lines")
+    public ResponseEntity<ResponseDto<?>> getPersonalSharedDocuments(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        var sharedDocs = personalDriveService.getPersonalSharedDocuments(driveChannelSeq, documentSeq);
+        return ResponseEntity.ok(ResponseDto.ok(sharedDocs, HttpStatus.OK));
+    }
+
+    // 단일 라인 생성
+    @PostMapping("/{driveChannelSeq}/documents/lines/create")
+    public ResponseEntity<ResponseDto<?>> createPersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.createPersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 생성되었습니다.", HttpStatus.OK));
+    }
+
+    // 단일 라인 수정
+    @PutMapping("/{driveChannelSeq}/documents/lines/update")
+    public ResponseEntity<ResponseDto<?>> updatePersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.updatePersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 수정되었습니다.", HttpStatus.OK));
+    }
+
+    // 단일 라인 삭제
+    @DeleteMapping("/{driveChannelSeq}/documents/lines/delete")
+    public ResponseEntity<ResponseDto<?>> deletePersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.deletePersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 생성
+    @PostMapping("/{driveChannelSeq}/documents/lines/batch-create")
+    public ResponseEntity<ResponseDto<?>> createPersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.createPersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 생성되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 수정
+    @PutMapping("/{driveChannelSeq}/documents/lines/batch-update")
+    public ResponseEntity<ResponseDto<?>> updatePersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.updatePersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 수정되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 삭제
+    @DeleteMapping("/{driveChannelSeq}/documents/lines/batch-delete")
+    public ResponseEntity<ResponseDto<?>> deletePersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.deletePersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 개인 공유문서를 프로젝트 공유문서로 이동
+    @PostMapping("/move-to-project")
+    public ResponseEntity<ResponseDto<?>> movePersonalToProject(
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @RequestBody MovePersonalToProjectReqDto reqDto) {
+        DriveItemDto movedDocument = personalDriveService.movePersonalToProject(userId, reqDto);
+        return ResponseEntity.ok(ResponseDto.ok(movedDocument, HttpStatus.OK));
     }
 }
