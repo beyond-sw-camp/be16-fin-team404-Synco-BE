@@ -7,5 +7,6 @@ import lombok.Getter;
 @Builder
 public class RoomSessionResDto {
     private Long roomId;
+    private Long hostId;
     private String token;
 }
