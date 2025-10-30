@@ -33,15 +33,8 @@ public interface ChatChannelMemberRepository extends JpaRepository<ChatChannelMe
 
     boolean existsByChatChannelAndMemberSeq(ChatChannel chatChannel, Long memberSeq);
     Optional<ChatChannelMember> findByChatChannelAndMemberSeq(ChatChannel chatChannel, Long memberSeq);
-    List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceType(Long memberSeq, WorkSpaceType workSpaceType);
     List<ChatChannelMember> findByChatChannel(ChatChannel chatChannel);
-//    @Query("""
-//    select ccm.lastReadChatMessageSeq
-//      from ChatChannelMember ccm
-//     where ccm.chatChannel.chatChannelSeq = :channelSeq
-//       and ccm.memberSeq = :memberSeq
-//    """)
-//    Long findLastReadSeq(Long channelSeq, Long memberSeq);
+
     Optional<ChatChannelMember> findByChatChannel_ChatChannelSeqAndMemberSeq(Long channelSeq, Long memberSeq);
 
     // ✅ 마지막 읽은 메시지 업데이트
@@ -58,4 +51,23 @@ public interface ChatChannelMemberRepository extends JpaRepository<ChatChannelMe
             @Param("latestSeq") Long latestSeq
     );
 
+    // 특정 사용자가 속한 모든 1:1 채팅 채널 목록 조회
+    List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceSeqAndChatChannel_WorkSpaceType(Long memberSeq, Long workSpaceSeq, WorkSpaceType workSpaceType);
+
+    // 1:1 참여자 모두가 속한 채널 반환
+    @Query("""
+    SELECT ccm.chatChannel.chatChannelSeq 
+    FROM ChatChannelMember ccm
+    WHERE ccm.chatChannel.workSpaceSeq = :workSpaceSeq
+      AND ccm.chatChannel.workSpaceType = :workSpaceType
+      AND ccm.memberSeq IN (:memberSeq1, :memberSeq2)
+    GROUP BY ccm.chatChannel.chatChannelSeq
+    HAVING COUNT(DISTINCT ccm.memberSeq) = 2
+    """)
+    Optional<Long> findExistingIndividualChannel(
+            @Param("workSpaceSeq") Long workSpaceSeq,
+            @Param("workSpaceType") WorkSpaceType workSpaceType,
+            @Param("memberSeq1") Long memberSeq1,
+            @Param("memberSeq2") Long memberSeq2
+    );
 }

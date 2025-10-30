@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class MyChatListResDto {
     private Long channelSeq;
     private String channelName;
+    private String otherProfileUrl;
     private Long workspaceSeq;
     private WorkSpaceType workSpaceType;
     private Long unreadCount;

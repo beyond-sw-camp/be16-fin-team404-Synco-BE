@@ -128,14 +128,14 @@ public class ChatController {
         }
     }
 
-    // 채팅 참여자 목록 조회
-    @GetMapping("/channels/{channelSeq}/members")
-    public ResponseEntity<ResponseDto<?>> getChannelMembers(
-            @PathVariable Long channelSeq,
-            @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        List<ChannelMemberResDto> members = chatService.getChannelMembers(channelSeq, memberSeq);
-        return ResponseEntity.ok(ResponseDto.ok(members, HttpStatus.OK));
-    }
+//    // 채팅 참여자 목록 조회
+//    @GetMapping("/channels/{channelSeq}/members")
+//    public ResponseEntity<ResponseDto<?>> getChannelMembers(
+//            @PathVariable Long channelSeq,
+//            @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
+//        List<ChannelMemberResDto> members = chatService.getChannelMembers(channelSeq, memberSeq);
+//        return ResponseEntity.ok(ResponseDto.ok(members, HttpStatus.OK));
+//    }
 
     // 채팅 메시지 삭제 (hard-delete)
     @DeleteMapping("/messages/{chatMessageSeq}")
@@ -174,13 +174,27 @@ public class ChatController {
          return ResponseEntity.ok(ResponseDto.ok("UPDATED", HttpStatus.OK));
      }
 
-    // 채팅목록 조회 (개인워크스페이스)
-    @GetMapping("/channels/personal")
-    public ResponseEntity<List<MyChatListResDto>> getPersonalChatChannels(
+    // 1:1 채팅채널 생성 또는 기존 channelSeq 반환
+    @PostMapping("/channels/individual")
+    public ResponseEntity<ResponseDto<?>> createOrGetIndividualChatChannel (
+            @RequestBody IndividualChatCreateReqDto dto,
             @RequestHeader("X-Member-Seq") Long memberSeq) {
-        List<MyChatListResDto> result = chatService.getMyChatChannelsByWorkspace(memberSeq, WorkSpaceType.INDIVIDUAL);
-        return ResponseEntity.ok(result);
+
+        Long channelSeq = chatService.createOrGetIndividualChatChannel(dto.getWorkSpaceSeq(), memberSeq, dto.getOtherMemberSeq());
+        return ResponseEntity.ok(ResponseDto.ok(channelSeq, HttpStatus.OK));
     }
+
+    // 1:1 채팅목록 조회
+    @GetMapping("/channels/individual")
+    public ResponseEntity<ResponseDto<?>> getIndividualChatChannels(
+            @RequestParam Long workSpaceSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        log.info("📥 개인 채팅목록 요청: memberSeq={}, workSpaceSeq={}", memberSeq, workSpaceSeq);
+        List<MyChatListResDto> myChatListResDtos = chatService.getMyChatChannelsByWorkspace(memberSeq, workSpaceSeq, WorkSpaceType.INDIVIDUAL);
+        return ResponseEntity.ok(ResponseDto.ok(myChatListResDtos, HttpStatus.OK));
+    }
+
+    // 채널 나가기
 
     // 1:1 채팅목록 조회
     // @GetMapping("/my/channels")

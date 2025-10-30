@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -401,40 +400,40 @@ public class ChatService {
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
     }
 
-    // 채팅 참여자 목록 조회
-    @Transactional(readOnly = true)
-    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
-        // 1️⃣ 접근 권한 확인
-        if (!isChannelParticipant(memberSeq, channelSeq)) {
-            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
-        }
-
-        // 2️⃣ 채널 존재 확인
-        ChatChannel channel = chatChannelRepository.findById(channelSeq)
-                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
-
-        // 3️⃣ 채널의 멤버 목록 조회
-        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
-
-        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
-        return members.stream()
-                .map(m -> {
-                    String key = "memberSeq:" + m.getMemberSeq();
-                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
-
-                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
-                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
-                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
-
-                   return ChannelMemberResDto.builder()
-                            .memberSeq(m.getMemberSeq())
-                            .memberName(memberName)
-                            .memberProfileUrl(profileImageUrl)
-                            .build();
-                })
-                .toList();
-    }
+//    // 채팅 참여자 목록 조회
+//    @Transactional(readOnly = true)
+//    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+//        // 1️⃣ 접근 권한 확인
+//        if (!isChannelParticipant(memberSeq, channelSeq)) {
+//            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
+//        }
+//
+//        // 2️⃣ 채널 존재 확인
+//        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+//                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+//
+//        // 3️⃣ 채널의 멤버 목록 조회
+//        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+//
+//        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
+//        return members.stream()
+//                .map(m -> {
+//                    String key = "memberSeq:" + m.getMemberSeq();
+//                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
+//                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+//
+//                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
+//                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
+//                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
+//
+//                   return ChannelMemberResDto.builder()
+//                            .memberSeq(m.getMemberSeq())
+//                            .memberName(memberName)
+//                            .memberProfileUrl(profileImageUrl)
+//                            .build();
+//                })
+//                .toList();
+//    }
 
     // 채팅 메시지 삭제 (hard-delete)
     public void deleteChatMessage(Long chatMessageSeq, Long memberSeq) throws AccessDeniedException {
@@ -582,37 +581,89 @@ public class ChatService {
         }
     }
 
-    // 채팅목록 조회 (개인워크스페이스)
-    @Transactional(readOnly = true)
-    public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, WorkSpaceType workSpaceType) {
-        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
-                .findByMemberSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceType);
-        return mapToDtoList(chatChannelMembers);
+    // 1:1 채팅목록 생성
+    public Long createOrGetIndividualChatChannel(Long workSpaceSeq, Long memberSeq, Long otherMemberSeq) {
+
+        // 내가 속한 INDIVIDUAL 채널 중 상대방이 포함된 채널이 있는지 확인
+        Optional<Long> existingChannelSeq = chatChannelMemberRepository
+                .findExistingIndividualChannel(workSpaceSeq, WorkSpaceType.INDIVIDUAL, memberSeq, otherMemberSeq);
+
+        // 이미 1:1 채팅채널이 있으면 그 채널 seq 반환
+        if (existingChannelSeq.isPresent()) {
+            return existingChannelSeq.get();
+        }
+
+        // 없으면 새로 생성
+        ChatChannel newChannel = ChatChannel.builder()
+                .chatChannelName("") // 1:1은 이름 없음
+                .workSpaceSeq(workSpaceSeq)
+                .workSpaceType(WorkSpaceType.INDIVIDUAL)
+                .build();
+
+        chatChannelRepository.save(newChannel);
+
+        // 참여자 저장
+        List<ChatChannelMember> members = List.of(memberSeq, otherMemberSeq)
+                .stream()
+                .map(seq -> ChatChannelMember.builder()
+                        .chatChannel(newChannel)
+                        .memberSeq(seq)
+                        .authority(Authority.SUPER)
+                        .build())
+                .toList();
+
+        chatChannelMemberRepository.saveAll(members);
+
+        return newChannel.getChatChannelSeq();
     }
 
-    // 채널목록 조회용 공통 DTO 매핑
-    private List<MyChatListResDto> mapToDtoList(List<ChatChannelMember> chatChannelMembers) {
-        List<MyChatListResDto> dtos = new ArrayList<>();
+    // 1:1 채팅목록 조회
+    @Transactional(readOnly = true)
+    public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, Long workSpaceSeq, WorkSpaceType workSpaceType) {
 
-        for (ChatChannelMember m : chatChannelMembers) {
-            ChatChannel channel = m.getChatChannel();
-            Long lastReadSeq = m.getLastReadChatMessageSeq();
+        // 내가 속한 모든 INDIVIDUAL 채널 조회
+        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
+                .findByMemberSeqAndChatChannel_WorkSpaceSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceSeq, workSpaceType);
 
-            // 읽지 않은 메시지 개수 계산
+        List<MyChatListResDto> result = new ArrayList<>();
+
+        // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
+        for (ChatChannelMember chatChannelMember : chatChannelMembers) {
+            ChatChannel channel = chatChannelMember.getChatChannel();
+            Long lastReadSeq = chatChannelMember.getLastReadChatMessageSeq();
+
+            // 읽지 않은 메시지 수 계산
             Long unreadCount = (lastReadSeq == null)
                     ? chatMessageRepository.countByChatChannelMember_ChatChannel(channel)
-                    : chatMessageRepository.countByChatChannelMember_ChatChannelAndChatMessageSeqGreaterThan(channel,
-                    lastReadSeq);
+                    : chatMessageRepository.countByChatChannelMember_ChatChannelAndChatMessageSeqGreaterThan(channel, lastReadSeq);
 
-            dtos.add(MyChatListResDto.builder()
+            // 상대방(memberSeq) 찾기
+            List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+            Long otherMemberSeq = members.stream()
+                    .map(ChatChannelMember::getMemberSeq)
+                    .filter(seq -> !seq.equals(memberSeq))
+                    .findFirst()
+                    .orElse(null);
+
+            // Redis에서 상대방 이름 / 프로필 URL 조회 (ChatRedisService 사용)
+            String otherName = chatRedisService.getMemberName(otherMemberSeq);
+            String otherProfileUrl = chatRedisService.getMemberProfileUrl(otherMemberSeq);
+
+            // DTO 생성
+            result.add(MyChatListResDto.builder()
                     .channelSeq(channel.getChatChannelSeq())
-                    .channelName(channel.getChatChannelName())
+                    .channelName(otherName)
+                    .otherProfileUrl(otherProfileUrl)
                     .workspaceSeq(channel.getWorkSpaceSeq())
-                    .workSpaceType(channel.getWorkSpaceType())
+                    .workSpaceType(WorkSpaceType.INDIVIDUAL)
                     .unreadCount(unreadCount)
-                    .isGroupChat(channel.getWorkSpaceType() == WorkSpaceType.PROJECT)
+                    .isGroupChat(false)
                     .build());
         }
-        return dtos;
+
+        return result;
     }
+
+    // 채널 나가기
+
 }
