@@ -44,3 +44,7 @@ spring:
           filters:
             - StripPrefix=1
           uri: lb://workspace-service
+        - id: livekit-webhook
+          predicates:
+            - Path=/livekit/**
+          uri: lb://task-service

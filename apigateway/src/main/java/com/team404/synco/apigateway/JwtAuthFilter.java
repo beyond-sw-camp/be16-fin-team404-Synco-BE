@@ -35,7 +35,8 @@ public class JwtAuthFilter implements GlobalFilter {
             "/drive/**",
             "/project/**",
             "/document/**",
-            "/connect/**"
+            "/connect/**",
+            "/livekit/**"
     );
 
     @Override

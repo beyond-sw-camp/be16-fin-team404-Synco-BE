@@ -4,7 +4,6 @@ import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
-import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomSessionResDto;
 import com.team404.synco.virtualmeeting.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +15,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -69,5 +66,13 @@ public class RoomController {
 
         Page<ChatMessageRes> res = roomService.getMessageList(memberId, roomId, pageable);
         return ResponseEntity.ok(ResponseDto.ok(res, HttpStatus.OK));
+    }
+
+    // 녹화 시작
+    @PostMapping("/{roomId}/recording/start")
+    public ResponseEntity<ResponseDto<?>> startRecording(@RequestHeader("X-Member-Seq") Long memberId,
+                                                           @PathVariable Long roomId) {
+        roomService.startRecording(memberId, roomId);
+        return ResponseEntity.ok(ResponseDto.ok("녹화가 시작되었습니다.", HttpStatus.OK));
     }
 }

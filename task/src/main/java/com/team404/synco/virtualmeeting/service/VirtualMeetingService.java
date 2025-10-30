@@ -10,11 +10,10 @@ import com.team404.synco.virtualmeeting.dto.Feign.ChannelInviteReqDto;
 import com.team404.synco.virtualmeeting.dto.Feign.GrantAuthorityReqDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomActiveListDto;
 import com.team404.synco.virtualmeeting.dto.*;
-import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannel;
-import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
-import com.team404.synco.virtualmeeting.repository.RoomRepository;
-import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelMemberRepository;
-import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelRepository;
+import com.team404.synco.virtualmeeting.dto.Room.RoomDetailDto;
+import com.team404.synco.virtualmeeting.dto.Room.RoomEndedListDto;
+import com.team404.synco.virtualmeeting.entity.*;
+import com.team404.synco.virtualmeeting.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +36,8 @@ public class VirtualMeetingService {
     private final VirtualMeetingChannelRepository virtualMeetingChannelRepository;
     private final VirtualMeetingChannelMemberRepository virtualMeetingChannelMemberRepository;
     private final RoomRepository roomRepository;
+    private final RecordingRepository recordingRepository;
+    private final RecordingSummaryRepository recordingSummaryRepository;
     private final MemberRedisComponent memberRedisComponent;
     // ====================================Feign 관련 메서드========================================
 
@@ -179,13 +180,103 @@ public class VirtualMeetingService {
 
     // 활성화된 화상회의 목록 조회
     @Transactional(readOnly = true)
-    public Page<RoomActiveListDto> getActiveRooms(Long channelSeq, Long memberSeq, Pageable pageable) {
+    public Page<RoomActiveListDto> getActiveRooms(Long workSpaceSeq, Long memberSeq, Pageable pageable) {
+        // 드라이브 채널조회
+        VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findFirstByWorkSpaceSeq(workSpaceSeq).orElseThrow(() -> new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
+
         // 채널 멤버인지 검증
-        virtualMeetingChannelMemberRepository.findByChannelAndMember(channelSeq, memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(virtualMeetingChannel.getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
         // 활성화된 룸 목록 조회
-        roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable);
-        return roomRepository.findByChannelSeqAndStatus(channelSeq, RoomStatus.IN_SESSION, pageable)
+        return roomRepository.findByChannelSeqAndStatus(virtualMeetingChannel.getVirtualMeetingChannelSeq(), RoomStatus.IN_SESSION, pageable)
                 .map(RoomActiveListDto::fromEntity);
+    }
+
+    // 종료된 화상회의 목록 조회
+    @Transactional(readOnly = true)
+    public Page<RoomEndedListDto> getEndedRooms(Long workSpaceSeq, Long memberSeq, Pageable pageable) {
+        // 드라이브 채널조회
+        VirtualMeetingChannel virtualMeetingChannel = virtualMeetingChannelRepository.findFirstByWorkSpaceSeq(workSpaceSeq).orElseThrow(() -> new EntityNotFoundException("기본 채널이 존재하지 않습니다. 유효하지 않은 WorkSpace입니다."));
+        // 채널 멤버인지 검증
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(virtualMeetingChannel.getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+        // 종료된 룸 목록 조회
+        return roomRepository.findByChannelSeqAndStatus(virtualMeetingChannel.getVirtualMeetingChannelSeq(), RoomStatus.ENDED, pageable)
+                .map(RoomEndedListDto::fromEntity);
+    }
+
+    // 종료된 화상회의 요약 상세 정보 조회
+    @Transactional(readOnly = true)
+    public RoomDetailDto getRoomDetail(Long roomSeq, Long memberSeq) {
+        Optional<Recording> recording = recordingRepository.findByRoom_RoomSeq(roomSeq);
+
+        // 녹화를 안했을경우 녹화 관련 제외하고 참여자
+        if(recording.isEmpty()) {
+            Room room = roomRepository.findById(roomSeq).orElseThrow(() -> new EntityNotFoundException("해당 화상회의 정보를 찾을 수 없습니다."));
+            // 채널 멤버인지 검증
+            virtualMeetingChannelMemberRepository.findByChannelAndMember(room.getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+            // 참가자 리스트 조회
+            List<RoomDetailDto.ParticipantDto> participantDtoList = room.getRoomParticipantList()
+                    .stream()
+                    .map(roomParticipant -> {
+                        String participantName = memberRedisComponent.getMemberName(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+                        String participantProfileUrl = memberRedisComponent.getMemberProfileUrl(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+                        return RoomDetailDto.ParticipantDto.builder()
+                                .participantId(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq())
+                                .participantName(participantName)
+                                .participantProfileUrl(participantProfileUrl)
+                                .build();
+                    })
+                    .toList();
+            if(participantDtoList.isEmpty()) {
+                participantDtoList = Collections.emptyList();
+            }
+
+            return RoomDetailDto.builder()
+                    .roomId(room.getRoomSeq())
+                    .roomName(room.getRoomName())
+                    .roomDescription(room.getRoomDescription())
+                    .hostId(room.getHostId())
+                    .createdAt(room.getCreatedAt())
+                    .duration(0L)
+                    .summaryContent("")
+                    .participants(participantDtoList)
+                    .participantCount(participantDtoList.size())
+                    .build();
+        }
+
+
+        RecordingSummary recordingSummary = recordingSummaryRepository.findByRecording_RecordingSeq(recording.get().getRecordingSeq()).orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 요약 정보를 찾을 수 없습니다."));
+
+        // 채널 멤버인지 검증
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(recording.get().getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq).orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+
+
+        // 참가자 리스트 조회
+        List<RoomDetailDto.ParticipantDto> participantDtoList = recording.get().getRoom().getRoomParticipantList()
+                .stream()
+                .map(roomParticipant -> {
+                    String participantName = memberRedisComponent.getMemberName(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+                    String participantProfileUrl = memberRedisComponent.getMemberProfileUrl(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq());
+
+                    return RoomDetailDto.ParticipantDto.builder()
+                            .participantId(roomParticipant.getVirtualMeetingChannelMember().getMemberSeq())
+                            .participantName(participantName)
+                            .participantProfileUrl(participantProfileUrl)
+                            .build();
+                })
+                .toList();
+
+
+        return RoomDetailDto.builder()
+                .roomId(recordingSummary.getRecording().getRoom().getRoomSeq())
+                .roomName(recordingSummary.getRecording().getRoom().getRoomName())
+                .roomDescription(recordingSummary.getRecording().getRoom().getRoomDescription())
+                .hostId(recordingSummary.getRecording().getRoom().getHostId())
+                .createdAt(recordingSummary.getRecording().getRoom().getCreatedAt())
+                .duration(recordingSummary.getRecording().getDurationMs())
+                .summaryContent(recordingSummary.getSummary())
+                .participants(participantDtoList)
+                .participantCount(participantDtoList.size())
+                .build();
     }
 
 

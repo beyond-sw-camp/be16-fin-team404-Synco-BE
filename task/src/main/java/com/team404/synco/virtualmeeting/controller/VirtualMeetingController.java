@@ -5,6 +5,8 @@ import com.team404.synco.common.constant.dto.ResponseDto;
 import com.team404.synco.virtualmeeting.dto.Feign.*;
 import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomActiveListDto;
+import com.team404.synco.virtualmeeting.dto.Room.RoomDetailDto;
+import com.team404.synco.virtualmeeting.dto.Room.RoomEndedListDto;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -107,33 +109,23 @@ public class VirtualMeetingController {
         return ResponseEntity.ok(ResponseDto.ok(activeRooms, HttpStatus.OK));
     }
 
-//    // 최근 화상회의 룸 목록
-//    @GetMapping("/channel/{channelSeq}/rooms/recent")
-//    public ResponseEntity<ResponseDto<?>> getRecentRooms(
-//            @PathVariable Long channelSeq,
-//            @RequestHeader("X-Member-Seq") Long memberSeq) {
-//
-//        var responseDto = virtualMeetingService.getRecentRooms(channelSeq, memberSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
-//    }
-//
-//    // 요약 목록
-//    @GetMapping("/channel/{channelSeq}/recordings/summaries")
-//    public ResponseEntity<ResponseDto<?>> getSummarizedRecordings(
-//            @PathVariable Long channelSeq,
-//            @RequestHeader("X-Member-Seq") Long memberSeq) {
-//
-//        var responseDto = virtualMeetingService.getSummarizedRecordings(channelSeq, memberSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
-//    }
-//
-//    // 녹화 요약 상세 조회 (녹화 ID로)
-//    @GetMapping("/recordings/{recordingId}/summary")
-//    public ResponseEntity<ResponseDto<?>> getRecordingSummaryById(
-//            @PathVariable String recordingId,
-//            @RequestHeader("X-Member-Seq") Long memberSeq) {
-//
-//        var responseDto = virtualMeetingService.getRecordingSummaryById(recordingId, memberSeq);
-//        return ResponseEntity.ok(ResponseDto.ok(responseDto, HttpStatus.OK));
-//    }
+    // 종료된 화상회의 룸 목록
+    @GetMapping("/channel/{channelSeq}/rooms/ended")
+    public ResponseEntity<ResponseDto<?>> getEndedRooms(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq,
+            @PageableDefault(value = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<RoomEndedListDto> endedRooms = virtualMeetingService.getEndedRooms(channelSeq, memberSeq, pageable);
+        return ResponseEntity.ok(ResponseDto.ok(endedRooms, HttpStatus.OK));
+    }
+
+    // 특정 화상회의 룸 요약 정보 조회
+    @GetMapping("/rooms/{roomSeq}/summary")
+    public ResponseEntity<ResponseDto<?>> getRoomSummaryDetail(
+            @PathVariable Long roomSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        RoomDetailDto roomDetail = virtualMeetingService.getRoomDetail(roomSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok(roomDetail, HttpStatus.OK));
+    }
+
 }
