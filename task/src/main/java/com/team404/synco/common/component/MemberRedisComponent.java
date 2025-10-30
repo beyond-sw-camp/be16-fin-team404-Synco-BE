@@ -44,6 +44,11 @@ public class MemberRedisComponent {
         return parseJsonString(profileUrl);
     }
 
+    public String getWorkSpaceName(final long workSpaceSeq){
+        String workSpaceName = Objects.requireNonNull(workSpaceRedisTemplate.opsForHash().get(WORKSPACE_KEY_PREFIX + workSpaceSeq, "name")).toString();
+        return parseJsonString(workSpaceName);
+    }
+
     /**
      * 단일 회원 정보 조회
      */

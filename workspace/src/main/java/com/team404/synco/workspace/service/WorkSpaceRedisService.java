@@ -16,6 +16,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -82,6 +84,14 @@ public class WorkSpaceRedisService {
             // 프로젝트 기본정보 (문자열 그대로 저장)
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "name", workSpace.getWorkSpaceName());
 
+            String startDate = workSpace.getStartDate().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey,"startDate", startDate);
+
+            String endDate = workSpace.getEndDate().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey,"endDate", endDate);
+
+
+
             if (workSpace.getWorkSpaceThumbnailImageUrl() != null) {
                 workSpaceRedisTemplate.opsForHash().put(
                         workSpaceKey,
@@ -144,6 +154,8 @@ public class WorkSpaceRedisService {
                                 .workSpaceSeq(seq)
                                 .workSpaceName((String) info.get("name"))
                                 .thumbnailImageUrl((String) info.get("thumbnailImage"))
+                                .startDate(LocalDateTime.parse((String) info.get("startDate")))
+                                .endDate(LocalDateTime.parse((String) info.get("endDate")))
                                 .build();
                     })
                     .filter(Objects::nonNull)

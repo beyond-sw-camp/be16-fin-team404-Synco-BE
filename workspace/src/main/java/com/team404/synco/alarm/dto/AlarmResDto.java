@@ -18,15 +18,17 @@ import java.time.LocalDateTime;
         private String message;
         private String ynRead;
         private Long workSpaceSeq;
+        private Long targetSeq;
         private LocalDateTime time;
 
-    public static AlarmResDto of(String receiverId, String alarmType, String message, Long workSpaceSeq){
+    public static AlarmResDto of(String receiverId, String alarmType, String message, Long workSpaceSeq, Long targetSeq){
         return AlarmResDto.builder()
                 .receiverId(receiverId)
                 .sender("SYSTEM")
                 .alarmType(alarmType)
                 .message(message)
                 .workSpaceSeq(workSpaceSeq)
+                .targetSeq(targetSeq)
                 .build();
     }
 
@@ -39,6 +41,7 @@ import java.time.LocalDateTime;
                 .message(alarm.getMessage())
                 .ynRead(alarm.getYnRead())
                 .workSpaceSeq(alarm.getWorkSpace().getWorkSpaceSeq())
+                .targetSeq(alarm.getTargetSeq())
                 .time(alarm.getCreatedAt())
                 .build();
     }
@@ -47,6 +50,7 @@ import java.time.LocalDateTime;
         return Alarm.builder()
                 .alarmType(alarmResDto.getAlarmType())
                 .message(alarmResDto.getMessage())
+                .targetSeq(alarmResDto.getTargetSeq())
                 .member(member)
                 .workSpace(workSpace)
                 .build();

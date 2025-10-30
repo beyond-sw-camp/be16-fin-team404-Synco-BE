@@ -71,7 +71,7 @@ public class FriendService {
                 .build();
 
         friendRepository.save(newRequest);
-        sendAlarm(receiver.getMemberSeq(), requester.getName() + "님이 친구 요청을 보냈습니다.", workSpace.getWorkSpaceSeq());
+        sendAlarm(receiver.getMemberSeq(), "[친구 요청] " + requester.getName() + "님이 친구 요청을 보냈습니다.", workSpace.getWorkSpaceSeq(), receiver.getMemberSeq());
     }
 
     // 2. 친구 요청 수락하기
@@ -113,7 +113,7 @@ public class FriendService {
 
         friendRepository.save(acceptedRelationship);
         // 알림을 보내기 위한 멤버 조회
-        sendAlarm(pendingRequest.getMember().getMemberSeq(), member.getName() + "님이 친구 요청을 수락했습니다.", workSpace.getWorkSpaceSeq());
+        sendAlarm(pendingRequest.getMember().getMemberSeq(), "[친구요청 수락] " + member.getName() + "님이 친구 요청을 수락했습니다.", workSpace.getWorkSpaceSeq(), pendingRequest.getFriendSeq());
     }
 
     // 3. 친구 요청 거절하기
@@ -232,8 +232,8 @@ public class FriendService {
     }
 
     // 알림 전송
-    private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq){
+    private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq, Long friendSeq){
         alarmService.createAlarm(memberSeq,
-                AlarmType.FRIEND, message, workSpaceSeq);
+                AlarmType.FRIEND, message, workSpaceSeq, friendSeq);
     }
 }

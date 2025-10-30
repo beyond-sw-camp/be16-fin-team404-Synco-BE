@@ -29,13 +29,13 @@ public class AlarmService {
     private final SseService sseService;
 
     // 알림 생성(내부 서비스 : 프로젝트, 친구)
-    public void createAlarm(Long memberSeq, String alarmType, String message, Long workSpaceSeq){
+    public void createAlarm(Long memberSeq, String alarmType, String message, Long workSpaceSeq, Long targetSeq){
 
         WorkSpace workSpace = workSpaceRepository.findById(workSpaceSeq).orElseThrow(()
                 -> new EntityNotFoundException("존재하지 않는 프로젝트 또는 개인 워크스페이스입니다."));
 
         // 알림 데이터 조립
-        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), alarmType, message, workSpace.getWorkSpaceSeq());
+        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), alarmType, message, workSpace.getWorkSpaceSeq(), targetSeq);
         log.info("멤버 ID : " + memberSeq);
 
         sseService.sendToClient(alarmResDto);

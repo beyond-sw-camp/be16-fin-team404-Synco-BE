@@ -86,13 +86,15 @@ public class ProjectScheduleManagementService {
                 throw new EntityNotFoundException("일정관리 채널 보드를 찾을 수 없습니다.");
             }
         }
-
+        Task task = taskRepository.save(taskCreateReqDto.toEntity(picMember, board));
         // 담당자에게 알림 전송
+        String workSpaceName = memberRedisComponent.getWorkSpaceName(picMember.getWorkSpaceSeq());
+
         AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(picMember.getMemberSeq()),
-                "alarm-task", "새로운 업무가 등록되었습니다.",
-                picMember.getWorkSpaceSeq(), picMember.getScheduleManagementChannelMemberSeq());
+                "alarm-task", "[업무 등록] " +  workSpaceName + " 프로젝트에 새로운 업무가 할당되었습니다.",
+                picMember.getWorkSpaceSeq(), task.getTaskSeq());
         redisEventPublisher.publish("alarm-task", alarmResDto);
-        return taskRepository.save(taskCreateReqDto.toEntity(picMember, board)).getTaskSeq();
+        return task.getTaskSeq();
     }
 
     // 특정 멤버가 생성한 보드들과 해당 보드의 Task들을 반환 (개인일정 화면용)

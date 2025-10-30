@@ -10,15 +10,15 @@ public class AlarmResDto {
     private String alarmType;
     private String message;
     private Long workSpaceSeq;
-    private Long channelSeq;
+    private Long targetSeq;
 
-    public static AlarmResDto of(String receiverId, String alarmType, String message, Long workSpaceSeq, Long channelSeq){
+    public static AlarmResDto of(String receiverId, String alarmType, String message, Long workSpaceSeq, Long targetSeq){
         return AlarmResDto.builder()
                 .receiverId(receiverId)
                 .alarmType(alarmType)
                 .message(message)
                 .workSpaceSeq(workSpaceSeq)
-                .channelSeq(channelSeq)
+                .targetSeq(targetSeq)
                 .build();
     }
 }

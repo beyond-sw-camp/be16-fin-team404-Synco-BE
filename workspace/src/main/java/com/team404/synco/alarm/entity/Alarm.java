@@ -23,6 +23,7 @@ public class Alarm extends BaseEntity {
     @Builder.Default
     private String ynRead = YnColumn.IS_FALSE;
     private String message;
+    private Long targetSeq;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private Member member;

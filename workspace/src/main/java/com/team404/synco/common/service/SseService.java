@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,158 +35,179 @@ public class SseService implements MessageListener {
     private final SseEmitterRegistry sseEmitterRegistry;
     private final ObjectMapper objectMapper;
 
-    public SseService(MemberRepository memberRepository, WorkSpaceRepository workSpaceRepository, AlarmRepository alarmRepository, SseEmitterRegistry sseEmitterRegistry,
-                      ObjectMapper objectMapper) {
+    public SseService(
+            MemberRepository memberRepository,
+            WorkSpaceRepository workSpaceRepository,
+            AlarmRepository alarmRepository,
+            SseEmitterRegistry sseEmitterRegistry,
+            ObjectMapper objectMapper
+    ) {
         this.memberRepository = memberRepository;
         this.workSpaceRepository = workSpaceRepository;
         this.alarmRepository = alarmRepository;
         this.sseEmitterRegistry = sseEmitterRegistry;
         this.objectMapper = objectMapper;
-        // heartbeat 스케줄러 시작 (25초마다 ping 이벤트 전송)
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+        // Heartbeat 스케줄러 (25초 주기)
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(this::sendHeartbeatToAllEmitters, 25, 25, TimeUnit.SECONDS);
     }
 
-    // ✅ SSE 연결
+    // SSE 연결 (다중 연결 지원)
     public SseEmitter connect(Long userId) {
         SseEmitter sseEmitter = new SseEmitter(0L); // 무제한
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
 
-        sseEmitterRegistry.registerEmitter(member.getMemberId(), sseEmitter);
+        final String memberId = member.getMemberId();
 
+        // 등록
+        sseEmitterRegistry.registerEmitter(memberId, sseEmitter);
+
+        // 개별 emitter 기준으로 정리
         sseEmitter.onCompletion(() -> {
-            log.info("[SSE 연결 종료] memberId={}", member.getMemberId());
-            sseEmitterRegistry.removeEmitter(member.getMemberId());
+            log.info("[SSE 연결 종료] memberId={}", memberId);
+            sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
         });
 
         sseEmitter.onTimeout(() -> {
-            log.warn("[SSE 타임아웃] memberId={}", member.getMemberId());
-            sseEmitterRegistry.removeEmitter(member.getMemberId());
+            log.warn("[SSE 타임아웃] memberId={}", memberId);
+            sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
+            sseEmitter.complete();
         });
 
         sseEmitter.onError((e) -> {
-            log.error("[SSE 오류] memberId={}, error={}", member.getMemberId(), e.getMessage());
-            sseEmitterRegistry.removeEmitter(member.getMemberId());
+            log.error("[SSE 오류] memberId={}, error={}", memberId, e.getMessage());
+            sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
+            sseEmitter.completeWithError(e);
         });
 
-        // ✅ 즉시 초기 연결 메시지 전송 (중요!)
+        // 즉시 초기 연결 이벤트
         try {
             sseEmitter.send(SseEmitter.event()
                     .name("connect")
                     .data("SSE connected")
                     .reconnectTime(3000L));
-            log.info("[SSE 연결 성공] memberId={}", member.getMemberId());
+            log.info("[SSE 연결 성공] memberId={}", memberId);
         } catch (IOException e) {
-            log.error("[SSE 초기 메시지 전송 실패] memberId={}", member.getMemberId(), e);
-            sseEmitterRegistry.removeEmitter(member.getMemberId());
+            log.error("[SSE 초기 메시지 전송 실패] memberId={}", memberId, e);
+            sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
             sseEmitter.completeWithError(e);
         }
 
         return sseEmitter;
     }
 
-    // ✅ 특정 사용자에게 알림 전송
+    // 특정 사용자에게 알림 전송 (다중 연결 브로드캐스트)
     public void sendToClient(AlarmResDto alarmResDto) {
         Member member = memberRepository.findById(Long.valueOf(alarmResDto.getReceiverId()))
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmResDto.getWorkSpaceSeq())
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 프로젝트 또는 개인 워크스페이스입니다."));
 
-        String data;
-        try {
-            data = objectMapper.writeValueAsString(alarmResDto);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("알림 직렬화 실패", e);
-        }
-
-        SseEmitter sseEmitter = sseEmitterRegistry.getEmitter(member.getMemberId());
+        // DB 저장 (전송 실패 시에도 기록 유지)
         Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
 
-        if (sseEmitter != null) {
+        List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(member.getMemberId());
+        if (emitters.isEmpty()) {
+            log.info("[SSE] emitter 없음 — DB 저장만 수행 (receiverId={})", member.getMemberId());
+            return;
+        }
+
+        // 안전한 순회를 위해 복사본 사용
+        List<SseEmitter> snapshot = new ArrayList<>(emitters);
+
+        for (SseEmitter emitter : snapshot) {
             try {
-                sseEmitter.send(SseEmitter.event()
+                emitter.send(SseEmitter.event()
                         .name("alarm")
                         .data(AlarmResDto.fromEntity(alarm))
                         .id(String.valueOf(alarm.getAlarmSeq()))
                         .reconnectTime(3000L));
                 log.info("[SSE] 알림 실시간 전송 성공 (to {})", member.getMemberId());
-            } catch (IOException e) {
-                log.warn("[SSE] 전송 실패, emitter 제거: {}", e.getMessage());
-                sseEmitterRegistry.removeEmitter(member.getMemberId());
+            } catch (IOException | IllegalStateException e) {
+                log.warn("[SSE] 전송 실패 → emitter 제거 ({}): {}", member.getMemberId(), e.getMessage());
+                sseEmitterRegistry.removeEmitter(member.getMemberId(), emitter);
             }
-        } else {
-            log.info("[SSE] emitter 없음 — DB 저장만 수행 (receiverId={})", member.getMemberId());
         }
     }
 
-    // ✅ Heartbeat (ping) 주기적 전송
+    // Heartbeat (ping) 주기적 전송 - 다중 연결 브로드캐스트
     private void sendHeartbeatToAllEmitters() {
         try {
-            Map<String, SseEmitter> emitters = sseEmitterRegistry.getAllEmitters();
+            Map<String, List<SseEmitter>> all = sseEmitterRegistry.getAllEmitters();
 
-            // ✅ INFO 레벨로 변경 + 상세 로그
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             log.info("[SSE Heartbeat] 💓 전송 시작");
-            log.info("[SSE Heartbeat] 📊 등록된 emitter 수: {}", emitters.size());
+            log.info("[SSE Heartbeat] 📊 등록된 사용자 수: {}", all.size());
 
-            if (emitters.isEmpty()) {
-                log.info("[SSE Heartbeat] ⚠️ 전송 대상 없음 (모든 emitter가 비어있음)");
+            if (all.isEmpty()) {
+                log.info("[SSE Heartbeat] ⚠️ 전송 대상 없음");
                 return;
             }
 
             int successCount = 0;
             int failCount = 0;
 
-            for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
+            for (Map.Entry<String, List<SseEmitter>> entry : all.entrySet()) {
                 String memberId = entry.getKey();
-                SseEmitter emitter = entry.getValue();
+                List<SseEmitter> snapshot = new ArrayList<>(entry.getValue());
 
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("ping")
-                            .data("keep-alive")
-                            .reconnectTime(3000L));
-
-                    log.info("[SSE] ✅ heartbeat 전송 성공 → {}", memberId);
-                    successCount++;
-
-                } catch (IOException e) {
-                    log.warn("[SSE] ❌ heartbeat 실패 → emitter 제거 ({}): {}", memberId, e.getMessage());
-                    sseEmitterRegistry.removeEmitter(memberId);
-                    failCount++;
+                for (SseEmitter emitter : snapshot) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("ping")
+                                .data("keep-alive")
+                                .reconnectTime(3000L));
+                        successCount++;
+                    } catch (IOException | IllegalStateException e) {
+                        log.warn("[SSE] ❌ heartbeat 실패 → emitter 제거 ({}): {}", memberId, e.getMessage());
+                        sseEmitterRegistry.removeEmitter(memberId, emitter);
+                        failCount++;
+                    }
                 }
             }
 
             log.info("[SSE Heartbeat] 📊 전송 완료 - 성공: {}, 실패: {}", successCount, failCount);
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
         } catch (Exception e) {
             log.error("[SSE Heartbeat] ❌ 예외 발생: {}", e.getMessage(), e);
         }
     }
 
-    // 멤버 상태 변경(오프라인 / 온라인 / 자리비움)
-    public void changeMemberStatus(MemberStatusResDto memberStatusResDto) throws IOException {
-        // 멤버 정보 가져오기
-        Member member = memberRepository.findById(memberStatusResDto.getMemberSeq()).orElseThrow(()
-                -> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        String data = "";
+    // 멤버 상태 변경(온라인/자리비움/오프라인) - 다중 연결 브로드캐스트 + 이벤트명 지정
+    public void changeMemberStatus(MemberStatusResDto memberStatusResDto) {
+        Member member = memberRepository.findById(memberStatusResDto.getMemberSeq())
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+
+        String payload;
         try {
-            data = objectMapper.writeValueAsString(memberStatusResDto);
+            payload = objectMapper.writeValueAsString(memberStatusResDto);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        // emitter 객체를 통해 메시지 전송
-        SseEmitter sseEmitter = sseEmitterRegistry.getEmitter(member.getMemberId());
-        try {
-            sseEmitter.send(data);
-        } catch (IOException e) {
-            throw new IOException(e);
+
+        List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(member.getMemberId());
+        if (emitters.isEmpty()) {
+            log.info("[SSE] member-status 전송 대상 없음: {}", member.getMemberId());
+            return;
+        }
+
+        List<SseEmitter> snapshot = new ArrayList<>(emitters);
+        for (SseEmitter emitter : snapshot) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("member-status")
+                        .data(payload)
+                        .reconnectTime(3000L));
+            } catch (IOException | IllegalStateException e) {
+                log.warn("[SSE] member-status 전송 실패 → emitter 제거 ({}): {}", member.getMemberId(), e.getMessage());
+                sseEmitterRegistry.removeEmitter(member.getMemberId(), emitter);
+            }
         }
     }
 
-    // pub&sub한 메시지 확인
+    // pub/sub으로 들어온 알림 → 실시간 전송
     @Override
     public void onMessage(Message message, byte[] pattern) {
         try {

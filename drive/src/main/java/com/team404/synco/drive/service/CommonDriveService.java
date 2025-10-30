@@ -226,7 +226,7 @@ public class CommonDriveService {
         ParticipantsResponseDto participantsResponseDto = projectDocumentRedisService.getDocumentParticipants(document.getDocumentSeq());
         for(ParticipantDto participantDto : participantsResponseDto.getParticipants()){
             AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(participantDto.getUserId()), "alarm-drive",
-                    "새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
+                    "[공유문서 생성] 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
             redisEventPublisher.publish("alarm-drive", alarmResDto);
         }
         return DriveItemDto.fromDocument(savedDocument);

@@ -4,48 +4,43 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+// SseEmitterRegistry.java (수정)
 @Slf4j
 @Component
 public class SseEmitterRegistry {
-    // 동시성 이슈를 줄이기 위한 ConcurrentHashMap 사용
-    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-    Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
+    // 사용자별 다중 연결 보관
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> emittersByUser = new ConcurrentHashMap<>();
 
     public void registerEmitter(String userId, SseEmitter emitter) {
-        // 연결이 완료(종료)되었을 때
-        emitter.onCompletion(() -> {
-            emitterMap.remove(userId);
-            log.info("[SSE] 연결 종료: {}", userId);
-        });
-
-        // 타임아웃 발생 시
-        emitter.onTimeout(() -> {
-            emitterMap.remove(userId);
-            log.info("[SSE] 타임아웃: {}", userId);
-            emitter.complete();
-        });
-
-        // 에러 발생 시
-        emitter.onError((e) -> {
-            emitterMap.remove(userId);
-            log.info("[SSE] 에러 발생: {}, {}", userId, e.getMessage());
-            emitter.completeWithError(e);
-        });
-        emitterMap.put(userId, emitter);
+        emittersByUser.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        // 콜백은 SseService.connect에서 emitter 개별로 등록해도 되지만,
+        // 여기서 공통으로도 안전하게 처리할 수 있습니다. (중복 등록 방지만 유의)
     }
 
-    public void removeEmitter(String userId) {
-        emitterMap.remove(userId);
+    public void removeEmitter(String userId, SseEmitter emitter) {
+        CopyOnWriteArrayList<SseEmitter> list = emittersByUser.get(userId);
+        if (list != null) {
+            if (emitter != null) {
+                list.remove(emitter);
+            }
+            if (list.isEmpty()) {
+                emittersByUser.remove(userId);
+            }
+        }
     }
 
-    public SseEmitter getEmitter(String userId) {
-        return emitterMap.get(userId);
+    public List<SseEmitter> getEmitters(String userId) {
+        return emittersByUser.getOrDefault(userId, new CopyOnWriteArrayList<>());
     }
 
-    public Map<String, SseEmitter> getAllEmitters() {
-        return emitters;
+    // 하트비트 등 전체 순회용
+    public Map<String, List<SseEmitter>> getAllEmitters() {
+        return Collections.unmodifiableMap(emittersByUser);
     }
 }
