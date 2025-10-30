@@ -34,7 +34,7 @@ public class RoomParticipant extends BaseEntity {
 
     // 관계 설정
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_seq", insertable = false, updatable = false,
+    @JoinColumn(name = "room_seq", nullable = false,
                 foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Room room;
 
@@ -45,9 +45,9 @@ public class RoomParticipant extends BaseEntity {
 
     public void joinRoom() {
         this.joinedAt = LocalDateTime.now();
+        this.leftAt = null;
     }
 
     public void leaveRoom() {
-        this.leftAt = LocalDateTime.now();
     }
 }

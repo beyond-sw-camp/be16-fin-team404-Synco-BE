@@ -28,4 +28,8 @@ public class RecordingSummary extends BaseEntity {
     @JoinColumn(name = "recording_seq", nullable = false, unique = true,
                 foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Recording recording;
+
+    public void updateSummary(String summary) {
+        this.summary = summary;
+    }
 }

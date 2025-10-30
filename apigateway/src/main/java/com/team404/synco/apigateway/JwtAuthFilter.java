@@ -32,7 +32,11 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/google/doLogin",
             "/member/kakao/doLogin",
             "/member/naver/doLogin",
-            "/connect/**"
+            "/drive/**",
+            "/project/**",
+            "/document/**",
+            "/connect/**",
+            "/livekit/**"
     );
 
     @Override

@@ -23,9 +23,6 @@ public class Room extends BaseEntity {
     @Column(name = "room_seq")
     private Long roomSeq;
 
-    @Column(name = "room_sid", length = 64)
-    private String roomSid;
-
     @Column(name = "room_name", length = 255)
     private String roomName;
 
@@ -67,5 +64,9 @@ public class Room extends BaseEntity {
     public void endRoom() {
         this.status = RoomStatus.ENDED;
         this.endedAt = LocalDateTime.now();
+    }
+
+    public void attachRecording(Recording recording) {
+        this.recording = recording;
     }
 }
