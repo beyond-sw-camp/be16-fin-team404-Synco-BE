@@ -71,4 +71,6 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     
     // ✅ 특정 드라이브 채널의 모든 폴더 조회 (순서대로)
     List<Folder> findByDriveChannelDriveChannelSeqOrderByOrders(Long driveChannelSeq);
+
+
 }
