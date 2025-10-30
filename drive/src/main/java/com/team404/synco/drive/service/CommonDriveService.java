@@ -3,11 +3,10 @@ package com.team404.synco.drive.service;
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.drive.dto.DocDetailListResDto;
-import com.team404.synco.drive.dto.DriveItemDto;
-import com.team404.synco.drive.dto.FolderTreeDto;
+import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
@@ -224,13 +223,12 @@ public class CommonDriveService {
                 .build();
 
         Document savedDocument = documentRepository.save(document);
-//        ToDo : 담당자가 수정 예정
-//        ParticipantsResponseDto participantsResponseDto = projectDocumentRedisService.getDocumentParticipants(document.getDocumentSeq());
-//        for(ParticipantDto participantDto : participantsResponseDto.getParticipants()){
-//            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(userId), String.valueOf(participantDto.getUserId()), "alarm-drive",
-//                    "새로운 공유문서가 있습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
-//            redisEventPublisher.publish("alarm-drive", alarmResDto);
-//        }
+        ParticipantsResponseDto participantsResponseDto = projectDocumentRedisService.getDocumentParticipants(document.getDocumentSeq());
+        for(ParticipantDto participantDto : participantsResponseDto.getParticipants()){
+            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(participantDto.getUserId()), "alarm-drive",
+                    "새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
+            redisEventPublisher.publish("alarm-drive", alarmResDto);
+        }
         return DriveItemDto.fromDocument(savedDocument);
     }
 

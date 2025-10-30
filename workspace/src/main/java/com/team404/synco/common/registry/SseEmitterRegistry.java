@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class SseEmitterRegistry {
     // 동시성 이슈를 줄이기 위한 ConcurrentHashMap 사용
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
     Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
 
     public void registerEmitter(String userId, SseEmitter emitter) {
@@ -42,5 +43,9 @@ public class SseEmitterRegistry {
 
     public SseEmitter getEmitter(String userId) {
         return emitterMap.get(userId);
+    }
+
+    public Map<String, SseEmitter> getAllEmitters() {
+        return emitters;
     }
 }

@@ -8,15 +8,17 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Builder
-public class AlarmResDto {
-    private String receiverId;
-    private String sender;
-    private String alarmType;
-    private String message;
-    private Long workSpaceSeq;
-    private LocalDateTime time;
+    @Getter
+    @Builder
+    public class AlarmResDto {
+        private Long alarmSeq;
+        private String receiverId;
+        private String sender;
+        private String alarmType;
+        private String message;
+        private String ynRead;
+        private Long workSpaceSeq;
+        private LocalDateTime time;
 
     public static AlarmResDto of(String receiverId, String alarmType, String message, Long workSpaceSeq){
         return AlarmResDto.builder()
@@ -30,11 +32,14 @@ public class AlarmResDto {
 
     public static AlarmResDto fromEntity(Alarm alarm){
         return AlarmResDto.builder()
+                .alarmSeq(alarm.getAlarmSeq())
                 .receiverId(alarm.getMember().getMemberId())
                 .sender("SYSTEM")
                 .alarmType(alarm.getAlarmType())
                 .message(alarm.getMessage())
+                .ynRead(alarm.getYnRead())
                 .workSpaceSeq(alarm.getWorkSpace().getWorkSpaceSeq())
+                .time(alarm.getCreatedAt())
                 .build();
     }
 

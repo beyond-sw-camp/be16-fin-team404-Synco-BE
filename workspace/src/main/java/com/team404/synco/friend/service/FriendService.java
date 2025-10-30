@@ -78,10 +78,8 @@ public class FriendService {
     public void acceptFriendRequest(Long friendSeq, Long memberSeq) {
         Friend pendingRequest = friendRepository.findById(friendSeq)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청을 찾을 수 없습니다."));
-
         Member member = memberRepository.findById(memberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
-
         WorkSpace workSpace = workSpaceRepository.findByMemberAndWorkSpaceType(member, WorkSpaceType.INDIVIDUAL)
                 .orElseThrow(() -> new EntityNotFoundException("해당 개인 워크스페이스가 존재하지 않습니다."));
 
@@ -115,7 +113,7 @@ public class FriendService {
 
         friendRepository.save(acceptedRelationship);
         // 알림을 보내기 위한 멤버 조회
-        sendAlarm(friendSeq, member.getName() + "님이 친구 요청을 수락했습니다.", workSpace.getWorkSpaceSeq());
+        sendAlarm(pendingRequest.getMember().getMemberSeq(), member.getName() + "님이 친구 요청을 수락했습니다.", workSpace.getWorkSpaceSeq());
     }
 
     // 3. 친구 요청 거절하기

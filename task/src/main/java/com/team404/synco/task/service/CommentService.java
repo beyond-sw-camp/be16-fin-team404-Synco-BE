@@ -1,6 +1,8 @@
 package com.team404.synco.task.service;
 
 import com.team404.synco.common.component.MemberRedisComponent;
+import com.team404.synco.common.constant.dto.AlarmResDto;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.task.dto.request.CommentCreateReqDto;
 import com.team404.synco.task.dto.request.CommentUpdateReqDto;
 import com.team404.synco.task.dto.response.CommentResDto;
@@ -19,8 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +31,7 @@ public class CommentService {
     private final TaskRepository taskRepository;
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
     private final MemberRedisComponent memberRedisComponent;
+    private final RedisEventPublisher redisEventPublisher;
     
     // 댓글 생성 (일반 댓글 또는 대댓글)
     public Long createComment(Long memberSeq, Long taskSeq, CommentCreateReqDto commentCreateReqDto) {
@@ -51,6 +52,12 @@ public class CommentService {
         }
         
         Comment comment = commentCreateReqDto.toEntity(member, task);
+        // 담당자에게 알림 전송
+        String name = memberRedisComponent.getMemberName(comment.getScheduleManagementChannelMember().getMemberSeq());
+        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                "alarm-task", task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+        task.getPicMemberSeq().getWorkSpaceSeq(), task.getPicMemberSeq().getScheduleManagementChannelMemberSeq());
+        redisEventPublisher.publish("alarm-task", alarmResDto);
         return commentRepository.save(comment).getCommentSeq();
     }
     
@@ -110,4 +117,6 @@ public class CommentService {
 
         commentRepository.delete(comment);
     }
+
+
 }

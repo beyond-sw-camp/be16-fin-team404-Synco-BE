@@ -5,21 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
-import com.team404.synco.common.constant.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
-import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomSessionResDto;
 import com.team404.synco.virtualmeeting.entity.*;
 import com.team404.synco.virtualmeeting.entity.Room;
-import com.team404.synco.virtualmeeting.entity.RoomParticipant;
-import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
-import com.team404.synco.virtualmeeting.repository.MessageRepository;
-import com.team404.synco.virtualmeeting.repository.RoomParticipantRepository;
-import com.team404.synco.virtualmeeting.repository.RoomRepository;
-import com.team404.synco.virtualmeeting.repository.VirtualMeetingChannelMemberRepository;
 import com.team404.synco.virtualmeeting.repository.*;
 import io.livekit.server.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,9 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import retrofit2.Call;
@@ -42,6 +32,7 @@ import retrofit2.internal.EverythingIsNonNull;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -69,6 +60,7 @@ public class RoomService {
     private final EgressServiceClient egressServiceClient; // (선택) 자동 녹화용
     private final ObjectMapper objectMapper;
     private final MemberRedisComponent memberRedisComponent;
+    private final RedisEventPublisher redisEventPublisher;
 
     // 화상회의 방 생성
     public RoomSessionResDto createImmediateRoom(Long memberSeq, RoomCreateReqDto roomCreateReqDto) {
@@ -99,12 +91,12 @@ public class RoomService {
 
         String token = createToken(room.getRoomSeq(), memberSeq);
         room.startRoom();
-
-        for(Long member : roomCreateReqDto.getAlarmMemberList()){
-            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(member), "alarm-meeting", "화상회의에 초대되었습니다.",
-                    room.getRoomSeq(), room.getVirtualMeetingChannel().getWorkSpaceSeq());
-            redisEventPublisher.publish("alarm-meeting", alarmResDto);
-        }
+// 알람 생성
+//        for(Long member : roomCreateReqDto.getAlarmMemberList()){
+//            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(member), "alarm-meeting", "화상회의에 초대되었습니다.",
+//                    room.getRoomSeq(), room.getVirtualMeetingChannel().getWorkSpaceSeq());
+//            redisEventPublisher.publish("alarm-meeting", alarmResDto);
+//        }
 
         RoomParticipant participant = RoomParticipant.builder()
                 .virtualMeetingChannelMember(virtualMeetingChannelMember)
