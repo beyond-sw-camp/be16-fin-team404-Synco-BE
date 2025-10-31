@@ -19,7 +19,7 @@ public interface VirtualMeetingChannelMemberRepository extends JpaRepository<Vir
 
     @Query("SELECT COUNT(m) > 0 FROM VirtualMeetingChannelMember m " +
             "WHERE m.virtualMeetingChannel.virtualMeetingChannelSeq = :virtualMeetingChannelSeq " +
-            "AND m.memberSeq = :virtualMeetingChannelSeq")
+            "AND m.memberSeq = :memberSeq")
     boolean existsMember(@Param("virtualMeetingChannelSeq") Long virtualMeetingChannelSeq, @Param("memberSeq") Long memberSeq);
 
     @Modifying(clearAutomatically = true)

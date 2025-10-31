@@ -32,9 +32,6 @@ public class JwtAuthFilter implements GlobalFilter {
             "/member/google/doLogin",
             "/member/kakao/doLogin",
             "/member/naver/doLogin",
-            "/drive/**",
-            "/project/**",
-            "/document/**",
             "/connect/**",
             "/livekit/**"
     );
