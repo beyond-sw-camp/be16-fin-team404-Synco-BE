@@ -1,5 +1,7 @@
 package com.team404.synco.workspace.service;
 
+import com.team404.synco.alarm.service.AlarmService;
+import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.service.S3Uploader;
@@ -9,41 +11,33 @@ import com.team404.synco.workspace.dto.*;
 import com.team404.synco.workspace.entity.WorkSpace;
 import com.team404.synco.workspace.repository.WorkSpaceRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class WorkSpaceService {
     private final WorkSpaceRepository workSpaceRepository;
     private final MemberRepository memberRepository;
     private final WorkSpaceRedisService workSpaceRedisService;
+    private final AlarmService alarmService;
     private final S3Uploader s3Uploader;
     private final ChatFeign chatFeign;
     private final DriveFeign driveFeign;
     private final TaskFeign taskFeign;
     private static final String WORKSPACE_THUMBNAIL_DIRECTORY = "workspaceThumbnail";
-
-    public WorkSpaceService(WorkSpaceRepository workSpaceRepository, MemberRepository memberRepository,
-                            WorkSpaceRedisService workSpaceRedisService, S3Uploader s3Uploader,
-                            ChatFeign chatFeign, DriveFeign driveFeign, TaskFeign taskFeign) {
-        this.workSpaceRepository = workSpaceRepository;
-        this.memberRepository = memberRepository;
-        this.workSpaceRedisService = workSpaceRedisService;
-        this.s3Uploader = s3Uploader;
-        this.chatFeign = chatFeign;
-        this.driveFeign = driveFeign;
-        this.taskFeign = taskFeign;
-    }
 
     // 개인 워크스페이스 생성
     public WorkSpaceResDto createIndividualWorkSpace(Long memberSeq) {
@@ -81,9 +75,14 @@ public class WorkSpaceService {
                     , WORKSPACE_THUMBNAIL_DIRECTORY);
         }
         // 프로젝트 생성
-        WorkSpace workSpace = workSpaceRepository.save(WorkSpace.builder().member(member)
-                .workSpaceName(teamWorkSpaceCreateReqDto.getWorkSpaceName()).workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
-                .workSpaceType(WorkSpaceType.PROJECT).build());
+        WorkSpace workSpace = workSpaceRepository.save(
+                WorkSpace.builder()
+                        .member(member)
+                        .workSpaceName(teamWorkSpaceCreateReqDto.getWorkSpaceName()).workSpaceThumbnailImageUrl(workSpaceThumbnailImageUrl)
+                        .workSpaceType(WorkSpaceType.PROJECT)
+                        .startDate(teamWorkSpaceCreateReqDto.getStartDate())
+                        .endDate(teamWorkSpaceCreateReqDto.getEndDate())
+                        .build());
 
         // 기본 채팅 채널 생성
         chatFeign.createChatBasicChannel(ChannelCreateReqDto.builder().channelName("일반").workSpaceSeq(workSpace.getWorkSpaceSeq())
@@ -118,8 +117,10 @@ public class WorkSpaceService {
                     workSpaceRedisService.addMemberInfo(inviteMember);
                     workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
                     workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
+                    // 초대 대상 멤버에게 알림 전달
+                    sendAlarm(inviteMember.getMemberSeq(),"[프로젝트 초대] " + workSpace.getWorkSpaceName() + "에 초대되었습니다.",
+                            workSpace.getWorkSpaceSeq());
                 });
-
 
         return WorkSpaceResDto.fromEntity(workSpace);
     }
@@ -203,7 +204,7 @@ public class WorkSpaceService {
     public WorkSpaceResDto editWorkSpace(TeamWorkSpaceEditReqDto teamWorkSpaceEditReqDto, Long memberSeq)
             throws AccessDeniedException {
         WorkSpace workSpace = workSpaceRepository.findById(teamWorkSpaceEditReqDto.getWorkSpaceSeq())
-                .orElseThrow(() -> new EntityNotFoundException("해당 프로젝트가 존재하지 않습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
 
         // 권한 검증
         checkAuthority(workSpace, memberSeq);
@@ -214,6 +215,13 @@ public class WorkSpaceService {
         // 이름 수정
         String newName = teamWorkSpaceEditReqDto.getWorkSpaceName();
         workSpace.updateWorkSpaceName(newName);
+
+        // 프로젝트 시작, 종료일 수정
+        LocalDateTime startDate = teamWorkSpaceEditReqDto.getStartDate();
+        LocalDateTime endDate = teamWorkSpaceEditReqDto.getEndDate();
+
+        workSpace.updateStartDate(startDate);
+        workSpace.updateEndDate(endDate);
 
         String newThumbnailImageUrl = workSpace.getWorkSpaceThumbnailImageUrl();
 
@@ -299,6 +307,9 @@ public class WorkSpaceService {
         chatFeign.kickFromWorkSpace(kickMemberFromWorkSpaceReqDto);
         taskFeign.kickFromWorkSpaceTask(kickMemberFromWorkSpaceReqDto);
         taskFeign.kickFromWorkSpaceVirtualMeeting(kickMemberFromWorkSpaceReqDto);
+
+        // 대상 멤버에게 알림 전달
+        sendAlarm(kickMemberFromWorkSpaceReqDto.getMemberSeq(),"[프로젝트 강제탈퇴] " + workSpace.getWorkSpaceName() + "에서 강제 탈퇴되었습니다.", workSpace.getWorkSpaceSeq());
     }
 
 
@@ -338,6 +349,9 @@ public class WorkSpaceService {
             workSpaceRedisService.addMemberInfo(inviteMember);
             workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
             workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
+
+            // 대상 멤버에게 알림 전달
+            sendAlarm(inviteMember.getMemberSeq(),"[프로젝트 초대] " + workSpace.getWorkSpaceName() + "에 초대되었습니다.", workSpace.getWorkSpaceSeq());
         });
 
         chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
@@ -365,6 +379,9 @@ public class WorkSpaceService {
         chatFeign.delegateSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         taskFeign.delegateTaskChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
         taskFeign.delegateVirtualMeetChannelSuperAuthority(delegateSuperAuthorityReqDto, memberSeq);
+
+        // 대상 멤버에게 알림 전달
+        sendAlarm(delegateMember.getMemberSeq(),"[프로젝트 권한 위임] " + workSpace.getWorkSpaceName() + "의 SUPER 권한이 회원님에게 위임되었습니다", workSpace.getWorkSpaceSeq());
     }
 
     // SUPER 권한 검증
@@ -372,6 +389,12 @@ public class WorkSpaceService {
         if (!workSpace.getMember().getMemberSeq().equals(memberSeq)) {
             throw new AccessDeniedException("SUPER 권한이 아닙니다. 접근이 거부되었습니다.");
         }
+    }
+
+    // 알림 전송
+    private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq){
+        alarmService.createAlarm(memberSeq,
+                AlarmType.PROJECT, message, workSpaceSeq, null);
     }
 //
 //
