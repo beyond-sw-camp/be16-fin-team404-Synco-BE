@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -126,6 +127,14 @@ public class VirtualMeetingController {
             @RequestHeader("X-Member-Seq") Long memberSeq) {
         RoomDetailDto roomDetail = virtualMeetingService.getRoomDetail(roomSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(roomDetail, HttpStatus.OK));
+    }
+
+    // 녹화 영상 다운로드 (S3에서 바이트 스트리밍)
+    @GetMapping(value = "/rooms/{roomSeq}/recording/download")
+    public ResponseEntity<byte[]> downloadRecording(
+            @PathVariable Long roomSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) {
+        return virtualMeetingService.downloadRecordingFile(roomSeq, memberSeq);
     }
 
 }
