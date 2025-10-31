@@ -57,7 +57,7 @@ public class RoomService {
     private final RecordingRepository recordingRepository;
     private final MessageRepository messageRepository; // 텍스트 히스토리 DB
     private final RoomServiceClient roomServiceClient; // LiveKit 서버 SDK
-    private final EgressServiceClient egressServiceClient; // (선택) 자동 녹화용
+    private final EgressServiceClient egressServiceClient; // 자동 녹화용
     private final ObjectMapper objectMapper;
     private final MemberRedisComponent memberRedisComponent;
     private final RedisEventPublisher redisEventPublisher;
@@ -306,10 +306,7 @@ public class RoomService {
             response = egressServiceClient.startRoomCompositeEgress(
                     room.getRoomSeq().toString(), // roomName 으로 들어감
                     fileOutput,
-                    "speaker",      // layout
-                    null,           // options - 필요없으면 null
-                    null,           // audioPreset/videoPreset 등 커스텀 없으면 null
-                    true            // advanced - 현재 SDK 시그니처에 맞추는 자리
+                    "grid"
             ).execute();
         } catch (IOException e) {
             log.error("녹화 시작 실패: {}", e.getMessage());

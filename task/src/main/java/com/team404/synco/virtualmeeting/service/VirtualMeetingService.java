@@ -19,9 +19,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +44,7 @@ public class VirtualMeetingService {
     private final RecordingRepository recordingRepository;
     private final RecordingSummaryRepository recordingSummaryRepository;
     private final MemberRedisComponent memberRedisComponent;
+    private final com.team404.synco.common.service.S3Uploader s3Uploader;
     // ====================================Feign 관련 메서드========================================
 
 
@@ -238,6 +244,7 @@ public class VirtualMeetingService {
                     .createdAt(room.getCreatedAt())
                     .duration(0L)
                     .summaryContent("")
+                    .downloadUrl(null)
                     .participants(participantDtoList)
                     .participantCount(participantDtoList.size())
                     .build();
@@ -274,9 +281,41 @@ public class VirtualMeetingService {
                 .createdAt(recordingSummary.getRecording().getRoom().getCreatedAt())
                 .duration(recordingSummary.getRecording().getDurationMs())
                 .summaryContent(recordingSummary.getSummary())
+                .downloadUrl(recordingSummary.getRecording().getOutputUrl())
                 .participants(participantDtoList)
                 .participantCount(participantDtoList.size())
                 .build();
+    }
+
+    // 녹화 영상 파일 바이트 다운로드 (S3에서 직접 읽어서 내려줌)
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> downloadRecordingFile(Long roomSeq, Long memberSeq) {
+        Recording recording = recordingRepository.findByRoom_RoomSeq(roomSeq)
+                .orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 정보를 찾을 수 없습니다."));
+
+        // 채널 멤버 검증
+        virtualMeetingChannelMemberRepository.findByChannelAndMember(
+                recording.getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelSeq(), memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널의 멤버가 아닙니다."));
+
+        String outputUrl = recording.getOutputUrl();
+        if (outputUrl == null || outputUrl.isBlank()) {
+            throw new EntityNotFoundException("다운로드할 녹화 파일이 없습니다.");
+        }
+
+        byte[] fileContent = s3Uploader.download(outputUrl);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        String fileName = recording.getFilename() == null || recording.getFilename().isBlank()
+                ? "recording.mp4"
+                : recording.getFilename();
+        String encoded = URLEncoder.encode(fileName, StandardCharsets.UTF_8);
+        headers.setContentDispositionFormData("attachment", encoded);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(fileContent);
     }
 
 
