@@ -61,9 +61,6 @@ public class SseService implements MessageListener {
 
         final String memberId = member.getMemberId();
 
-        // 등록
-        sseEmitterRegistry.registerEmitter(memberId, sseEmitter);
-
         // 개별 emitter 기준으로 정리
         sseEmitter.onCompletion(() -> {
             log.info("[SSE 연결 종료] memberId={}", memberId);

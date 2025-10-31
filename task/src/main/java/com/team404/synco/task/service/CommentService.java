@@ -52,13 +52,28 @@ public class CommentService {
         }
         
         Comment comment = commentCreateReqDto.toEntity(member, task);
-        // 담당자에게 알림 전송
+
+        // 담당자 및 답글 작성자에게 알림 전송
         String name = memberRedisComponent.getMemberName(comment.getScheduleManagementChannelMember().getMemberSeq());
         String workSpaceName = memberRedisComponent.getWorkSpaceName(task.getPicMemberSeq().getWorkSpaceSeq());
-        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
-        task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
-        redisEventPublisher.publish("alarm-task", alarmResDto);
+
+        // 답글이면
+        AlarmResDto alarmResDto = null;
+        if(comment.getParentCommentSeq() != null){
+            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
+            redisEventPublisher.publish("alarm-task", alarmResDto);
+            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                    comment.getScheduleManagementChannelMember().getMemberSeq(), task.getTaskSeq());
+            redisEventPublisher.publish("alarm-task", alarmResDto);
+        } else {
+            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
+            redisEventPublisher.publish("alarm-task", alarmResDto);
+        }
         return commentRepository.save(comment).getCommentSeq();
     }
     

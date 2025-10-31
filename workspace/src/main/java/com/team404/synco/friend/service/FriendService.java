@@ -70,8 +70,8 @@ public class FriendService {
                 .friendStatus(FriendStatus.PENDING)
                 .build();
 
-        friendRepository.save(newRequest);
-        sendAlarm(receiver.getMemberSeq(), "[친구 요청] " + requester.getName() + "님이 친구 요청을 보냈습니다.", workSpace.getWorkSpaceSeq(), receiver.getMemberSeq());
+        Friend friend = friendRepository.save(newRequest);
+        sendAlarm(receiver.getMemberSeq(), "[친구 요청] " + requester.getName() + "님이 친구 요청을 보냈습니다.", workSpace.getWorkSpaceSeq(), friend.getFriendSeq());
     }
 
     // 2. 친구 요청 수락하기
