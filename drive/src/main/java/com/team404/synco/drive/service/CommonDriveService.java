@@ -3,10 +3,10 @@ package com.team404.synco.drive.service;
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.DriveItemType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.dto.AlarmResDto;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.common.service.S3Uploader;
-import com.team404.synco.drive.dto.DocDetailListResDto;
-import com.team404.synco.drive.dto.DriveItemDto;
-import com.team404.synco.drive.dto.FolderTreeDto;
+import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
@@ -23,14 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,6 +35,8 @@ public class CommonDriveService {
     private final FolderRepository folderRepository;
     private final DocumentRepository documentRepository;
     private final DocumentLineRepository documentLineRepository;
+    private final ProjectDocumentRedisService projectDocumentRedisService;
+    private final RedisEventPublisher redisEventPublisher;
     private final S3Uploader s3Uploader;
     private final String folderNamePrefix = "drive/";
 
@@ -228,6 +223,12 @@ public class CommonDriveService {
                 .build();
 
         Document savedDocument = documentRepository.save(document);
+        ParticipantsResponseDto participantsResponseDto = projectDocumentRedisService.getDocumentParticipants(document.getDocumentSeq());
+        for(ParticipantDto participantDto : participantsResponseDto.getParticipants()){
+            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(participantDto.getUserId()), "alarm-drive",
+                    "[공유문서 생성] 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
+            redisEventPublisher.publish("alarm-drive", alarmResDto);
+        }
         return DriveItemDto.fromDocument(savedDocument);
     }
 

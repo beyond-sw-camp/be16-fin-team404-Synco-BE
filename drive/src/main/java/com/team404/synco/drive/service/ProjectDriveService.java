@@ -3,6 +3,7 @@ package com.team404.synco.drive.service;
 import com.team404.synco.common.constant.DocumentType;
 import com.team404.synco.common.constant.WorkSpaceType;
 import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.*;
 import com.team404.synco.drive.entity.Document;
@@ -34,6 +35,7 @@ import java.util.*;
 public class ProjectDriveService {
 
     private final CommonDriveService commonDriveService;
+    private final RedisEventPublisher redisEventPublisher;
     private final DocumentRepository documentRepository;
     private final DriveChannelRepository driveChannelRepository;
     private final DocumentLineRepository documentLineRepository;

@@ -1,5 +1,7 @@
 package com.team404.synco.common.config;
 
+import com.team404.synco.alarm.service.AlarmSubscriber;
+import com.team404.synco.common.constant.AlarmType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,8 +10,13 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.util.List;
 
 @Configuration
 public class RedisConfig {
@@ -90,4 +97,55 @@ public class RedisConfig {
         return redisTemplate;
     }
 
+    // redis-pub/sub용 redis 설정
+    @Bean
+    @Qualifier("sseFactory")
+    public RedisConnectionFactory sseFactory(){
+        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
+        configuration.setHostName(host);
+        configuration.setPort(port);
+        return new LettuceConnectionFactory(configuration);
+    }
+
+    // redis-pub/sub용 redisTemplate 생성
+    @Bean
+    @Qualifier("ssePubSub")
+    public RedisTemplate<String, Object> sseRedisTemplate(@Qualifier("sseFactory") RedisConnectionFactory redisConnectionFactory){
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
+        return redisTemplate;
+    }
+
+    @Bean
+    public MessageListenerAdapter listenerAdapter(AlarmSubscriber subscriber) {
+        return new MessageListenerAdapter(subscriber, "onMessage");
+    }
+
+    @Bean
+    @Qualifier("listenerContainer")
+    public RedisMessageListenerContainer redisContainer(
+            @Qualifier("sseFactory") RedisConnectionFactory factory,
+            MessageListenerAdapter listenerAdapter) {
+
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(factory);
+
+        // AlarmType에 정의된 모든 채널을 수동으로 등록
+        List<String> alarmChannels = List.of(
+                AlarmType.MEETING,
+                AlarmType.PROJECT,
+                AlarmType.CHAT,
+                AlarmType.TASK,
+                AlarmType.FRIEND,
+                AlarmType.DRIVE
+        );
+
+        alarmChannels.forEach(channel ->
+                container.addMessageListener(listenerAdapter, new ChannelTopic(channel))
+        );
+
+        return container;
+    }
 }
