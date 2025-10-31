@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
-import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomSessionResDto;
 import com.team404.synco.virtualmeeting.entity.*;
 import com.team404.synco.virtualmeeting.entity.Room;
@@ -21,9 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import retrofit2.Call;
@@ -62,6 +60,7 @@ public class RoomService {
     private final EgressServiceClient egressServiceClient; // 자동 녹화용
     private final ObjectMapper objectMapper;
     private final MemberRedisComponent memberRedisComponent;
+    private final RedisEventPublisher redisEventPublisher;
 
     // 화상회의 방 생성
     public RoomSessionResDto createImmediateRoom(Long memberSeq, RoomCreateReqDto roomCreateReqDto) {
@@ -92,6 +91,12 @@ public class RoomService {
 
         String token = createToken(room.getRoomSeq(), memberSeq);
         room.startRoom();
+// 알람 생성
+//        for(Long member : roomCreateReqDto.getAlarmMemberList()){
+//            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(member), "alarm-meeting", "화상회의에 초대되었습니다.",
+//                    room.getRoomSeq(), room.getVirtualMeetingChannel().getWorkSpaceSeq());
+//            redisEventPublisher.publish("alarm-meeting", alarmResDto);
+//        }
 
         RoomParticipant participant = RoomParticipant.builder()
                 .virtualMeetingChannelMember(virtualMeetingChannelMember)
@@ -145,7 +150,7 @@ public class RoomService {
 
         // 기존 participant를 room과 memberSeq로 찾기
         Optional<RoomParticipant> existingParticipant = participantRepository.findByRoomAndVirtualMeetingChannelMember_MemberSeq(room, memberSeq);
-        
+
         if(existingParticipant.isPresent()){
             RoomParticipant participant = existingParticipant.get();
             // 이미 참가 중이고 나간 적이 없으면 에러

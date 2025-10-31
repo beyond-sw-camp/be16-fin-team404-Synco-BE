@@ -5,6 +5,8 @@ import com.team404.synco.workspace.entity.WorkSpace;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class WorkSpaceResDto {
@@ -13,6 +15,8 @@ public class WorkSpaceResDto {
     private WorkSpaceType workSpaceType;
     private String workSpaceOwner;
     private String workSpaceThumbnailImage;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
 
     public static WorkSpaceResDto fromEntity(WorkSpace workSpace){
         return WorkSpaceResDto.builder()
@@ -21,6 +25,8 @@ public class WorkSpaceResDto {
                 .workSpaceType(workSpace.getWorkSpaceType())
                 .workSpaceOwner(workSpace.getMember().getName())
                 .workSpaceThumbnailImage(workSpace.getWorkSpaceThumbnailImageUrl())
+                .startDate(workSpace.getStartDate())
+                .endDate(workSpace.getEndDate())
                 .build();
     }
 }
