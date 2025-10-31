@@ -374,12 +374,9 @@ public class ChatService {
         log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={}, chatMessageSeq={})",
                 channelSeq, dto.getSenderSeq(), memberName, fileUrls, savedMessage.getChatMessageSeq());
 
-
-//        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(participantDto.getUserId()), "alarm-drive",
-//                "[공유문서 생성] 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
         List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository.findByChatChannel(chatChannel);
-
-        chatChannelMembers.forEach(chatChannelMember -> redisEventPublisher.publish("alarm-chat",
+        chatChannelMembers.stream().filter(chatChannelMember -> chatChannelMember.getMemberSeq() != sender.getMemberSeq())
+                        .forEach(chatChannelMember -> redisEventPublisher.publish("alarm-chat",
                 AlarmResDto.of(String.valueOf(chatChannelMember.getMemberSeq()), "alarm-chat", "chat-received",
                         chatChannel.getWorkSpaceSeq(), chatChannel.getChatChannelSeq())));
 
