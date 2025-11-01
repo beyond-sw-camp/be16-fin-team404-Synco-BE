@@ -400,40 +400,40 @@ public class ChatService {
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
     }
 
-//    // 채팅 참여자 목록 조회
-//    @Transactional(readOnly = true)
-//    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
-//        // 1️⃣ 접근 권한 확인
-//        if (!isChannelParticipant(memberSeq, channelSeq)) {
-//            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
-//        }
-//
-//        // 2️⃣ 채널 존재 확인
-//        ChatChannel channel = chatChannelRepository.findById(channelSeq)
-//                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
-//
-//        // 3️⃣ 채널의 멤버 목록 조회
-//        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
-//
-//        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
-//        return members.stream()
-//                .map(m -> {
-//                    String key = "memberSeq:" + m.getMemberSeq();
-//                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-//                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
-//
-//                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
-//                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
-//                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
-//
-//                   return ChannelMemberResDto.builder()
-//                            .memberSeq(m.getMemberSeq())
-//                            .memberName(memberName)
-//                            .memberProfileUrl(profileImageUrl)
-//                            .build();
-//                })
-//                .toList();
-//    }
+    // 채팅 참여자 목록 조회 (@멘션)
+    @Transactional(readOnly = true)
+    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+        // 1️⃣ 접근 권한 확인
+        if (!isChannelParticipant(memberSeq, channelSeq)) {
+            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
+        }
+
+        // 2️⃣ 채널 존재 확인
+        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 3️⃣ 채널의 멤버 목록 조회
+        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+
+        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
+        return members.stream()
+                .map(m -> {
+                    String key = "memberSeq:" + m.getMemberSeq();
+                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
+                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+
+                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
+                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
+                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
+
+                   return ChannelMemberResDto.builder()
+                            .memberSeq(m.getMemberSeq())
+                            .memberName(memberName)
+                            .memberProfileUrl(profileImageUrl)
+                            .build();
+                })
+                .toList();
+    }
 
     // 채팅 메시지 삭제 (hard-delete)
     public void deleteChatMessage(Long chatMessageSeq, Long memberSeq) throws AccessDeniedException {
@@ -619,11 +619,11 @@ public class ChatService {
 
     // 1:1 채팅목록 조회
     @Transactional(readOnly = true)
-    public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, Long workSpaceSeq, WorkSpaceType workSpaceType) {
+    public List<MyChatListResDto> getIndividualChatChannels(Long memberSeq, WorkSpaceType workSpaceType) {
 
         // 내가 속한 모든 INDIVIDUAL 채널 조회
         List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
-                .findByMemberSeqAndChatChannel_WorkSpaceSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceSeq, workSpaceType);
+                .findByMemberSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceType);
 
         List<MyChatListResDto> result = new ArrayList<>();
 
