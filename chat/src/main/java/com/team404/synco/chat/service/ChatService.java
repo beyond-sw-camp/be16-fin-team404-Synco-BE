@@ -665,5 +665,56 @@ public class ChatService {
     }
 
     // 채널 나가기
+    public void leaveIndividualChatChannel(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+        log.info("🚪 채널 나가기 요청: channelSeq={}, memberSeq={}", channelSeq, memberSeq);
 
+        // 채널 존재여부 확인
+        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 채널 멤버 여부 확인
+        if (!isChannelParticipant(memberSeq, channelSeq)) {
+            throw new AccessDeniedException("채널 멤버가 아닙니다.");
+        }
+
+        // 채널 멤버 목록 조회
+        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+        int memberCountBeforeLeave = members.size();
+
+        // 1:1 채팅방인지 확인
+        boolean isIndividualChat = channel.getWorkSpaceType() == WorkSpaceType.INDIVIDUAL;
+
+        // 채널 멤버에서 해당 멤버 제거
+        chatChannelMemberRepository.deleteByChannelAndMember(channelSeq, memberSeq);
+
+        // 마지막 멤버가 나가는 경우 채널 및 메시지 모두 삭제
+        if (isIndividualChat && memberCountBeforeLeave == 2) {
+            // 현재 멤버 수가 2명이었는데 1명이 나가면, 남은 멤버가 1명
+            // 남은 멤버 수 확인
+            List<ChatChannelMember> remainingMembers = chatChannelMemberRepository.findByChatChannel(channel);
+
+            // 남은 멤버가 없으면 (둘 다 나간 경우) 채널과 메시지 삭제
+            if (remainingMembers.isEmpty()) {
+                log.info("🗑️ 1:1 채팅방의 모든 멤버가 나감 - 채널 및 메시지 삭제: channelSeq={}", channelSeq);
+
+                // 1. 채널의 모든 메시지 삭제
+                chatMessageRepository.deleteByChatChannel(channel);
+                log.info("✅ 채널 메시지 삭제 완료");
+
+                // 2. 채널 삭제
+                chatChannelRepository.delete(channel);
+                log.info("✅ 채널 삭제 완료");
+
+                log.info("✅ 1:1 채팅방 완전 삭제 완료: channelSeq={}", channelSeq);
+                return;
+            }
+
+            // 남은 멤버가 1명인 경우 (한 명만 나간 경우)는 채널 유지
+            log.info("✅ 1:1 채팅방에서 한 명만 나감 - 채널 유지: channelSeq={}, 남은 멤버={}",
+                    channelSeq, remainingMembers.get(0).getMemberSeq());
+        }
+
+        log.info("✅ 채널 나가기 완료: channelSeq={}, memberSeq={}, 남은 멤버 수={}",
+                channelSeq, memberSeq, members.size() - 1);
+    }
 }

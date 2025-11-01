@@ -187,35 +187,20 @@ public class ChatController {
     // 1:1 채팅목록 조회
     @GetMapping("/channels/individual")
     public ResponseEntity<ResponseDto<?>> getIndividualChatChannels(
-//            @RequestParam Long workSpaceSeq,
             @RequestHeader("X-Member-Seq") Long memberSeq) {
         log.info("📥 개인 채팅목록 요청: memberSeq={}", memberSeq);
         List<MyChatListResDto> myChatListResDtos = chatService.getIndividualChatChannels(memberSeq, WorkSpaceType.INDIVIDUAL);
         return ResponseEntity.ok(ResponseDto.ok(myChatListResDtos, HttpStatus.OK));
     }
 
-    // 채널 나가기
+    // 1:1 채팅채널 나가기
+    @DeleteMapping("/channels/{channelSeq}/leave")
+    public ResponseEntity<ResponseDto<?>> leaveIndividualChatChannel(
+            @PathVariable Long channelSeq,
+            @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
 
-    // 1:1 채팅목록 조회
-    // @GetMapping("/my/channels")
-    // public ResponseEntity<?> getMyChannels() {
-    // List<MyChatChannelListDto> MychatChannelListDtos =
-    // chatService.getMyChannels();
-    // return new ResponseEntity<>(MychatChannelListDtos, HttpStatus.OK);
-    // }
-    //
-    // 1:1 채널 나가기
-    // @DeleteMapping("/room/group/{channelSeq}/leave")
-    // public ResponseEntity<?> leaveGroupChatRoom(@PathVariable Long channelSeq) {
-    // chatService.leaveGroupChatRoom(channelSeq);
-    // return ResponseEntity.ok().build();
-    // }
-    // // 1:1 채팅방 개설 또는 기존 channelSeq return
-    // @PostMapping("/room/private/create")
-    // public ResponseEntity<?> getOrCreatePrivateRoom(@RequestParam Long
-    // otherMemberId) {
-    // Long roomId = chatService.getOrCreatePrivateRoom(otherMemberId);
-    // return new ResponseEntity<>(roomId, HttpStatus.OK);
-    // }
-    //
+        log.info("🚪 채널 나가기 요청: channelSeq={}, memberSeq={}", channelSeq, memberSeq);
+        chatService.leaveIndividualChatChannel(channelSeq, memberSeq);
+        return ResponseEntity.ok(ResponseDto.ok("채널에서 나갔습니다.", HttpStatus.OK));
+    }
 }
