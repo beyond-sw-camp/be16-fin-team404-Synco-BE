@@ -1,5 +1,6 @@
 package com.team404.synco.friend.service;
 
+import com.team404.synco.alarm.dto.AlarmResDto;
 import com.team404.synco.alarm.service.AlarmService;
 import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.FriendStatus;
@@ -233,7 +234,8 @@ public class FriendService {
 
     // 알림 전송
     private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq, Long friendSeq){
-        alarmService.createAlarm(memberSeq,
-                AlarmType.FRIEND, message, workSpaceSeq, friendSeq);
+        // 알림 데이터 조립
+        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), AlarmType.FRIEND, message, workSpaceSeq, friendSeq);
+        alarmService.createAlarm(alarmResDto);
     }
 }
