@@ -400,9 +400,9 @@ public class ChatService {
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
     }
 
-    // 채팅 참여자 목록 조회 (@멘션)
+    // 채팅 참여자 목록 조회 (1:1 사용자정보 조회)
     @Transactional(readOnly = true)
-    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+    public List<IndividualChatUserResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
         // 1️⃣ 접근 권한 확인
         if (!isChannelParticipant(memberSeq, channelSeq)) {
             throw new AccessDeniedException("채널 접근 권한이 없습니다.");
@@ -415,21 +415,20 @@ public class ChatService {
         // 3️⃣ 채널의 멤버 목록 조회
         List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
 
-        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
+        // 4️⃣ Redis에서 memberName, profileImageUrl, activeStatus 조회 (chatRedisService 활용)
         return members.stream()
                 .map(m -> {
-                    String key = "memberSeq:" + m.getMemberSeq();
-                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
+                    String memberName = chatRedisService.getMemberName(m.getMemberSeq());
+                    String profileImageUrl = chatRedisService.getMemberProfileUrl(m.getMemberSeq());
+                    String activeStatus = chatRedisService.getMemberActiveStatus(m.getMemberSeq());
+                    List<Long> workSpaceList = chatRedisService.getMemberWorkSpaceList(m.getMemberSeq());
 
-                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
-                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
-                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
-
-                   return ChannelMemberResDto.builder()
+                    return IndividualChatUserResDto.builder()
                             .memberSeq(m.getMemberSeq())
                             .memberName(memberName)
                             .memberProfileUrl(profileImageUrl)
+                            .activeStatus(activeStatus)
+                            .workSpaceList(workSpaceList)
                             .build();
                 })
                 .toList();

@@ -128,12 +128,12 @@ public class ChatController {
         }
     }
 
-    // 채팅 참여자 목록 조회 (@멘션)
+    // 채팅 참여자 목록 조회 (1:1 사용자정보 조회)
     @GetMapping("/channels/{channelSeq}/members")
     public ResponseEntity<ResponseDto<?>> getChannelMembers(
             @PathVariable Long channelSeq,
             @RequestHeader("X-Member-Seq") Long memberSeq) throws AccessDeniedException {
-        List<ChannelMemberResDto> members = chatService.getChannelMembers(channelSeq, memberSeq);
+        List<IndividualChatUserResDto> members = chatService.getChannelMembers(channelSeq, memberSeq);
         return ResponseEntity.ok(ResponseDto.ok(members, HttpStatus.OK));
     }
 
