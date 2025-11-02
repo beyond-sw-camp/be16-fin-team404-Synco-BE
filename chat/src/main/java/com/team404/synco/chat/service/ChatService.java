@@ -632,9 +632,18 @@ public class ChatService {
 
         List<MyChatListResDto> result = new ArrayList<>();
 
-        // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
-        for (ChatChannelMember chatChannelMember : chatChannelMembers) {
+       // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
+       for (ChatChannelMember chatChannelMember : chatChannelMembers) {
+        try {
             ChatChannel channel = chatChannelMember.getChatChannel();
+            
+            // ✅ 채널이 null이거나 삭제된 경우 건너뛰기
+            if (channel == null) {
+                log.warn("⚠️ 채널이 삭제되었지만 ChatChannelMember가 남아있음: chatChannelMemberSeq={}", 
+                        chatChannelMember.getChatChannelMemberSeq());
+                continue;
+            }
+            
             Long lastReadSeq = chatChannelMember.getLastReadChatMessageSeq();
 
             // 읽지 않은 메시지 수 계산
@@ -650,6 +659,13 @@ public class ChatService {
                     .findFirst()
                     .orElse(null);
 
+            // ✅ 상대방이 없으면 건너뛰기
+            if (otherMemberSeq == null) {
+                log.warn("⚠️ 채널에 상대방을 찾을 수 없습니다. channelSeq={}, memberSeq={}, members.size()={}", 
+                        channel.getChatChannelSeq(), memberSeq, members.size());
+                continue;
+            }
+
             // Redis에서 상대방 이름 / 프로필 URL 조회 (ChatRedisService 사용)
             String otherName = chatRedisService.getMemberName(otherMemberSeq);
             String otherProfileUrl = chatRedisService.getMemberProfileUrl(otherMemberSeq);
@@ -662,12 +678,17 @@ public class ChatService {
                     .workspaceSeq(channel.getWorkSpaceSeq())
                     .workSpaceType(WorkSpaceType.INDIVIDUAL)
                     .unreadCount(unreadCount)
-                    .isGroupChat(false)
                     .build());
+        } catch (Exception e) {
+            log.error("⚠️ 채널 처리 중 오류 발생: chatChannelMemberSeq={}", 
+                    chatChannelMember.getChatChannelMemberSeq(), e);
+            // 개별 채널 처리 실패해도 다음 채널은 계속 처리
+            continue;
         }
-
-        return result;
     }
+
+    return result;
+}
 
     // 채널 나가기
     public void leaveIndividualChatChannel(Long channelSeq, Long memberSeq) throws AccessDeniedException {
