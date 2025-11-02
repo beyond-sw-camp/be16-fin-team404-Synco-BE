@@ -625,6 +625,12 @@ public class ChatService {
         List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
                 .findByMemberSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceType);
 
+        // 목록이 없으면 빈 리스트 반환
+        if (chatChannelMembers == null || chatChannelMembers.isEmpty()) {
+            log.info("📭 1:1 채팅 목록이 없습니다. memberSeq={}", memberSeq);
+            return new ArrayList<>();
+        }
+
         List<MyChatListResDto> result = new ArrayList<>();
 
         // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
