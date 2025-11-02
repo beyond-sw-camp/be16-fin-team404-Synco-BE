@@ -368,6 +368,9 @@ public class ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
+        // ✅ 메시지 전송 시 자동으로 읽음 처리
+        updateLastRead(channelSeq, dto.getSenderSeq(), savedMessage.getChatMessageSeq());
+
         log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={}, chatMessageSeq={})",
                 channelSeq, dto.getSenderSeq(), memberName, fileUrls, savedMessage.getChatMessageSeq());
 
@@ -545,6 +548,15 @@ public class ChatService {
                 memberSeq,
                 channelSeq,
                 latestMsgSeq
+        );
+    }
+
+    // (오버로딩) 특정 메시지 seq로 업데이트 (saveMessage시 사용)
+    public void updateLastRead(Long channelSeq, Long memberSeq, Long messageSeq) {
+        chatChannelMemberRepository.updateLastRead(
+                memberSeq,
+                channelSeq,
+                messageSeq
         );
     }
 
