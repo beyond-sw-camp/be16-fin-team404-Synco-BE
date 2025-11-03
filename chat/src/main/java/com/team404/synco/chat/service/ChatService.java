@@ -371,6 +371,9 @@ public class ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
+        // ✅ 메시지 전송 시 자동으로 읽음 처리
+        updateLastRead(channelSeq, dto.getSenderSeq(), savedMessage.getChatMessageSeq());
+
         log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={}, chatMessageSeq={})",
                 channelSeq, dto.getSenderSeq(), memberName, fileUrls, savedMessage.getChatMessageSeq());
 
@@ -409,40 +412,39 @@ public class ChatService {
         return s3Uploader.uploadAll(files, "chat/" + channelSeq);
     }
 
-//    // 채팅 참여자 목록 조회
-//    @Transactional(readOnly = true)
-//    public List<ChannelMemberResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
-//        // 1️⃣ 접근 권한 확인
-//        if (!isChannelParticipant(memberSeq, channelSeq)) {
-//            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
-//        }
-//
-//        // 2️⃣ 채널 존재 확인
-//        ChatChannel channel = chatChannelRepository.findById(channelSeq)
-//                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
-//
-//        // 3️⃣ 채널의 멤버 목록 조회
-//        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
-//
-//        // 4️⃣ Redis에서 memberName, profileImageUrl 조회
-//        return members.stream()
-//                .map(m -> {
-//                    String key = "memberSeq:" + m.getMemberSeq();
-//                    String rawName = (String) memberRedisTemplate.opsForHash().get(key, "memberName");
-//                    String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(key, "memberProfileUrl");
-//
-//                    // 따옴표 제거 (Redis에 문자열이 JSON 형태로 저장된 경우)
-//                    String memberName = rawName != null ? rawName.replaceAll("^\"|\"$", "") : "알 수 없음";
-//                    String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
-//
-//                   return ChannelMemberResDto.builder()
-//                            .memberSeq(m.getMemberSeq())
-//                            .memberName(memberName)
-//                            .memberProfileUrl(profileImageUrl)
-//                            .build();
-//                })
-//                .toList();
-//    }
+    // 채팅 참여자 목록 조회 (1:1 사용자정보 조회)
+    @Transactional(readOnly = true)
+    public List<IndividualChatUserResDto> getChannelMembers(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+        // 1️⃣ 접근 권한 확인
+        if (!isChannelParticipant(memberSeq, channelSeq)) {
+            throw new AccessDeniedException("채널 접근 권한이 없습니다.");
+        }
+
+        // 2️⃣ 채널 존재 확인
+        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 3️⃣ 채널의 멤버 목록 조회
+        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+
+        // 4️⃣ Redis에서 memberName, profileImageUrl, activeStatus 조회 (chatRedisService 활용)
+        return members.stream()
+                .map(m -> {
+                    String memberName = chatRedisService.getMemberName(m.getMemberSeq());
+                    String profileImageUrl = chatRedisService.getMemberProfileUrl(m.getMemberSeq());
+                    String activeStatus = chatRedisService.getMemberActiveStatus(m.getMemberSeq());
+                    List<Long> workSpaceList = chatRedisService.getMemberWorkSpaceList(m.getMemberSeq());
+
+                    return IndividualChatUserResDto.builder()
+                            .memberSeq(m.getMemberSeq())
+                            .memberName(memberName)
+                            .memberProfileUrl(profileImageUrl)
+                            .activeStatus(activeStatus)
+                            .workSpaceList(workSpaceList)
+                            .build();
+                })
+                .toList();
+    }
 
     // 채팅 메시지 삭제 (hard-delete)
     public void deleteChatMessage(Long chatMessageSeq, Long memberSeq) throws AccessDeniedException {
@@ -558,6 +560,15 @@ public class ChatService {
         );
     }
 
+    // (오버로딩) 특정 메시지 seq로 업데이트 (saveMessage시 사용)
+    public void updateLastRead(Long channelSeq, Long memberSeq, Long messageSeq) {
+        chatChannelMemberRepository.updateLastRead(
+                memberSeq,
+                channelSeq,
+                messageSeq
+        );
+    }
+
     // 타이핑 인디케이터
     public void publishTyping(ChatTypingDto dto) {
 
@@ -628,17 +639,32 @@ public class ChatService {
 
     // 1:1 채팅목록 조회
     @Transactional(readOnly = true)
-    public List<MyChatListResDto> getMyChatChannelsByWorkspace(Long memberSeq, Long workSpaceSeq, WorkSpaceType workSpaceType) {
+    public List<MyChatListResDto> getIndividualChatChannels(Long memberSeq, WorkSpaceType workSpaceType) {
 
         // 내가 속한 모든 INDIVIDUAL 채널 조회
         List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository
-                .findByMemberSeqAndChatChannel_WorkSpaceSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceSeq, workSpaceType);
+                .findByMemberSeqAndChatChannel_WorkSpaceType(memberSeq, workSpaceType);
+
+        // 목록이 없으면 빈 리스트 반환
+        if (chatChannelMembers == null || chatChannelMembers.isEmpty()) {
+            log.info("📭 1:1 채팅 목록이 없습니다. memberSeq={}", memberSeq);
+            return new ArrayList<>();
+        }
 
         List<MyChatListResDto> result = new ArrayList<>();
 
-        // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
-        for (ChatChannelMember chatChannelMember : chatChannelMembers) {
+       // 각 채널별로 상대방 이름과 안 읽은 메시지 수 계산
+       for (ChatChannelMember chatChannelMember : chatChannelMembers) {
+        try {
             ChatChannel channel = chatChannelMember.getChatChannel();
+            
+            // ✅ 채널이 null이거나 삭제된 경우 건너뛰기
+            if (channel == null) {
+                log.warn("⚠️ 채널이 삭제되었지만 ChatChannelMember가 남아있음: chatChannelMemberSeq={}", 
+                        chatChannelMember.getChatChannelMemberSeq());
+                continue;
+            }
+            
             Long lastReadSeq = chatChannelMember.getLastReadChatMessageSeq();
 
             // 읽지 않은 메시지 수 계산
@@ -654,6 +680,13 @@ public class ChatService {
                     .findFirst()
                     .orElse(null);
 
+            // ✅ 상대방이 없으면 건너뛰기
+            if (otherMemberSeq == null) {
+                log.warn("⚠️ 채널에 상대방을 찾을 수 없습니다. channelSeq={}, memberSeq={}, members.size()={}", 
+                        channel.getChatChannelSeq(), memberSeq, members.size());
+                continue;
+            }
+
             // Redis에서 상대방 이름 / 프로필 URL 조회 (ChatRedisService 사용)
             String otherName = chatRedisService.getMemberName(otherMemberSeq);
             String otherProfileUrl = chatRedisService.getMemberProfileUrl(otherMemberSeq);
@@ -666,13 +699,69 @@ public class ChatService {
                     .workspaceSeq(channel.getWorkSpaceSeq())
                     .workSpaceType(WorkSpaceType.INDIVIDUAL)
                     .unreadCount(unreadCount)
-                    .isGroupChat(false)
                     .build());
+        } catch (Exception e) {
+            log.error("⚠️ 채널 처리 중 오류 발생: chatChannelMemberSeq={}", 
+                    chatChannelMember.getChatChannelMemberSeq(), e);
+            // 개별 채널 처리 실패해도 다음 채널은 계속 처리
+            continue;
         }
-
-        return result;
     }
 
-    // 채널 나가기
+    return result;
+}
 
+    // 채널 나가기
+    public void leaveIndividualChatChannel(Long channelSeq, Long memberSeq) throws AccessDeniedException {
+        log.info("🚪 채널 나가기 요청: channelSeq={}, memberSeq={}", channelSeq, memberSeq);
+
+        // 채널 존재여부 확인
+        ChatChannel channel = chatChannelRepository.findById(channelSeq)
+                .orElseThrow(() -> new EntityNotFoundException("채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
+
+        // 채널 멤버 여부 확인
+        if (!isChannelParticipant(memberSeq, channelSeq)) {
+            throw new AccessDeniedException("채널 멤버가 아닙니다.");
+        }
+
+        // 채널 멤버 목록 조회
+        List<ChatChannelMember> members = chatChannelMemberRepository.findByChatChannel(channel);
+        int memberCountBeforeLeave = members.size();
+
+        // 1:1 채팅방인지 확인
+        boolean isIndividualChat = channel.getWorkSpaceType() == WorkSpaceType.INDIVIDUAL;
+
+        // 채널 멤버에서 해당 멤버 제거
+        chatChannelMemberRepository.deleteByChannelAndMember(channelSeq, memberSeq);
+
+        // 마지막 멤버가 나가는 경우 채널 및 메시지 모두 삭제
+        if (isIndividualChat && memberCountBeforeLeave == 2) {
+            // 현재 멤버 수가 2명이었는데 1명이 나가면, 남은 멤버가 1명
+            // 남은 멤버 수 확인
+            List<ChatChannelMember> remainingMembers = chatChannelMemberRepository.findByChatChannel(channel);
+
+            // 남은 멤버가 없으면 (둘 다 나간 경우) 채널과 메시지 삭제
+            if (remainingMembers.isEmpty()) {
+                log.info("🗑️ 1:1 채팅방의 모든 멤버가 나감 - 채널 및 메시지 삭제: channelSeq={}", channelSeq);
+
+                // 1. 채널의 모든 메시지 삭제
+                chatMessageRepository.deleteByChatChannel(channel);
+                log.info("✅ 채널 메시지 삭제 완료");
+
+                // 2. 채널 삭제
+                chatChannelRepository.delete(channel);
+                log.info("✅ 채널 삭제 완료");
+
+                log.info("✅ 1:1 채팅방 완전 삭제 완료: channelSeq={}", channelSeq);
+                return;
+            }
+
+            // 남은 멤버가 1명인 경우 (한 명만 나간 경우)는 채널 유지
+            log.info("✅ 1:1 채팅방에서 한 명만 나감 - 채널 유지: channelSeq={}, 남은 멤버={}",
+                    channelSeq, remainingMembers.get(0).getMemberSeq());
+        }
+
+        log.info("✅ 채널 나가기 완료: channelSeq={}, memberSeq={}, 남은 멤버 수={}",
+                channelSeq, memberSeq, members.size() - 1);
+    }
 }

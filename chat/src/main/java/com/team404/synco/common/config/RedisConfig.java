@@ -38,14 +38,14 @@ public class RedisConfig {
         return new LettuceConnectionFactory(configuration);
     }
 
-//    publish 객체 (Redis에 데이터를 String 형태로 publish/send하는 객체.)
+    //    publish 객체 (Redis에 데이터를 String 형태로 publish/send하는 객체.)
     @Bean
     @Qualifier("chatPubSub")
     public StringRedisTemplate stringRedisTemplate(@Qualifier("chatPubSub") RedisConnectionFactory redisConnectionFactory) {
         return new StringRedisTemplate(redisConnectionFactory);
     }
 
-//    subscribe 객체
+    //    subscribe 객체
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             @Qualifier("chatPubSub") RedisConnectionFactory redisConnectionFactory,
@@ -57,7 +57,7 @@ public class RedisConfig {
         return container;
     }
 
-//    redis에서 수신된 메시지를 처리하는 객체 생성
+    //    redis에서 수신된 메시지를 처리하는 객체 생성
     @Bean
     public MessageListenerAdapter messageListenerAdapter(RedisPubSubService redisPubSubService) {
 //        RedisPubSubService의 특정 메서드(onMessage())가 수신된 메시지를 처리할 수 있도록 지정

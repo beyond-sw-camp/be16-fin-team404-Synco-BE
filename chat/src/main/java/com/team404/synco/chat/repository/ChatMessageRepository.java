@@ -4,6 +4,7 @@ import com.team404.synco.chat.entity.ChatChannel;
 import com.team404.synco.chat.entity.ChatMessage;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
@@ -56,4 +57,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     """)
     Long findLatestSeqByChannel(@Param("channelSeq") Long channelSeq);
 
+    @Modifying
+    @Query("DELETE FROM ChatMessage m WHERE m.chatChannelMember.chatChannel = :channel")
+    void deleteByChatChannel(ChatChannel channel);
 }

@@ -52,7 +52,7 @@ public interface ChatChannelMemberRepository extends JpaRepository<ChatChannelMe
     );
 
     // 특정 사용자가 속한 모든 1:1 채팅 채널 목록 조회
-    List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceSeqAndChatChannel_WorkSpaceType(Long memberSeq, Long workSpaceSeq, WorkSpaceType workSpaceType);
+    List<ChatChannelMember> findByMemberSeqAndChatChannel_WorkSpaceType(Long memberSeq, WorkSpaceType workSpaceType);
 
     // 1:1 참여자 모두가 속한 채널 반환
     @Query("""
