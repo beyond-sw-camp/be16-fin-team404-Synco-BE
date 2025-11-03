@@ -336,15 +336,10 @@ public class ChatService {
                 .orElseThrow(() -> new EntityNotFoundException("채팅 채널을 찾을 수 없습니다. channelSeq=" + channelSeq));
 
         // Redis에서 발신자 정보 확인
-        String memberKey = "memberSeq:" + dto.getSenderSeq();
-        String rawMemberName = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberName");
-        String rawProfileUrl = (String) memberRedisTemplate.opsForHash().get(memberKey, "memberProfileUrl");
+        String memberName = chatRedisService.getMemberName(dto.getSenderSeq());
+        String profileImageUrl = chatRedisService.getMemberProfileUrl(dto.getSenderSeq());
 
-        // ✅ 따옴표 제거 (null-safe, JSON 문자열 대응)
-        String memberName = rawMemberName != null ? rawMemberName.replaceAll("^\"|\"$", "") : null;
-        String profileImageUrl = rawProfileUrl != null ? rawProfileUrl.replaceAll("^\"|\"$", "") : null;
-
-        if (memberName == null) {
+        if (memberName == null || "알 수 없음".equals(memberName)) {
             throw new EntityNotFoundException("Redis에서 멤버 정보를 찾을 수 없습니다. memberSeq=" + dto.getSenderSeq());
         }
 
@@ -478,24 +473,7 @@ public class ChatService {
         List<ChatMessage> list = chatMessageRepository.findMessages(channelSeq, lastId, pageable);
 
         return list.stream()
-                .map(m -> {
-                    long senderSeq = m.getChatChannelMember().getMemberSeq();
-                    String senderName = chatRedisService.getMemberName(senderSeq);
-                    String profileUrl = chatRedisService.getMemberProfileUrl(senderSeq);
-
-                    return ChatMessageResDto.builder()
-                            .chatMessageSeq(m.getChatMessageSeq())
-                            .channelSeq(channelSeq)
-                            .senderSeq(senderSeq)
-                            .senderName(senderName)
-                            .senderProfileImageUrl(profileUrl)
-                            .chatMessageText(m.getChatMessageText())
-                            .chatMessageFileUrls(m.getChatMessageFileUrls())
-                            .replyToSeq(m.getChatMessageParentSeq())
-                            .messageType(m.getMessageType())
-                            .createdAt(m.getCreatedAt())
-                            .build();
-                })
+                .map(message -> mapToChatMessageResDto(message, channelSeq))    // DTO 매핑 메서드 사용
                 .toList();
     }
 
@@ -518,24 +496,9 @@ public class ChatService {
             list = chatMessageRepository.findMessagesAfterLastRead(channelSeq, lastReadSeq, pageable);
         }
 
-        return list.stream().map(m -> {
-            long senderSeq = m.getChatChannelMember().getMemberSeq();
-            String senderName = chatRedisService.getMemberName(senderSeq);
-            String profileUrl = chatRedisService.getMemberProfileUrl(senderSeq);
-
-            return ChatMessageResDto.builder()
-                    .chatMessageSeq(m.getChatMessageSeq())
-                    .channelSeq(channelSeq)
-                    .senderSeq(senderSeq)
-                    .senderName(senderName)
-                    .senderProfileImageUrl(profileUrl)
-                    .chatMessageText(m.getChatMessageText())
-                    .chatMessageFileUrls(m.getChatMessageFileUrls())
-                    .replyToSeq(m.getChatMessageParentSeq())
-                    .messageType(m.getMessageType())
-                    .createdAt(m.getCreatedAt())
-                    .build();
-        }).toList();
+        return list.stream()
+                .map(message -> mapToChatMessageResDto(message, channelSeq))    // DTO 매핑 메서드 사용
+                .toList();
     }
 
     // 마지막 읽은 메시지 업데이트
@@ -755,4 +718,25 @@ public class ChatService {
         log.info("✅ 채널 나가기 완료: channelSeq={}, memberSeq={}, 남은 멤버 수={}",
                 channelSeq, memberSeq, members.size() - 1);
     }
+
+    // 메시지 엔티티를 DTO로 변환하는 공통 메서드
+    private ChatMessageResDto mapToChatMessageResDto(ChatMessage message, Long channelSeq) {
+        long senderSeq = message.getChatChannelMember().getMemberSeq();
+        String senderName = chatRedisService.getMemberName(senderSeq);
+        String profileUrl = chatRedisService.getMemberProfileUrl(senderSeq);
+
+        return ChatMessageResDto.builder()
+                .chatMessageSeq(message.getChatMessageSeq())
+                .channelSeq(channelSeq)
+                .senderSeq(senderSeq)
+                .senderName(senderName)
+                .senderProfileImageUrl(profileUrl)
+                .chatMessageText(message.getChatMessageText())
+                .chatMessageFileUrls(message.getChatMessageFileUrls())
+                .replyToSeq(message.getChatMessageParentSeq())
+                .messageType(message.getMessageType())
+                .createdAt(message.getCreatedAt())
+                .build();
+    }
+
 }
