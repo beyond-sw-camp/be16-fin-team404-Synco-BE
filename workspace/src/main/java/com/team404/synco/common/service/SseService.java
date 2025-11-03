@@ -3,12 +3,20 @@ package com.team404.synco.common.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.alarm.dto.AlarmResDto;
+import com.team404.synco.common.constant.FriendStatus;
 import com.team404.synco.common.registry.SseEmitterRegistry;
+import com.team404.synco.friend.repository.FriendRepository;
 import com.team404.synco.member.dto.MemberStatusResDto;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
+import com.team404.synco.workspace.dto.WorkSpaceInfoResDto;
+import com.team404.synco.workspace.dto.WorkSpaceMemberInfoResDto;
+import com.team404.synco.workspace.service.WorkSpaceService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,23 +24,27 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
 public class SseService implements MessageListener {
     private final MemberRepository memberRepository;
+    private final FriendRepository friendRepository;
     private final SseEmitterRegistry sseEmitterRegistry;
     private final ObjectMapper objectMapper;
 
+    @Lazy
+    @Autowired
+    private WorkSpaceService workSpaceService; // 순환참조 문제로 필드 주입 + Lazy
+
     public SseService(
-            MemberRepository memberRepository,
+            MemberRepository memberRepository, FriendRepository friendRepository,
             SseEmitterRegistry sseEmitterRegistry,
             ObjectMapper objectMapper
     ) {
         this.memberRepository = memberRepository;
+        this.friendRepository = friendRepository;
         this.sseEmitterRegistry = sseEmitterRegistry;
         this.objectMapper = objectMapper;
     }
@@ -90,49 +102,41 @@ public class SseService implements MessageListener {
     // Heartbeat (ping) 주기적 전송 - 다중 연결 브로드캐스트
     @Scheduled(fixedRate = 15000)
     private void sendHeartbeatToAllEmitters() {
-        try {
-            Map<String, List<SseEmitter>> all = sseEmitterRegistry.getAllEmitters();
+        Map<String, List<SseEmitter>> all = sseEmitterRegistry.getAllEmitters();
 
-            log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            log.info("[SSE Heartbeat] 💓 전송 시작");
-            log.info("[SSE Heartbeat] 📊 등록된 사용자 수: {}", all.size());
+        if (all.isEmpty()) {
+            log.debug("[SSE Heartbeat] 전송 대상 없음");
+            return;
+        }
 
-            if (all.isEmpty()) {
-                log.info("[SSE Heartbeat] ⚠️ 전송 대상 없음");
-                return;
-            }
+        for (Map.Entry<String, List<SseEmitter>> entry : all.entrySet()) {
+            String memberId = entry.getKey();
+            List<SseEmitter> snapshot = new ArrayList<>(entry.getValue());
 
-            int successCount = 0;
-            int failCount = 0;
-
-            for (Map.Entry<String, List<SseEmitter>> entry : all.entrySet()) {
-                String memberId = entry.getKey();
-                List<SseEmitter> snapshot = new ArrayList<>(entry.getValue());
-
-                for (SseEmitter emitter : snapshot) {
-                    try {
-                        emitter.send(SseEmitter.event()
-                                .name("ping")
-                                .data("keep-alive"));
-                        successCount++;
-                    } catch (IOException | IllegalStateException e) {
-                        log.warn("[SSE] ❌ heartbeat 실패");
-                        failCount++;
-                    }
+            for (SseEmitter emitter : snapshot) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("ping")
+                            .data("keep-alive"));
+                } catch (IOException | IllegalStateException e) {
+                    // 연결이 끊긴 emitter 제거
+                    log.warn("[SSE] Heartbeat 전송 실패 → emitter 제거: {}", memberId);
+                    sseEmitterRegistry.removeEmitter(memberId);
                 }
             }
-
-            log.info("[SSE Heartbeat] 📊 전송 완료 - 성공: {}, 실패: {}", successCount, failCount);
-            log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        } catch (Exception e) {
-            log.error("[SSE Heartbeat] ❌ 예외 발생: {}", e.getMessage(), e);
         }
+
+        log.debug("[SSE Heartbeat] 완료 - 현재 등록 사용자 수: {}", all.size());
     }
+
 
     // 멤버 상태 변경(온라인/자리비움/오프라인) - 다중 연결 브로드캐스트 + 이벤트명 지정
     public void changeMemberStatus(MemberStatusResDto memberStatusResDto) {
-        Member member = memberRepository.findById(memberStatusResDto.getMemberSeq())
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+        String memberId = memberStatusResDto.getMemberId();
+        if (memberId == null || memberId.isBlank()) {
+            log.info("[SSE] memberId가 null/blank - member-status 전송 건너뛰기: memberId={}", memberId);
+            return;
+        }
 
         String payload;
         try {
@@ -141,23 +145,60 @@ public class SseService implements MessageListener {
             throw new RuntimeException(e);
         }
 
-        List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(member.getMemberId());
-        if (emitters.isEmpty()) {
-            log.info("[SSE] member-status 전송 대상 없음: {}", member.getMemberId());
-            return;
-        }
+        // 1. 해당 멤버의 친구 목록 조회
+        Member member = memberRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+        List<String> friendList = findMyFriendList(member.getMemberSeq());
 
-        List<SseEmitter> snapshot = new ArrayList<>(emitters);
-        for (SseEmitter emitter : snapshot) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("member-status")
-                        .data(payload)
-                        .reconnectTime(3000L));
-            } catch (IOException | IllegalStateException e) {
-                throw new RuntimeException("상태 변경 실패");
+        // 2. 해당 멤버가 속한 워크스페이스의 멤버 목록 조회 후 memberId 변환
+        List<String> workSpaceMemberList = workSpaceService.findMyWorkSpaceList(member.getMemberSeq()).stream()
+                .map(WorkSpaceInfoResDto::getWorkSpaceSeq)
+                .flatMap(workSpaceSeq -> workSpaceService.findWorkSpaceMemberList(workSpaceSeq).stream())
+                .map(WorkSpaceMemberInfoResDto::getMemberSeq)
+                .map(seq -> memberRepository.findById(seq)
+                        .map(Member::getMemberId)
+                        .orElse(null)) // 존재하지 않는 경우 null 반환
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 3. 모든 관련 사용자 목록 합치기 (중복 제거)
+        Set<String> targetMemberList = new HashSet<>();
+        targetMemberList.addAll(friendList);
+        targetMemberList.addAll(workSpaceMemberList);
+
+        // 4. 각 사용자의 emitter를 찾아서 전송
+        int successCount = 0;
+        int failCount = 0;
+
+        for (String targetMemberId : targetMemberList) {
+            log.info("target: " + targetMemberId);
+            // 자기 자신은 제외 (이미 상태를 알고 있음)
+            if (targetMemberId.equals(memberId)) {
+                continue;
+            }
+
+            List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(targetMemberId);
+            List<SseEmitter> snapshot = new ArrayList<>(emitters);
+
+            for (SseEmitter emitter : snapshot) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("member-status")
+                            .data(payload)
+                            .reconnectTime(3000L));
+                    successCount++;
+                    log.info("[SSE] member-status 전송 성공: from={}, to={}", memberId, targetMemberId);
+                } catch (IOException | IllegalStateException e) {
+                    failCount++;
+                    log.info("[SSE] member-status 전송 실패: from={}, to={}, error={}",
+                            memberId, targetMemberId, e.getMessage());
+                }
             }
         }
+
+        log.info("[SSE] member-status 전송 완료: memberId={}, 총 대상={}, 성공={}, 실패={}",
+                memberId, targetMemberList.size(), successCount, failCount);
     }
 
     // pub/sub으로 들어온 알림 → 실시간 전송
@@ -175,5 +216,15 @@ public class SseService implements MessageListener {
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         return member.getMemberId();
+    }
+
+    // 친구 목록 직접 조회
+    private List<String> findMyFriendList(Long memberSeq) {
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+        return friendRepository.findAllByMemberAndFriendStatus(member, FriendStatus.APPROVE, Pageable.unpaged())
+                .stream()
+                .map(friend -> friend.getFriendMember().getMemberId())
+                .toList();
     }
 }

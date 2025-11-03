@@ -188,6 +188,7 @@ public class MemberService {
         }
         member.registerMemberId(memberIdReqDto.getMemberId());
         workSpaceService.createIndividualWorkSpace(member.getMemberSeq());
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
     }
 
     public LoginResDto googleLogin(RedirectDto redirectDto) throws IOException {
@@ -238,8 +239,9 @@ public class MemberService {
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
+
         workSpaceRedisService.addMemberInfo(member);
-//        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberSeq(), member.getLastActiveStatus()));
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -311,6 +313,7 @@ public class MemberService {
 
         workSpaceRedisService.addMemberInfo(member);
         jwtTokenProvider.deleteRt(memberSeq);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getActiveStatus()));
     }
 
     @Transactional(readOnly = true)
@@ -354,7 +357,7 @@ public class MemberService {
     private String getRequestStatus(Member currentMember, Member targetMember) {
         // 내가 보낸 요청인지 확인
         if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
-                currentMember, targetMember, FriendStatus.PENDING)) {
+                    currentMember, targetMember, FriendStatus.PENDING)) {
             return "sent";
         }
         // 나에게 온 요청인지 확인
@@ -375,5 +378,6 @@ public class MemberService {
         // 상태 변경
         member.updateActiveStatus(reqDto.getActiveStatus());
         workSpaceRedisService.addMemberInfo(member);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), reqDto.getActiveStatus()));
     }
 }
