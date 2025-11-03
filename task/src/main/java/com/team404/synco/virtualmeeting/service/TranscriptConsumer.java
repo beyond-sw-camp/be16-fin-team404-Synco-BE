@@ -7,6 +7,7 @@ import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.kafka.TranscriptEvent;
 import com.team404.synco.virtualmeeting.entity.Recording;
 import com.team404.synco.virtualmeeting.entity.RecordingSummary;
+import com.team404.synco.virtualmeeting.entity.RoomParticipant;
 import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
 import com.team404.synco.virtualmeeting.repository.RecordingRepository;
 import com.team404.synco.virtualmeeting.repository.RecordingSummaryRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -55,14 +57,11 @@ public class TranscriptConsumer {
             summary.updateSummary(summaryText);
             log.info("✅ 요약 생성 완료: recordingSeq={}", event.getRecordingSeq());
 
-            List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = recording.getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelmemberList();
-            for(VirtualMeetingChannelMember m : virtualMeetingChannelmemberList){
-                MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getMemberSeq());
-                if(memberInfo == null) {
-                    log.warn("멤버 정보를 찾을 수 없습니다. memberSeq={}", m.getMemberSeq());
-                    continue;
-                }
-                
+            Set<RoomParticipant> roomParticipantList = recording.getRoom().getRoomParticipantList();
+            for(RoomParticipant m : roomParticipantList){
+                MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getVirtualMeetingChannelMember().getMemberSeq());
+                if(memberInfo == null) continue;
+
                 AlarmResDto res = AlarmResDto.of(memberInfo.getMemberSeq().toString(),
                         "alarm-meeting",
                         "회의 녹취 및 요약이 완료되었습니다.\n" +

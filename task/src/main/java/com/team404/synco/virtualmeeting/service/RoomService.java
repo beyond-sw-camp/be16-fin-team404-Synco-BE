@@ -103,16 +103,12 @@ public class RoomService {
                 .build();
         participantRepository.save(participant);
 
-        List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = virtualMeetingChannel.getVirtualMeetingChannelmemberList();
-        for(VirtualMeetingChannelMember m : virtualMeetingChannelmemberList){
-            if(m.getMemberSeq() == memberSeq) continue; // 호스트는 제외
-            
-            MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getMemberSeq());
-            if(memberInfo == null) {
-                log.warn("멤버 정보를 찾을 수 없습니다. memberSeq={}", m.getMemberSeq());
-                continue;
-            }
-            
+        for(Long alarmMemberSeq : roomCreateReqDto.getAlarmMemberList()){
+            if(alarmMemberSeq.equals(memberSeq)) continue; // 호스트는 제외
+
+            MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(alarmMemberSeq);
+            if(memberInfo == null) continue;
+
             String hostName = memberRedisComponent.getMemberName(memberSeq);
             AlarmResDto res = AlarmResDto.of(memberInfo.getMemberSeq().toString(),
                     "alarm-meeting",
