@@ -58,8 +58,13 @@ public class TranscriptConsumer {
             List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = recording.getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelmemberList();
             for(VirtualMeetingChannelMember m : virtualMeetingChannelmemberList){
                 MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getMemberSeq());
+                if(memberInfo == null) {
+                    log.warn("멤버 정보를 찾을 수 없습니다. memberSeq={}", m.getMemberSeq());
+                    continue;
+                }
+                
                 AlarmResDto res = AlarmResDto.of(memberInfo.getMemberSeq().toString(),
-                        "VirtualMeeting-summary",
+                        "alarm-meeting",
                         "회의 녹취 및 요약이 완료되었습니다.\n" +
                                 "[회의명]: " + recording.getRoom().getRoomName() + "\n" +
                                 "[녹취 요약]: " + summaryText + "\n" +
@@ -68,7 +73,7 @@ public class TranscriptConsumer {
                         recording.getRecordingSeq()
                 );
 
-                redisEventPublisher.publish("virtual-meeting-summary-alarm", res);
+                redisEventPublisher.publish("alarm-meeting", res);
             }
 
             acknowledgment.acknowledge();
