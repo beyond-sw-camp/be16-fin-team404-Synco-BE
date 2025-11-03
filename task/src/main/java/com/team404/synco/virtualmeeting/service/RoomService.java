@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.Authority;
 import com.team404.synco.common.constant.RoomStatus;
+import com.team404.synco.common.constant.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
+import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageReq;
 import com.team404.synco.virtualmeeting.dto.Room.ChatMessageRes;
 import com.team404.synco.virtualmeeting.dto.Room.RoomCreateReqDto;
@@ -91,12 +93,6 @@ public class RoomService {
 
         String token = createToken(room.getRoomSeq(), memberSeq);
         room.startRoom();
-// 알람 생성
-//        for(Long member : roomCreateReqDto.getAlarmMemberList()){
-//            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(member), "alarm-meeting", "화상회의에 초대되었습니다.",
-//                    room.getRoomSeq(), room.getVirtualMeetingChannel().getWorkSpaceSeq());
-//            redisEventPublisher.publish("alarm-meeting", alarmResDto);
-//        }
 
         RoomParticipant participant = RoomParticipant.builder()
                 .virtualMeetingChannelMember(virtualMeetingChannelMember)
@@ -106,6 +102,23 @@ public class RoomService {
                 .displayNameAtJoin(memberRedisComponent.getMemberName(memberSeq))
                 .build();
         participantRepository.save(participant);
+
+        List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = virtualMeetingChannel.getVirtualMeetingChannelmemberList();
+        for(VirtualMeetingChannelMember m : virtualMeetingChannelmemberList){
+            if(m.getMemberSeq() != memberSeq) continue; // 호스트는 제외
+            MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getMemberSeq());
+            AlarmResDto res = AlarmResDto.of(memberInfo.getMemberSeq().toString(),
+                    "VirtualMeeting-invite",
+                    "새로운 화상회의가 시작되었습니다.\n" +
+                            "[회의명]: " + room.getRoomName() + "\n" +
+                            "[호스트]: " + memberSeq + "\n" +
+                            "[워크스페이스]: " + virtualMeetingChannel.getWorkSpaceSeq(),
+                    virtualMeetingChannel.getWorkSpaceSeq(),
+                    room.getRoomSeq()
+            );
+
+            redisEventPublisher.publish("virtual-meeting-invite-alarm",res);
+        }
 
         return RoomSessionResDto.builder()
                 .roomId(room.getRoomSeq())

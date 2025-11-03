@@ -1,8 +1,13 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.common.component.MemberRedisComponent;
+import com.team404.synco.common.constant.dto.AlarmResDto;
+import com.team404.synco.common.service.RedisEventPublisher;
+import com.team404.synco.virtualmeeting.dto.MemberInfoDto;
 import com.team404.synco.virtualmeeting.dto.kafka.TranscriptEvent;
 import com.team404.synco.virtualmeeting.entity.Recording;
 import com.team404.synco.virtualmeeting.entity.RecordingSummary;
+import com.team404.synco.virtualmeeting.entity.VirtualMeetingChannelMember;
 import com.team404.synco.virtualmeeting.repository.RecordingRepository;
 import com.team404.synco.virtualmeeting.repository.RecordingSummaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +16,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -22,6 +29,8 @@ public class TranscriptConsumer {
     private final RecordingRepository recordingRepository;
     private final RecordingSummaryRepository recordingSummaryRepository;
     private final SummaryService summaryService;
+    private final MemberRedisComponent memberRedisComponent;
+    private final RedisEventPublisher redisEventPublisher;
 
     @KafkaListener(topics = TOPIC_TRANSCRIPT, groupId = "task-service-group")
     public void consumeTranscript(TranscriptEvent event, Acknowledgment acknowledgment) {
@@ -45,6 +54,22 @@ public class TranscriptConsumer {
             
             summary.updateSummary(summaryText);
             log.info("✅ 요약 생성 완료: recordingSeq={}", event.getRecordingSeq());
+
+            List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = recording.getRoom().getVirtualMeetingChannel().getVirtualMeetingChannelmemberList();
+            for(VirtualMeetingChannelMember m : virtualMeetingChannelmemberList){
+                MemberInfoDto memberInfo = memberRedisComponent.getMemberInfo(m.getMemberSeq());
+                AlarmResDto res = AlarmResDto.of(memberInfo.getMemberSeq().toString(),
+                        "VirtualMeeting-summary",
+                        "회의 녹취 및 요약이 완료되었습니다.\n" +
+                                "[회의명]: " + recording.getRoom().getRoomName() + "\n" +
+                                "[녹취 요약]: " + summaryText + "\n" +
+                                "[녹취 전문]: " + event.getTranscript(),
+                        recording.getRoom().getVirtualMeetingChannel().getWorkSpaceSeq(),
+                        recording.getRecordingSeq()
+                );
+
+                redisEventPublisher.publish("virtual-meeting-summary-alarm", res);
+            }
 
             acknowledgment.acknowledge();
         } catch (Exception e) {
