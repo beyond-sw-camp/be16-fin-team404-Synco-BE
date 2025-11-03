@@ -7,11 +7,13 @@ import lombok.Getter;
 @Getter
 @Builder
 public class MemberStatusResDto {
+    private String memberId;
     private Long memberSeq;
     private ActiveStatus activeStatus;
 
-    public static MemberStatusResDto of(Long memberSeq, ActiveStatus activeStatus){
+    public static MemberStatusResDto of(String memberId, Long memberSeq, ActiveStatus activeStatus){
         return MemberStatusResDto.builder()
+                .memberId(memberId)
                 .memberSeq(memberSeq)
                 .activeStatus(activeStatus)
                 .build();

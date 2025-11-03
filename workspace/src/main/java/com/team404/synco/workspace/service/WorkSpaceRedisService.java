@@ -52,7 +52,6 @@ public class WorkSpaceRedisService {
 
 
     // 멤버 정보 변경
-
     // 멤버가 속한 프로젝트 목록 저장
     public void addWorkSpace(WorkSpace workSpace, Long memberSeq) {
         String memberKey = MEMBER_KEY_PREFIX + memberSeq;

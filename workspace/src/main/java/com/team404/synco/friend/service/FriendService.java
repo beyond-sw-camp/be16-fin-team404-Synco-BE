@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Transactional
 @Service
@@ -230,6 +231,16 @@ public class FriendService {
         Friend friendRelation = friendRepository.findByMemberAndFriendMemberAndFriendStatus(friend, me, FriendStatus.APPROVE)
                 .orElseThrow(() -> new IllegalArgumentException("친구 관계를 찾을 수 없습니다."));
         friendRepository.delete(friendRelation);
+    }
+
+    // 친구 목록 조회
+    public List<String> findMyFriendList(Long memberSeq){
+        Member member = memberRepository.findById(memberSeq)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+        Page<Friend> friendList = friendRepository.findAllByMemberAndFriendStatus(member, FriendStatus.APPROVE, Pageable.unpaged());
+        return friendList.stream()
+                .map(friend -> friend.getFriendMember().getMemberId())
+                .collect(Collectors.toList());
     }
 
     // 알림 전송
