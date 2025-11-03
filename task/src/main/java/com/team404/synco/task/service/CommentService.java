@@ -57,20 +57,30 @@ public class CommentService {
         String name = memberRedisComponent.getMemberName(comment.getScheduleManagementChannelMember().getMemberSeq());
         String workSpaceName = memberRedisComponent.getWorkSpaceName(task.getPicMemberSeq().getWorkSpaceSeq());
 
-        // 답글이면
+
         AlarmResDto alarmResDto = null;
+
+        // 답글이면
         if(comment.getParentCommentSeq() != null){
+            // 업무 담당자에게 알림 전송
             alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                    "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
+                            task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
                     task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
             redisEventPublisher.publish("alarm-task", alarmResDto);
-            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
-                    comment.getScheduleManagementChannelMember().getMemberSeq(), task.getTaskSeq());
+
+            // 답글 작성자에게 알림 전송
+            Comment parentComment = commentRepository.findById(comment.getParentCommentSeq())
+                    .orElseThrow(() -> new EntityNotFoundException("부모 댓글을 찾을 수 없습니다."));
+            alarmResDto = AlarmResDto.of(String.valueOf(parentComment.getScheduleManagementChannelMember().getMemberSeq()),
+                    "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
+                            task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
+                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
             redisEventPublisher.publish("alarm-task", alarmResDto);
         } else {
             alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " + task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " +
+                            task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
                     task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
             redisEventPublisher.publish("alarm-task", alarmResDto);
         }

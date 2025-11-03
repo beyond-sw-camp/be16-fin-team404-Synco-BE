@@ -1,5 +1,6 @@
 package com.team404.synco.workspace.service;
 
+import com.team404.synco.alarm.dto.AlarmResDto;
 import com.team404.synco.alarm.service.AlarmService;
 import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.Authority;
@@ -393,8 +394,9 @@ public class WorkSpaceService {
 
     // 알림 전송
     private void sendAlarm(Long memberSeq, String message, Long workSpaceSeq){
-        alarmService.createAlarm(memberSeq,
-                AlarmType.PROJECT, message, workSpaceSeq, null);
+        // 알림 데이터 조립
+        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), AlarmType.PROJECT, message, workSpaceSeq, null);
+        alarmService.createAlarm(alarmResDto);
     }
 //
 //
