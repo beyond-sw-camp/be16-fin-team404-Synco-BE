@@ -22,6 +22,9 @@ public class ChatChannel extends BaseEntity {
     @Column(nullable = false)
     private long workSpaceSeq;
 
+    @Enumerated(EnumType.STRING)
+    private WorkSpaceType workSpaceType;
+
     @Builder.Default
     @OneToMany(mappedBy = "chatChannel", orphanRemoval = true)
     private List<ChatChannelMember> chatChannelmemberList = new ArrayList<>();

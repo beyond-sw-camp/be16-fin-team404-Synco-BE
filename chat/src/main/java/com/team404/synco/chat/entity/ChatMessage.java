@@ -20,7 +20,7 @@ public class ChatMessage extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String chatMessageFileUrls;
 
-    private long chatMessageParentSeq;
+    private Long chatMessageParentSeq; // 답장아닌일반메시지=null 처리를 위한 nullable
 
     @Column(nullable = false)
     @Builder.Default
@@ -30,6 +30,8 @@ public class ChatMessage extends BaseEntity {
     @JoinColumn(name = "chat_channel_member_seq", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
     private ChatChannelMember chatChannelMember;
 
-    @OneToOne(mappedBy = "chatMessage", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private ChatVote chatVote;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MessageType messageType = MessageType.TEXT;
 }

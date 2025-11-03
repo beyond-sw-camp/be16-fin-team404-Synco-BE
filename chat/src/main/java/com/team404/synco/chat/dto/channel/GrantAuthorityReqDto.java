@@ -1,4 +1,4 @@
-package com.team404.synco.chat.dto;
+package com.team404.synco.chat.dto.channel;
 
 import lombok.*;
 
