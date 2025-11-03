@@ -96,6 +96,7 @@ public class MemberService {
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
         workSpaceRedisService.addMemberInfo(member);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
 
         return LoginResDto.builder()
                 .accessToken(accessToken)

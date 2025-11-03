@@ -347,17 +347,16 @@ public class WorkSpaceService {
         List<Long> inviteMemberList = channelInviteReqDto.getMemberList();
         inviteMemberList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
-            workSpaceRedisService.addMemberInfo(inviteMember);
+            chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
+            taskFeign.addMemberToTaskChannel(channelInviteReqDto);
+            taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto, memberSeq);
+
             workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
             workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
 
             // 대상 멤버에게 알림 전달
             sendAlarm(inviteMember.getMemberSeq(),"[프로젝트 초대] " + workSpace.getWorkSpaceName() + "에 초대되었습니다.", workSpace.getWorkSpaceSeq());
         });
-
-        chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
-        taskFeign.addMemberToTaskChannel(channelInviteReqDto);
-        taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto, memberSeq);
     }
 
     // 프로젝트 SUPER 권한 위임
