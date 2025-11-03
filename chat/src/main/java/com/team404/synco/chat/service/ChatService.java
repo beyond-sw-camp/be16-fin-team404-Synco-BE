@@ -11,7 +11,9 @@ import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.chat.repository.ChatMessageRepository;
 import com.team404.synco.common.constant.Authority;
+import com.team404.synco.common.dto.AlarmResDto;
 import com.team404.synco.common.service.MemberRedisComponent;
+import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.common.service.S3Uploader;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class ChatService {
     private final S3Uploader s3Uploader;
     private final RedisPubSubService redisPubSubService;
     private final ChatRedisService chatRedisService;
+    private final RedisEventPublisher redisEventPublisher;
     private final String folderNamePrefix = "chat/";
 
     // 기본 채널 생성
@@ -368,6 +371,12 @@ public class ChatService {
 
         log.info("💾 메시지 저장 완료 (channelSeq={}, memberSeq={}, memberName={}, files={}, chatMessageSeq={})",
                 channelSeq, dto.getSenderSeq(), memberName, fileUrls, savedMessage.getChatMessageSeq());
+
+        List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository.findByChatChannel(chatChannel);
+        chatChannelMembers.stream().filter(chatChannelMember -> chatChannelMember.getMemberSeq() != sender.getMemberSeq())
+                        .forEach(chatChannelMember -> redisEventPublisher.publish("alarm-chat",
+                AlarmResDto.of(String.valueOf(chatChannelMember.getMemberSeq()), "alarm-chat", savedMessage.getChatMessageText(),
+                        chatChannel.getWorkSpaceSeq(), chatChannel.getChatChannelSeq())));
 
         // ChatMessageResDto 생성하여 반환
         return ChatMessageResDto.builder()
