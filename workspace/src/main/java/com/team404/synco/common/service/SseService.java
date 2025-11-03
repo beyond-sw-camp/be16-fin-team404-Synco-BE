@@ -3,13 +3,11 @@ package com.team404.synco.common.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.alarm.dto.AlarmResDto;
-import com.team404.synco.alarm.entity.Alarm;
 import com.team404.synco.alarm.repository.AlarmRepository;
 import com.team404.synco.common.registry.SseEmitterRegistry;
 import com.team404.synco.member.dto.MemberStatusResDto;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
-import com.team404.synco.workspace.entity.WorkSpace;
 import com.team404.synco.workspace.repository.WorkSpaceRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -55,37 +53,39 @@ public class SseService implements MessageListener {
 
     // SSE 연결 (다중 연결 지원)
     public SseEmitter connect(Long userId) {
-        SseEmitter sseEmitter = new SseEmitter(0L); // 무제한
+        SseEmitter sseEmitter = new SseEmitter(0L);
+
         Member member = memberRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
-
         final String memberId = member.getMemberId();
 
-        // 개별 emitter 기준으로 정리
+        // 1) 레지스트리에 반드시 등록
+        sseEmitterRegistry.registerEmitter(memberId, sseEmitter);
+
+        // 2) 콜백 등록
         sseEmitter.onCompletion(() -> {
             log.info("[SSE 연결 종료] memberId={}", memberId);
             sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
         });
-
         sseEmitter.onTimeout(() -> {
             log.warn("[SSE 타임아웃] memberId={}", memberId);
             sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
             sseEmitter.complete();
         });
-
         sseEmitter.onError((e) -> {
             log.error("[SSE 오류] memberId={}, error={}", memberId, e.getMessage());
             sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
             sseEmitter.completeWithError(e);
         });
 
-        // 즉시 초기 연결 이벤트
+        // 3) 초기 연결 이벤트
         try {
             sseEmitter.send(SseEmitter.event()
                     .name("connect")
                     .data("SSE connected")
                     .reconnectTime(3000L));
             log.info("[SSE 연결 성공] memberId={}", memberId);
+            log.info("[SSE] 현재 등록 사용자 수={}", sseEmitterRegistry.getAllEmitters().size());
         } catch (IOException e) {
             log.error("[SSE 초기 메시지 전송 실패] memberId={}", memberId, e);
             sseEmitterRegistry.removeEmitter(memberId, sseEmitter);
@@ -97,17 +97,10 @@ public class SseService implements MessageListener {
 
     // 특정 사용자에게 알림 전송 (다중 연결 브로드캐스트)
     public void sendToClient(AlarmResDto alarmResDto) {
-        Member member = memberRepository.findById(Long.valueOf(alarmResDto.getReceiverId()))
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        WorkSpace workSpace = workSpaceRepository.findById(alarmResDto.getWorkSpaceSeq())
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 프로젝트 또는 개인 워크스페이스입니다."));
 
-        // DB 저장 (전송 실패 시에도 기록 유지)
-        Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
-
-        List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(member.getMemberId());
+        List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(alarmResDto.getReceiverId());
         if (emitters.isEmpty()) {
-            log.info("[SSE] emitter 없음 — DB 저장만 수행 (receiverId={})", member.getMemberId());
+            log.info("[SSE] emitter 없음 — DB 저장만 수행 (receiverId={})", alarmResDto.getReceiverId());
             return;
         }
 
@@ -118,13 +111,13 @@ public class SseService implements MessageListener {
             try {
                 emitter.send(SseEmitter.event()
                         .name("alarm")
-                        .data(AlarmResDto.fromEntity(alarm))
-                        .id(String.valueOf(alarm.getAlarmSeq()))
+                        .data(alarmResDto)
+                        .id(String.valueOf(alarmResDto.getAlarmSeq()))
                         .reconnectTime(3000L));
-                log.info("[SSE] 알림 실시간 전송 성공 (to {})", member.getMemberId());
+                log.info("[SSE] 알림 실시간 전송 성공 (to {})", alarmResDto.getReceiverId());
             } catch (IOException | IllegalStateException e) {
-                log.warn("[SSE] 전송 실패 → emitter 제거 ({}): {}", member.getMemberId(), e.getMessage());
-                sseEmitterRegistry.removeEmitter(member.getMemberId(), emitter);
+                log.warn("[SSE] 전송 실패 → emitter 제거 ({}): {}", alarmResDto.getReceiverId(), e.getMessage());
+                sseEmitterRegistry.removeEmitter(alarmResDto.getReceiverId(), emitter);
             }
         }
     }
