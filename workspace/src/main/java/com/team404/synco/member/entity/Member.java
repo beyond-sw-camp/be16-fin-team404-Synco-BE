@@ -1,15 +1,13 @@
 package com.team404.synco.member.entity;
 
+import com.team404.synco.alarm.entity.Alarm;
 import com.team404.synco.common.constant.ActiveStatus;
 import com.team404.synco.common.constant.SocialType;
 import com.team404.synco.common.constant.YnColumn;
-import com.team404.synco.alarm.entity.Alarm;
 import com.team404.synco.common.entity.BaseEntity;
-import com.team404.synco.friend.entity.Friend;
 import com.team404.synco.member.dto.MemberUpdateDto;
 import com.team404.synco.workspace.entity.WorkSpace;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.time.LocalDate;
