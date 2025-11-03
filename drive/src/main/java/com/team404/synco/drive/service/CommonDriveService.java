@@ -223,12 +223,17 @@ public class CommonDriveService {
                 .build();
 
         Document savedDocument = documentRepository.save(document);
-        ParticipantsResponseDto participantsResponseDto = projectDocumentRedisService.getDocumentParticipants(document.getDocumentSeq());
-        for(ParticipantDto participantDto : participantsResponseDto.getParticipants()){
-            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(participantDto.getUserId()), "alarm-drive",
+
+        // 워크스페이스 멤버 목록 조회
+        List<Long> workSpaceMemberList = projectDocumentRedisService.getWorkSpaceMemberList(driveChannel.getWorkspaceSeq());
+
+        // 워크스페이스의 모든 멤버에게 알림 전송
+        for(Long memberSeq : workSpaceMemberList) {
+            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), "alarm-drive",
                     "[공유문서 생성] 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
             redisEventPublisher.publish("alarm-drive", alarmResDto);
         }
+
         return DriveItemDto.fromDocument(savedDocument);
     }
 
