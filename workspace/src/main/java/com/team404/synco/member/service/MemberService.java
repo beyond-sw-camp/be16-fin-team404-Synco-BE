@@ -1,8 +1,10 @@
 package com.team404.synco.member.service;
 
-import com.team404.synco.alarm.service.AlarmService;
 import com.team404.synco.common.auth.JwtTokenProvider;
-import com.team404.synco.common.constant.*;
+import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.FriendStatus;
+import com.team404.synco.common.constant.SocialType;
+import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.EmailService;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.common.service.SseService;
@@ -47,7 +49,6 @@ public class MemberService {
     private final KakaoService kakaoService;
     private final NaverService naverService;
     private final WorkSpaceRedisService workSpaceRedisService;
-    private final AlarmService alarmService;
     private final SseService sseService;
     private final FriendRepository friendRepository;
 
@@ -238,7 +239,7 @@ public class MemberService {
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
         workSpaceRedisService.addMemberInfo(member);
-        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberSeq(), member.getLastActiveStatus()));
+//        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberSeq(), member.getLastActiveStatus()));
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
