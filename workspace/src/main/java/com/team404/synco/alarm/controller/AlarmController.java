@@ -27,6 +27,11 @@ public class AlarmController {
             return sseService.connect(memberSeq);
     }
 
+    @GetMapping("/sse/disconnect")
+    public void unSubscribe(@RequestHeader("X-Member-Seq")Long memberSeq) {
+        sseService.unSubscribe(memberSeq);
+    }
+
     // 알림 전체 목록 조회
     @GetMapping("")
     public ResponseEntity<ResponseDto<?>> alarmList(@RequestHeader("X-Member-Seq")Long memberSeq) throws IOException {
