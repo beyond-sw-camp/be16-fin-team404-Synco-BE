@@ -4,9 +4,12 @@ import com.team404.synco.chat.entity.ChatChannelMember;
 import com.team404.synco.common.constant.Authority;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.*;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChannelMemberResDto {
     private Long memberSeq;
     private Authority authority;

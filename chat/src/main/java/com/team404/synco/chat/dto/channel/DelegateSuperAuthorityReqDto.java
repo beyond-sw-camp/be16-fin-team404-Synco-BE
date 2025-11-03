@@ -1,4 +1,4 @@
-package com.team404.synco.chat.dto;
+package com.team404.synco.chat.dto.channel;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class ChannelEditReqDto {
-    private Long channelSeq;
-    private String channelName;
+public class DelegateSuperAuthorityReqDto {
+    private Long delegateMemberSeq;
+    private Long workSpaceSeq;
 }
