@@ -9,6 +9,8 @@ eureka:
 spring:
   application:
     name: chat-service
+  kafka:
+    bootstrap-servers: localhost:9092
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
     url: jdbc:mariadb://localhost:3308/synco

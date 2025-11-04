@@ -11,6 +11,7 @@ import com.team404.synco.chat.repository.ChatChannelMemberRepository;
 import com.team404.synco.chat.repository.ChatChannelRepository;
 import com.team404.synco.chat.repository.ChatMessageRepository;
 import com.team404.synco.common.constant.Authority;
+import com.team404.synco.chat.dto.kafka.ChatEvent;
 import com.team404.synco.common.dto.AlarmResDto;
 import com.team404.synco.common.service.MemberRedisComponent;
 import com.team404.synco.common.service.RedisEventPublisher;
@@ -44,6 +45,7 @@ public class ChatService {
     private final RedisPubSubService redisPubSubService;
     private final ChatRedisService chatRedisService;
     private final RedisEventPublisher redisEventPublisher;
+    private final ChatEventPublisher chatEventPublisher;
     private final String folderNamePrefix = "chat/";
 
     // 기본 채널 생성
@@ -124,6 +126,9 @@ public class ChatService {
         checkChannelAuthority(basicChannel.getChatChannelSeq(), memberSeq);
         // 채널 수정
         editChannel.updateChannelName(channelEditReqDto.getChannelName());
+
+        // Kafka 이벤트 발행 (채널명 변경)
+        chatEventPublisher.publishChannelUpdated(editChannel);
         return ChannelEditResDto.fromEntity(editChannel);
     }
 
@@ -141,7 +146,12 @@ public class ChatService {
         // 권한 검증
         checkChannelAuthority(basicChannel.getChatChannelSeq(), memberSeq);
         // 채널 삭제
+        Long ws = deleteChannel.getWorkSpaceSeq();
+        Long ch = deleteChannel.getChatChannelSeq();
         chatChannelRepository.deleteById(deleteChannel.getChatChannelSeq());
+
+        // Kafka 이벤트 발행 (채널 삭제)
+        chatEventPublisher.publishChannelDeleted(ch, ws);
     }
 
     // 채널 권한 설정
@@ -366,6 +376,9 @@ public class ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
+        // Kafka 이벤트 발행 (메시지 생성)
+        chatEventPublisher.publishMessageCreated(savedMessage, chatChannel, dto.getSenderSeq());
+
         // ✅ 메시지 전송 시 자동으로 읽음 처리
         updateLastRead(channelSeq, dto.getSenderSeq(), savedMessage.getChatMessageSeq());
 
@@ -458,6 +471,9 @@ public class ChatService {
         // 삭제
         chatMessageRepository.delete(chatMessage);
         log.info("💥 메시지 영구 삭제 완료 - chatMessageSeq={}, memberSeq={}", chatMessageSeq, memberSeq);
+
+        // Kafka 이벤트 발행 (메시지 삭제)
+        chatEventPublisher.publishMessageDeleted(chatMessageSeq);
 
         // ✅ Redis를 통해 브로드캐스트 (메시지 전송과 동일한 방식!)
         ObjectMapper objectMapper = new ObjectMapper();

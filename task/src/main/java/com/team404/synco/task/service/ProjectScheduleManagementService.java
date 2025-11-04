@@ -5,6 +5,7 @@ import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.task.constant.TaskStatus;
+import com.team404.synco.task.dto.kafka.TaskEvent;
 import com.team404.synco.task.dto.request.BoardCreateReqDto;
 import com.team404.synco.task.dto.request.TaskCreateReqDto;
 import com.team404.synco.task.dto.request.TaskStatusUpdateReqDto;
@@ -26,6 +27,8 @@ import com.team404.synco.task.repository.TaskRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectScheduleManagementService {
@@ -42,6 +46,7 @@ public class ProjectScheduleManagementService {
     private final MemberRedisComponent memberRedisComponent;
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
     private final RedisEventPublisher redisEventPublisher;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     // 워크스페이스의 모든 Task를 상태별로 그룹화해서 반환 (팀일정 화면용)
     @Transactional(readOnly = true)
@@ -94,6 +99,10 @@ public class ProjectScheduleManagementService {
                 "alarm-task", "[업무 등록] " +  workSpaceName + " 프로젝트에 새로운 업무가 할당되었습니다.",
                 picMember.getWorkSpaceSeq(), task.getTaskSeq());
         redisEventPublisher.publish("alarm-task", alarmResDto);
+
+        // Kafka 이벤트 발행
+        publishTaskCreated(task);
+
         return task.getTaskSeq();
     }
 
@@ -138,6 +147,9 @@ public class ProjectScheduleManagementService {
         }
         
         task.updateTaskStatus(taskStatusUpdateReqDto.getTaskStatus());
+
+        // Kafka 이벤트 발행
+        publishTaskUpdated(task);
     }
 
     // Task 전체 수정
@@ -181,6 +193,9 @@ public class ProjectScheduleManagementService {
 
             task.updateTask(taskUpdateReqDto, picMember, board.orElse(null));
         }
+
+        // Kafka 이벤트 발행
+        publishTaskUpdated(task);
     }
 
     // Task 보드 변경
@@ -297,7 +312,11 @@ public class ProjectScheduleManagementService {
             throw new ForbiddenException("SUPER/MANAGER만 Task를 삭제할 수 있습니다.");
         }
         
+        Long taskSeqToDelete = task.getTaskSeq();
         taskRepository.delete(task);
+
+        // Kafka 이벤트 발행
+        publishTaskDeleted(taskSeqToDelete);
     }
 
     // Board 삭제 (개인화면용 - 본인이 생성한 Board만 삭제 가능)
@@ -345,6 +364,46 @@ public class ProjectScheduleManagementService {
                 throw new ForbiddenException("본인이 생성한 보드만 순서를 변경할 수 있습니다.");
             }
             board.updateOrders(update.getNewOrders());
+        }
+    }
+
+    // ========== Kafka 이벤트 발행 메서드 ==========
+
+    /**
+     * Task 생성 이벤트 발행
+     */
+    private void publishTaskCreated(Task task) {
+        try {
+            TaskEvent event = TaskEvent.fromEntity(task);
+            kafkaTemplate.send("task.task.created", event);
+            log.info("📤 Task 생성 이벤트 발행: taskSeq={}", task.getTaskSeq());
+        } catch (Exception e) {
+            log.error("❌ Task 생성 이벤트 발행 실패: taskSeq={}, error={}", task.getTaskSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Task 수정 이벤트 발행
+     */
+    private void publishTaskUpdated(Task task) {
+        try {
+            TaskEvent event = TaskEvent.fromEntity(task);
+            kafkaTemplate.send("task.task.updated", event);
+            log.info("📤 Task 수정 이벤트 발행: taskSeq={}", task.getTaskSeq());
+        } catch (Exception e) {
+            log.error("❌ Task 수정 이벤트 발행 실패: taskSeq={}, error={}", task.getTaskSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Task 삭제 이벤트 발행
+     */
+    private void publishTaskDeleted(Long taskSeq) {
+        try {
+            kafkaTemplate.send("task.task.deleted", taskSeq);
+            log.info("📤 Task 삭제 이벤트 발행: taskSeq={}", taskSeq);
+        } catch (Exception e) {
+            log.error("❌ Task 삭제 이벤트 발행 실패: taskSeq={}, error={}", taskSeq, e.getMessage(), e);
         }
     }
 }

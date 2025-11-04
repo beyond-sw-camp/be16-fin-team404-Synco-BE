@@ -1,7 +1,7 @@
 package com.team404.synco.task.service;
 
-import com.team404.synco.common.constant.Authority;
 import com.team404.synco.task.constant.TaskStatus;
+import com.team404.synco.task.dto.kafka.TaskEvent;
 import com.team404.synco.task.dto.request.PersonalTaskCreateReqDto;
 import com.team404.synco.task.dto.request.PersonalTaskUpdateReqDto;
 import com.team404.synco.task.dto.request.TaskStatusUpdateReqDto;
@@ -12,8 +12,9 @@ import com.team404.synco.task.entity.Task;
 import com.team404.synco.task.repository.ScheduleManagementChannelMemberRepository;
 import com.team404.synco.task.repository.TaskRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PersonalScheduleManagementService {
 
     private final TaskRepository taskRepository;
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     // 개인 스케줄 Task 생성
     @Transactional
@@ -35,7 +38,12 @@ public class PersonalScheduleManagementService {
                 .findByMemberSeqAndWorkSpaceSeq(memberSeq, workSpaceSeq)
                 .orElseThrow(() -> new EntityNotFoundException("일정관리 채널 멤버를 찾을 수 없습니다."));
 
-        return taskRepository.save(createReqDto.toEntity(member)).getTaskSeq();
+        Task savedTask = taskRepository.save(createReqDto.toEntity(member));
+        
+        // Kafka 이벤트 발행
+        publishTaskCreated(savedTask);
+        
+        return savedTask.getTaskSeq();
     }
 
     // 개인 스케줄 Task 조회 (상태별로 그룹화)
@@ -82,6 +90,9 @@ public class PersonalScheduleManagementService {
                 .orElseThrow(() -> new EntityNotFoundException("해당 워크스페이스에 참여하지 않은 사용자입니다."));
 
         task.updatePersonalTask(updateReqDto);
+        
+        // Kafka 이벤트 발행
+        publishTaskUpdated(task);
     }
 
     // 개인 스케줄 Task 상태만 변경 (칸반보드 드래그 앤 드롭용)
@@ -96,6 +107,9 @@ public class PersonalScheduleManagementService {
                 .orElseThrow(() -> new EntityNotFoundException("해당 워크스페이스에 참여하지 않은 사용자입니다."));
 
         task.updateTaskStatus(statusUpdateReqDto.getTaskStatus());
+        
+        // Kafka 이벤트 발행
+        publishTaskUpdated(task);
     }
 
     // 개인 스케줄 Task 삭제
@@ -109,6 +123,50 @@ public class PersonalScheduleManagementService {
                 .findByMemberSeqAndWorkSpaceSeq(memberSeq, task.getPicMemberSeq().getWorkSpaceSeq())
                 .orElseThrow(() -> new EntityNotFoundException("해당 워크스페이스에 참여하지 않은 사용자입니다."));
 
+        Long taskSeqToDelete = task.getTaskSeq();
         taskRepository.delete(task);
+        
+        // Kafka 이벤트 발행
+        publishTaskDeleted(taskSeqToDelete);
+    }
+    
+    // ========== Kafka 이벤트 발행 메서드 ==========
+    
+    /**
+     * Task 생성 이벤트 발행
+     */
+    private void publishTaskCreated(Task task) {
+        try {
+            TaskEvent event = TaskEvent.fromEntity(task);
+            kafkaTemplate.send("task.task.created", event);
+            log.info("📤 Task 생성 이벤트 발행: taskSeq={}", task.getTaskSeq());
+        } catch (Exception e) {
+            log.error("❌ Task 생성 이벤트 발행 실패: taskSeq={}, error={}", task.getTaskSeq(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Task 수정 이벤트 발행
+     */
+    private void publishTaskUpdated(Task task) {
+        try {
+            TaskEvent event = TaskEvent.fromEntity(task);
+            kafkaTemplate.send("task.task.updated", event);
+            log.info("📤 Task 수정 이벤트 발행: taskSeq={}", task.getTaskSeq());
+        } catch (Exception e) {
+            log.error("❌ Task 수정 이벤트 발행 실패: taskSeq={}, error={}", task.getTaskSeq(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Task 삭제 이벤트 발행
+     */
+    private void publishTaskDeleted(Long taskSeq) {
+        try {
+            kafkaTemplate.send("task.task.deleted", taskSeq);
+            log.info("📤 Task 삭제 이벤트 발행: taskSeq={}", taskSeq);
+        } catch (Exception e) {
+            log.error("❌ Task 삭제 이벤트 발행 실패: taskSeq={}, error={}", taskSeq, e.getMessage(), e);
+        }
     }
 }
