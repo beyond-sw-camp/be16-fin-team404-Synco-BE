@@ -229,6 +229,7 @@ public class CommonDriveService {
 
         // 워크스페이스의 모든 멤버에게 알림 전송
         for(Long memberSeq : workSpaceMemberList) {
+            if(memberSeq.equals(userId)) continue; // 본인 제외
             AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), "alarm-drive",
                     "[공유문서 생성] 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
             redisEventPublisher.publish("alarm-drive", alarmResDto);
