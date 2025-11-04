@@ -16,5 +16,6 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findAllByMemberAndWorkSpaceAndYnReadAndAlarmType(Member member, WorkSpace workSpace, String isFalse, AlarmType alarmType);
     Iterable<Alarm> deleteAllByMemberAndAlarmType(Member member, AlarmType alarmType);
     Iterable<Alarm> deleteAllByMemberAndWorkSpaceAndAlarmType(Member member, WorkSpace workSpace, AlarmType alarmType);   Iterable<Alarm> deleteAllByMemberAndYnRead(Member member, String isFalse);
-    Iterable<Alarm> deleteAllByMemberAndWorkSpaceAndYnRead(Member member, WorkSpace workSpace, String isFalse);
+    Iterable<Alarm> deleteAllByMember(Member member);
+    Iterable<Alarm> deleteAllByMemberAndWorkSpace(Member member, WorkSpace workSpace);
 }

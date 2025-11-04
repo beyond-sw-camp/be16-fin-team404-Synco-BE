@@ -38,25 +38,20 @@ public class AlarmService {
         Member member = memberRepository.findById(Long.valueOf(alarmResDto.getReceiverId()))
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
 
-        log.info("멤버 ID : {}", member.getMemberSeq());
 
         if(!YnColumn.IS_FALSE.equals(member.getYnAlarmOffSet()) || alarmResDto.getAlarmType().equals(AlarmType.CHAT)){
             try {
                 // DB 저장 시도
                 Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
-                log.info("알림 DB 저장 성공");
 
                 // 저장 성공 시에만 SSE 전송
                 sseService.sendToClient(AlarmResDto.fromEntity(alarm));
-                log.info("SSE 전송 성공");
 
             } catch (DataAccessException e) {
                 // DB 관련 예외 (JPA, JDBC, Hibernate 등)
-                log.error("DB 저장 실패로 인해 SSE 전송이 중단되었습니다. 원인: {}", e.getMessage(), e);
                 throw new RuntimeException("알림 저장 중 오류가 발생했습니다.", e);
             } catch (Exception e) {
                 // 기타 예외 처리
-                log.error("알림 생성 중 알 수 없는 오류 발생: {}", e.getMessage(), e);
                 throw new RuntimeException("알림 생성 중 오류가 발생했습니다.", e);
             }
         }
@@ -118,7 +113,7 @@ public class AlarmService {
     // 알림 삭제 처리(개인 모두)
     public void deleteAllPersonalAlarm(Long memberSeq){
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        alarmRepository.deleteAllByMemberAndYnRead(member, YnColumn.IS_FALSE)
+        alarmRepository.deleteAllByMember(member)
                 .forEach(Alarm::updateReadStatus);
     }
 
@@ -127,7 +122,7 @@ public class AlarmService {
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmFindReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
-        alarmRepository.deleteAllByMemberAndWorkSpaceAndYnRead(member, workSpace, YnColumn.IS_FALSE)
+        alarmRepository.deleteAllByMemberAndWorkSpace(member, workSpace)
                 .forEach(Alarm::updateReadStatus);
     }
 

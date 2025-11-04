@@ -51,15 +51,17 @@ public class SseService implements MessageListener {
 
     // SSE 연결 (다중 연결 지원)
     public SseEmitter connect(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId가 null입니다. SSE 연결을 등록할 수 없습니다.");
+        }
+
         SseEmitter sseEmitter = new SseEmitter(14400 * 60 * 1000L);
 
         // 🔹 1. 콜백 등록 (여기에 onCompletion / onTimeout 넣기)
         sseEmitter.onCompletion(() -> {
-            log.info("[SSE] 연결 종료 → emitter 제거");
             sseEmitterRegistry.removeEmitter(getReceiver(userId));
         });
         sseEmitter.onTimeout(() -> {
-            log.info("[SSE] 타임아웃 발생 → emitter 제거");
             sseEmitter.complete();
             sseEmitterRegistry.removeEmitter(getReceiver(userId));
         });
@@ -87,7 +89,6 @@ public class SseService implements MessageListener {
 
         List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(alarmResDto.getReceiverId());
         if (emitters.isEmpty()) {
-            log.info("[SSE] emitter 없음 — DB 저장만 수행 (receiverId={})", alarmResDto.getReceiverId());
             return;
         }
 
@@ -99,8 +100,7 @@ public class SseService implements MessageListener {
                 emitter.send(SseEmitter.event()
                         .name("alarm")
                         .data(alarmResDto)
-                        .id(String.valueOf(alarmResDto.getAlarmSeq()))
-                        .reconnectTime(3000L));
+                        .id(String.valueOf(alarmResDto.getAlarmSeq())));
             } catch (IOException | IllegalStateException e) {
                 throw new RuntimeException("알림 전송 실패");
             }
@@ -167,7 +167,6 @@ public class SseService implements MessageListener {
 
         // 4. 각 사용자의 emitter를 찾아서 전송
         for (String targetMemberId : targetMemberList) {
-            log.info("target: " + targetMemberId);
             // 자기 자신은 제외 (이미 상태를 알고 있음)
             if (targetMemberId.equals(memberId)) {
                 continue;
@@ -180,11 +179,10 @@ public class SseService implements MessageListener {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("member-status")
-                            .data(payload)
-                            .reconnectTime(3000L));
+                            .data(payload));
                 } catch (IOException | IllegalStateException e) {
-                    log.info("[SSE] member-status 전송 실패: from={}, to={}, error={}",
-                            memberId, targetMemberId, e.getMessage());
+                    sseEmitterRegistry.removeEmitter(targetMemberId);
+
                 }
             }
         }
