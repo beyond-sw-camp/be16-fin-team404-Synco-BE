@@ -62,11 +62,16 @@ public class MemberRedisComponent {
                 return null;
             }
 
+            // Redis에서 가져온 값들은 문자열로 감싸져 있을 수 있으므로 파싱 필요
+            String nameStr = info.get(MEMBER_NAME) != null ? info.get(MEMBER_NAME).toString() : "";
+            String profileUrlStr = info.get(MEMBER_PROFILE_URL) != null ? info.get(MEMBER_PROFILE_URL).toString() : "";
+            String activeStatusStr = info.get(ACTIVE_STATUS) != null ? info.get(ACTIVE_STATUS).toString() : "OFFLINE";
+            
             return MemberInfoDto.builder()
                     .memberSeq(memberSeq)
-                    .name((String) info.get(MEMBER_NAME))
-                    .profileImageUrl((String) info.get(MEMBER_PROFILE_URL))
-                    .activeStatus(ActiveStatus.valueOf((String) info.get(ACTIVE_STATUS)))
+                    .name(parseJsonString(nameStr))
+                    .profileImageUrl(parseJsonString(profileUrlStr))
+                    .activeStatus(ActiveStatus.valueOf(parseJsonString(activeStatusStr)))
                     .build();
 
         } catch (DataAccessException e) {
@@ -115,11 +120,16 @@ public class MemberRedisComponent {
                         Map<Object, Object> info = memberRedisTemplate.opsForHash().entries(memberKey);
                         if (info.isEmpty()) return null;
 
+                        // Redis에서 가져온 값들은 문자열로 감싸져 있을 수 있으므로 파싱 필요
+                        String nameStr = info.get(MEMBER_NAME) != null ? info.get(MEMBER_NAME).toString() : "";
+                        String profileUrlStr = info.get(MEMBER_PROFILE_URL) != null ? info.get(MEMBER_PROFILE_URL).toString() : "";
+                        String activeStatusStr = info.get(ACTIVE_STATUS) != null ? info.get(ACTIVE_STATUS).toString() : "OFFLINE";
+                        
                         return MemberInfoDto.builder()
                                 .memberSeq(seq)
-                                .name((String) info.get(MEMBER_NAME))
-                                .profileImageUrl((String) info.get(MEMBER_PROFILE_URL))
-                                .activeStatus(ActiveStatus.valueOf((String) info.get(ACTIVE_STATUS)))
+                                .name(parseJsonString(nameStr))
+                                .profileImageUrl(parseJsonString(profileUrlStr))
+                                .activeStatus(ActiveStatus.valueOf(parseJsonString(activeStatusStr)))
                                 .build();
                     })
                     .filter(Objects::nonNull)

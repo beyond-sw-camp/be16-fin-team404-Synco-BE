@@ -654,6 +654,27 @@ public class ChatService {
             String otherName = chatRedisService.getMemberName(otherMemberSeq);
             String otherProfileUrl = chatRedisService.getMemberProfileUrl(otherMemberSeq);
 
+            // 마지막 메시지 조회
+            String lastMessage = null;
+            try {
+                Optional<ChatMessage> latestMessageOpt = chatMessageRepository.findTop1ByChatChannelMember_ChatChannel_ChatChannelSeqOrderByChatMessageSeqDesc(channel.getChatChannelSeq());
+                if (latestMessageOpt.isPresent()) {
+                    ChatMessage latestMessage = latestMessageOpt.get();
+                    // 파일이 있는 경우
+                    if (latestMessage.getChatMessageFileUrls() != null && !latestMessage.getChatMessageFileUrls().isEmpty()) {
+                        lastMessage = "[파일]";
+                    } else {
+                        lastMessage = latestMessage.getChatMessageText();
+                        if (lastMessage == null || lastMessage.trim().isEmpty()) {
+                            lastMessage = "";
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ 마지막 메시지 조회 실패: channelSeq={}", channel.getChatChannelSeq(), e);
+                // 마지막 메시지 조회 실패해도 목록은 반환
+            }
+
             // DTO 생성
             result.add(MyChatListResDto.builder()
                     .channelSeq(channel.getChatChannelSeq())
@@ -662,6 +683,7 @@ public class ChatService {
                     .workspaceSeq(channel.getWorkSpaceSeq())
                     .workSpaceType(WorkSpaceType.INDIVIDUAL)
                     .unreadCount(unreadCount)
+                    .lastMessage(lastMessage)
                     .build());
         } catch (Exception e) {
             log.error("⚠️ 채널 처리 중 오류 발생: chatChannelMemberSeq={}", 
