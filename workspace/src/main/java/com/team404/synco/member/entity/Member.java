@@ -51,7 +51,7 @@ public class Member extends BaseEntity {
     private String ynDel = YnColumn.IS_FALSE;
     @Column(nullable = false)
     @Builder.Default
-    private String ynAlarmOffSet = YnColumn.IS_FALSE;
+    private String ynAlarmOffSet = YnColumn.IS_TRUE;
     @OneToMany(mappedBy = "member")
     private List<Alarm> alarmList = new ArrayList<>();
     @OneToMany(mappedBy = "member")

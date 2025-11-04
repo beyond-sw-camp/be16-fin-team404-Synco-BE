@@ -11,11 +11,10 @@ import com.team404.synco.member.entity.Member;
 import com.team404.synco.member.repository.MemberRepository;
 import com.team404.synco.workspace.dto.WorkSpaceInfoResDto;
 import com.team404.synco.workspace.dto.WorkSpaceMemberInfoResDto;
-import com.team404.synco.workspace.service.WorkSpaceService;
+import com.team404.synco.workspace.service.WorkSpaceRedisService;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -28,26 +27,13 @@ import java.util.*;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SseService implements MessageListener {
     private final MemberRepository memberRepository;
     private final FriendRepository friendRepository;
     private final SseEmitterRegistry sseEmitterRegistry;
     private final ObjectMapper objectMapper;
-
-    @Lazy
-    @Autowired
-    private WorkSpaceService workSpaceService; // 순환참조 문제로 필드 주입 + Lazy
-
-    public SseService(
-            MemberRepository memberRepository, FriendRepository friendRepository,
-            SseEmitterRegistry sseEmitterRegistry,
-            ObjectMapper objectMapper
-    ) {
-        this.memberRepository = memberRepository;
-        this.friendRepository = friendRepository;
-        this.sseEmitterRegistry = sseEmitterRegistry;
-        this.objectMapper = objectMapper;
-    }
+    private final WorkSpaceRedisService workSpaceRedisService;
 
     // SSE 연결 (다중 연결 지원)
     public SseEmitter connect(Long userId) {
@@ -81,6 +67,7 @@ public class SseService implements MessageListener {
     }
 
     public void unSubscribe(Long userId) {
+        log.info("연결 종료");
         sseEmitterRegistry.removeEmitter(getReceiver(userId));
     }
 
@@ -99,8 +86,7 @@ public class SseService implements MessageListener {
             try {
                 emitter.send(SseEmitter.event()
                         .name("alarm")
-                        .data(alarmResDto)
-                        .id(String.valueOf(alarmResDto.getAlarmSeq())));
+                        .data(alarmResDto));
             } catch (IOException | IllegalStateException e) {
                 throw new RuntimeException("알림 전송 실패");
             }
@@ -125,6 +111,7 @@ public class SseService implements MessageListener {
                             .name("ping")
                             .data("keep-alive"));
                 } catch (IOException | IllegalStateException e) {
+                    log.info("연결 종료 : {}", e.getMessage());
                     sseEmitterRegistry.removeEmitter(memberId);
                 }
             }
@@ -137,52 +124,57 @@ public class SseService implements MessageListener {
         String memberId = memberStatusResDto.getMemberId();
 
         String payload;
-        try {
-            payload = objectMapper.writeValueAsString(memberStatusResDto);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        try { payload = objectMapper.writeValueAsString(memberStatusResDto); }
+        catch (JsonProcessingException e) { throw new RuntimeException(e); }
 
-        // 1. 해당 멤버의 친구 목록 조회
         Member member = memberRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         List<String> friendList = findMyFriendList(member.getMemberSeq());
 
-        // 2. 해당 멤버가 속한 워크스페이스의 멤버 목록 조회 후 memberId 변환
-        List<String> workSpaceMemberList = workSpaceService.findMyWorkSpaceList(member.getMemberSeq()).stream()
-                .map(WorkSpaceInfoResDto::getWorkSpaceSeq)
-                .flatMap(workSpaceSeq -> workSpaceService.findWorkSpaceMemberList(workSpaceSeq).stream())
-                .map(WorkSpaceMemberInfoResDto::getMemberSeq)
-                .map(seq -> memberRepository.findById(seq)
-                        .map(Member::getMemberId)
-                        .orElse(null)) // 존재하지 않는 경우 null 반환
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        // 내 워크스페이스 목록 (Redis DTO / Fallback(Long) 모두 대응)
+        List<?> myWorkSpaceList = workSpaceRedisService.findMyWorkSpaceList(member.getMemberSeq());
+        List<Long> workSpaceSeqList =
+                (!myWorkSpaceList.isEmpty() && myWorkSpaceList.get(0) instanceof WorkSpaceInfoResDto)
+                        ? ((List<WorkSpaceInfoResDto>) myWorkSpaceList).stream()
+                        .map(WorkSpaceInfoResDto::getWorkSpaceSeq).filter(Objects::nonNull).distinct().toList()
+                        : (!myWorkSpaceList.isEmpty() && myWorkSpaceList.get(0) instanceof Long)
+                        ? ((List<Long>) myWorkSpaceList).stream().skip(1).filter(Objects::nonNull).distinct().toList()
+                        : Collections.emptyList();
 
-        // 3. 모든 관련 사용자 목록 합치기 (중복 제거)
+        // 각 워크스페이스 멤버 가져오기(REDIS만 사용, SUPER 식별 불필요)
+        Set<Long> memberSeqs = new HashSet<>();
+        for (Long wsSeq : workSpaceSeqList) {
+            List<?> raw = workSpaceRedisService.findWorkSpaceMemberList(wsSeq, null);
+            if (!raw.isEmpty() && raw.get(0) instanceof WorkSpaceMemberInfoResDto) {
+                ((List<WorkSpaceMemberInfoResDto>) raw).forEach(m -> { if (m.getMemberSeq()!=null) memberSeqs.add(m.getMemberSeq()); });
+            } else if (!raw.isEmpty() && raw.get(0) instanceof Long) {
+                ((List<Long>) raw).stream().filter(Objects::nonNull).forEach(memberSeqs::add);
+            }
+        }
+
+        // memberSeq -> memberId
+        List<String> workSpaceMemberList = memberSeqs.isEmpty()
+                ? Collections.emptyList()
+                : memberRepository.findAllById(memberSeqs).stream()
+                .map(Member::getMemberId).filter(Objects::nonNull).distinct().toList();
+
+        // 대상 합치기(본인 제외)
         Set<String> targetMemberList = new HashSet<>();
         targetMemberList.addAll(friendList);
         targetMemberList.addAll(workSpaceMemberList);
+        targetMemberList.remove(memberId);
 
-        // 4. 각 사용자의 emitter를 찾아서 전송
+        // 브로드캐스트
         for (String targetMemberId : targetMemberList) {
-            // 자기 자신은 제외 (이미 상태를 알고 있음)
-            if (targetMemberId.equals(memberId)) {
-                continue;
-            }
-
             List<SseEmitter> emitters = sseEmitterRegistry.getEmitters(targetMemberId);
+            if (emitters == null || emitters.isEmpty()) continue;
             List<SseEmitter> snapshot = new ArrayList<>(emitters);
-
             for (SseEmitter emitter : snapshot) {
                 try {
-                    emitter.send(SseEmitter.event()
-                            .name("member-status")
-                            .data(payload));
+                    emitter.send(SseEmitter.event().name("member-status").data(payload));
                 } catch (IOException | IllegalStateException e) {
-                    sseEmitterRegistry.removeEmitter(targetMemberId);
-
+                    log.info("연결 종료 : {}", e.getMessage());
+                    sseEmitterRegistry.removeEmitter(targetMemberId); // broken-pipe 정리
                 }
             }
         }
