@@ -32,7 +32,7 @@ public class ProjectDocumentRedisService implements MessageListener {
     private static final String LINE_LOCKS_KEY = "document:locks:"; // 라인 락 키
     // 프로젝트 멤버 확인용 (Redis DB 2)
     private static final String WORKSPACE_KEY_PREFIX = "workSpaceSeq:";
-    private static final String FRIEND_LIST = "friendList";
+    private static final String MEMBER_LIST = "memberList";
 
     // TTL 설정 (안전장치: 비정상 종료 시 자동 정리)
     private static final int ONLINE_USERS_TTL_MINUTES = 30;
@@ -297,6 +297,8 @@ public class ProjectDocumentRedisService implements MessageListener {
             .build();
     }
 
+
+
     // ==================== 라인 락 관리 ====================
 
     /**
@@ -416,7 +418,7 @@ public class ProjectDocumentRedisService implements MessageListener {
             String workspaceKey = WORKSPACE_KEY_PREFIX + workspaceSeq;
 
             // Redis에서 friendList 조회
-            Object existing = workspaceMembersTemplate.opsForHash().get(workspaceKey, FRIEND_LIST);
+            Object existing = workspaceMembersTemplate.opsForHash().get(workspaceKey, MEMBER_LIST);
 
             if (existing == null) {
                 log.warn("⚠️ 프로젝트 멤버 목록 없음 - WorkspaceSeq: {}", workspaceSeq);
@@ -433,6 +435,42 @@ public class ProjectDocumentRedisService implements MessageListener {
 
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * 워크스페이스 멤버 목록 조회
+     */
+    public List<Long> getWorkSpaceMemberList(Long workspaceSeq) {
+        try {
+            String workspaceKey = WORKSPACE_KEY_PREFIX + workspaceSeq;
+
+            // Redis에서 memberList 조회 (워크스페이스 멤버 목록)
+            Object existing = workspaceMembersTemplate.opsForHash().get(workspaceKey, MEMBER_LIST);
+
+            if (existing == null) {
+                log.warn("⚠️ 프로젝트 멤버 목록 없음 - WorkspaceSeq: {}", workspaceSeq);
+                return Collections.emptyList();
+            }
+
+            // JSON 파싱 (문자열로 감싸져 있을 수 있으므로 처리)
+            String memberListStr = existing.toString();
+            // 따옴표 제거 (있는 경우)
+            if (memberListStr.startsWith("\"") && memberListStr.endsWith("\"")) {
+                memberListStr = memberListStr.substring(1, memberListStr.length() - 1);
+            }
+            
+            List<Long> memberList = objectMapper.readValue(
+                    memberListStr,
+                    new TypeReference<List<Long>>() {}
+            );
+
+            log.info("✅ 워크스페이스 멤버 목록 조회 성공 - WorkspaceSeq: {}, 멤버 수: {}", workspaceSeq, memberList.size());
+            return memberList;
+
+        } catch (Exception e) {
+            log.error("❌ 워크스페이스 멤버 목록 조회 실패 - WorkspaceSeq: {}", workspaceSeq, e);
+            return Collections.emptyList();
         }
     }
 

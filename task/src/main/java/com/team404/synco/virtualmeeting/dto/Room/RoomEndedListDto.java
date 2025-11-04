@@ -4,6 +4,8 @@ import com.team404.synco.virtualmeeting.entity.Room;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class RoomEndedListDto {
@@ -12,6 +14,7 @@ public class RoomEndedListDto {
     private String roomDescription;
     private Integer activeUserCount;
     private Long hostId;
+    private LocalDateTime createdAt;
 
     public static RoomEndedListDto fromEntity(Room room){
         return RoomEndedListDto.builder()
@@ -20,6 +23,7 @@ public class RoomEndedListDto {
                 .roomDescription(room.getRoomDescription())
                 .activeUserCount(room.getRoomParticipantList().size())
                 .hostId(room.getHostId())
+                .createdAt(room.getCreatedAt())
                 .build();
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
@@ -56,6 +57,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     WHERE m.chatChannelMember.chatChannel.chatChannelSeq = :channelSeq
     """)
     Long findLatestSeqByChannel(@Param("channelSeq") Long channelSeq);
+
+    // ✅ 최신 메시지 1개 조회
+    Optional<ChatMessage> findTop1ByChatChannelMember_ChatChannel_ChatChannelSeqOrderByChatMessageSeqDesc(Long channelSeq);
 
     @Modifying
     @Query("DELETE FROM ChatMessage m WHERE m.chatChannelMember.chatChannel = :channel")

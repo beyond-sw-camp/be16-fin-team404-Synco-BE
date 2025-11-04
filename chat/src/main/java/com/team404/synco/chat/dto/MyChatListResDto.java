@@ -17,4 +17,5 @@ public class MyChatListResDto {
     private Long workspaceSeq;
     private WorkSpaceType workSpaceType;
     private Long unreadCount;
+    private String lastMessage;
 }
