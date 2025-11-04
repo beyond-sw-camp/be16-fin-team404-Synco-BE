@@ -45,9 +45,11 @@ public class SseService implements MessageListener {
 
         // 🔹 1. 콜백 등록 (여기에 onCompletion / onTimeout 넣기)
         sseEmitter.onCompletion(() -> {
+            log.info("정상적으로 브라우저에서 연결이 종료되었습니다. onCompletion()");
             sseEmitterRegistry.removeEmitter(getReceiver(userId));
         });
         sseEmitter.onTimeout(() -> {
+            log.info("sseEmitter의 연결시간이 초과되었습니다.");
             sseEmitter.complete();
             sseEmitterRegistry.removeEmitter(getReceiver(userId));
         });
@@ -59,6 +61,7 @@ public class SseService implements MessageListener {
             sseEmitter.send(SseEmitter.event()
                     .name("connect")
                     .data("SSE connected"));
+            log.info("sseEmitter 연결 성공");
         } catch (IOException e) {
             throw new RuntimeException("SSE 연결 중 오류 발생", e);
         }
@@ -94,7 +97,7 @@ public class SseService implements MessageListener {
     }
 
     // Heartbeat (ping) 주기적 전송 - 다중 연결 브로드캐스트
-    @Scheduled(initialDelay = 0, fixedRate = 15000)
+    @Scheduled(fixedRate = 15000)
     private void sendHeartbeatToAllEmitters() throws Exception {
         Map<String, List<SseEmitter>> all = sseEmitterRegistry.getAllEmitters();
 
@@ -173,7 +176,7 @@ public class SseService implements MessageListener {
                 try {
                     emitter.send(SseEmitter.event().name("member-status").data(payload));
                 } catch (IOException | IllegalStateException e) {
-                    log.info("연결 종료 : {}", e.getMessage());
+                    log.info("멤버 상태 전송 실패 -> 연결 종료 : {}", e.getMessage());
                     sseEmitterRegistry.removeEmitter(targetMemberId); // broken-pipe 정리
                 }
             }
@@ -183,12 +186,7 @@ public class SseService implements MessageListener {
     // pub/sub으로 들어온 알림 → 실시간 전송
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        try {
-            AlarmResDto alarmResDto = objectMapper.readValue(message.getBody(), AlarmResDto.class);
-            sendToClient(alarmResDto);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
     }
 
     private String getReceiver(Long userId){
