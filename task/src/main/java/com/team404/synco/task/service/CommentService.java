@@ -32,7 +32,7 @@ public class CommentService {
     private final ScheduleManagementChannelMemberRepository scheduleManagementChannelMemberRepository;
     private final MemberRedisComponent memberRedisComponent;
     private final RedisEventPublisher redisEventPublisher;
-    
+
     // 댓글 생성 (일반 댓글 또는 대댓글)
     public Long createComment(Long memberSeq, Long taskSeq, CommentCreateReqDto commentCreateReqDto) {
         Task task = taskRepository.findById(taskSeq)
@@ -62,27 +62,35 @@ public class CommentService {
 
         // 답글이면
         if(comment.getParentCommentSeq() != null){
-            // 업무 담당자에게 알림 전송
-            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                    "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
-                            task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
-                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
-            redisEventPublisher.publish("alarm-task", alarmResDto);
+            // 내가 업무 담당자이면서 답글 작성자면 알림 전송 생략
+            if(task.getPicMemberSeq().getMemberSeq() != memberSeq){
+                // 업무 담당자에게 알림 전송
+                alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                        "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
+                                task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
+                        task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
+                redisEventPublisher.publish("alarm-task", alarmResDto);
 
-            // 답글 작성자에게 알림 전송
-            Comment parentComment = commentRepository.findById(comment.getParentCommentSeq())
-                    .orElseThrow(() -> new EntityNotFoundException("부모 댓글을 찾을 수 없습니다."));
-            alarmResDto = AlarmResDto.of(String.valueOf(parentComment.getScheduleManagementChannelMember().getMemberSeq()),
-                    "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
-                            task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
-                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
-            redisEventPublisher.publish("alarm-task", alarmResDto);
+                // 답글 작성자에게 알림 전송, 내가 답글 작성자라면 알림 전송 생략
+                Comment parentComment = commentRepository.findById(comment.getParentCommentSeq())
+                        .orElseThrow(() -> new EntityNotFoundException("부모 댓글을 찾을 수 없습니다."));
+                if(parentComment.getScheduleManagementChannelMember().getMemberSeq() != memberSeq) {
+                    alarmResDto = AlarmResDto.of(String.valueOf(parentComment.getScheduleManagementChannelMember().getMemberSeq()),
+                            "alarm-task", "[답글 등록] " + workSpaceName + "프로젝트의 " +
+                                    task.getTaskTitle() + "업무에 " + name + "님이 답글을 달았습니다.",
+                            task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
+                    redisEventPublisher.publish("alarm-task", alarmResDto);
+                }
+            }
         } else {
-            alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
-                    "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " +
-                            task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
-                    task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
-            redisEventPublisher.publish("alarm-task", alarmResDto);
+            // 댓글 작성시 업무 담당자에게 알림 전송, 내가 업무 담당자이면서 댓글 작성자면 알림 전송 생략
+            if(task.getPicMemberSeq().getMemberSeq() != memberSeq){
+                alarmResDto = AlarmResDto.of(String.valueOf(task.getPicMemberSeq().getMemberSeq()),
+                        "alarm-task", "[댓글 등록] " + workSpaceName + "프로젝트의 " +
+                                task.getTaskTitle() + "업무에 " + name + "님이 댓글을 달았습니다.",
+                        task.getPicMemberSeq().getWorkSpaceSeq(), task.getTaskSeq());
+                redisEventPublisher.publish("alarm-task", alarmResDto);
+            }
         }
         return commentRepository.save(comment).getCommentSeq();
     }
@@ -143,6 +151,4 @@ public class CommentService {
 
         commentRepository.delete(comment);
     }
-
-
 }
