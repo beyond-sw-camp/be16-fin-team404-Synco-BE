@@ -4,6 +4,7 @@ import com.team404.synco.alarm.dto.AlarmFindReqDto;
 import com.team404.synco.alarm.dto.AlarmResDto;
 import com.team404.synco.alarm.entity.Alarm;
 import com.team404.synco.alarm.repository.AlarmRepository;
+import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.SseService;
 import com.team404.synco.member.entity.Member;
@@ -39,23 +40,25 @@ public class AlarmService {
 
         log.info("멤버 ID : {}", member.getMemberSeq());
 
-        try {
-            // DB 저장 시도
-            Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
-            log.info("알림 DB 저장 성공");
+        if(!YnColumn.IS_FALSE.equals(member.getYnAlarmOffSet()) || alarmResDto.getAlarmType().equals(AlarmType.CHAT)){
+            try {
+                // DB 저장 시도
+                Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
+                log.info("알림 DB 저장 성공");
 
-            // 저장 성공 시에만 SSE 전송
-            sseService.sendToClient(AlarmResDto.fromEntity(alarm));
-            log.info("SSE 전송 성공");
+                // 저장 성공 시에만 SSE 전송
+                sseService.sendToClient(AlarmResDto.fromEntity(alarm));
+                log.info("SSE 전송 성공");
 
-        } catch (DataAccessException e) {
-            // DB 관련 예외 (JPA, JDBC, Hibernate 등)
-            log.error("DB 저장 실패로 인해 SSE 전송이 중단되었습니다. 원인: {}", e.getMessage(), e);
-            throw new RuntimeException("알림 저장 중 오류가 발생했습니다.", e);
-        } catch (Exception e) {
-            // 기타 예외 처리
-            log.error("알림 생성 중 알 수 없는 오류 발생: {}", e.getMessage(), e);
-            throw new RuntimeException("알림 생성 중 오류가 발생했습니다.", e);
+            } catch (DataAccessException e) {
+                // DB 관련 예외 (JPA, JDBC, Hibernate 등)
+                log.error("DB 저장 실패로 인해 SSE 전송이 중단되었습니다. 원인: {}", e.getMessage(), e);
+                throw new RuntimeException("알림 저장 중 오류가 발생했습니다.", e);
+            } catch (Exception e) {
+                // 기타 예외 처리
+                log.error("알림 생성 중 알 수 없는 오류 발생: {}", e.getMessage(), e);
+                throw new RuntimeException("알림 생성 중 오류가 발생했습니다.", e);
+            }
         }
     }
 

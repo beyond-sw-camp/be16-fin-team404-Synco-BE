@@ -51,7 +51,18 @@ public class SseService implements MessageListener {
 
     // SSE 연결 (다중 연결 지원)
     public SseEmitter connect(Long userId) {
-        SseEmitter sseEmitter = new SseEmitter(0L);
+        SseEmitter sseEmitter = new SseEmitter(14400 * 60 * 1000L);
+
+        // 🔹 1. 콜백 등록 (여기에 onCompletion / onTimeout 넣기)
+        sseEmitter.onCompletion(() -> {
+            log.info("[SSE] 연결 종료 → emitter 제거");
+            sseEmitterRegistry.removeEmitter(getReceiver(userId));
+        });
+        sseEmitter.onTimeout(() -> {
+            log.info("[SSE] 타임아웃 발생 → emitter 제거");
+            sseEmitter.complete();
+            sseEmitterRegistry.removeEmitter(getReceiver(userId));
+        });
         // 1) 레지스트리에 반드시 등록
         sseEmitterRegistry.registerEmitter(getReceiver(userId), sseEmitter);
 
@@ -60,10 +71,8 @@ public class SseService implements MessageListener {
             sseEmitter.send(SseEmitter.event()
                     .name("connect")
                     .data("SSE connected"));
-            log.info("[SSE 연결 성공] memberId={}", getReceiver(userId));
-            log.info("[SSE] 현재 등록 사용자 수={}", sseEmitterRegistry.getAllEmitters().size());
         } catch (IOException e) {
-            throw new RuntimeException("SSE 연결 중 오류 발생");
+            throw new RuntimeException("SSE 연결 중 오류 발생", e);
         }
 
         return sseEmitter;
@@ -92,7 +101,6 @@ public class SseService implements MessageListener {
                         .data(alarmResDto)
                         .id(String.valueOf(alarmResDto.getAlarmSeq()))
                         .reconnectTime(3000L));
-                log.info("[SSE] 알림 실시간 전송 성공 (to {})", alarmResDto.getReceiverId());
             } catch (IOException | IllegalStateException e) {
                 throw new RuntimeException("알림 전송 실패");
             }
@@ -100,43 +108,33 @@ public class SseService implements MessageListener {
     }
 
     // Heartbeat (ping) 주기적 전송 - 다중 연결 브로드캐스트
-    @Scheduled(fixedRate = 15000)
-    private void sendHeartbeatToAllEmitters() {
+    @Scheduled(initialDelay = 0, fixedRate = 15000)
+    private void sendHeartbeatToAllEmitters() throws Exception {
         Map<String, List<SseEmitter>> all = sseEmitterRegistry.getAllEmitters();
 
         if (all.isEmpty()) {
-            log.debug("[SSE Heartbeat] 전송 대상 없음");
             return;
         }
 
         for (Map.Entry<String, List<SseEmitter>> entry : all.entrySet()) {
             String memberId = entry.getKey();
             List<SseEmitter> snapshot = new ArrayList<>(entry.getValue());
-
             for (SseEmitter emitter : snapshot) {
                 try {
                     emitter.send(SseEmitter.event()
                             .name("ping")
                             .data("keep-alive"));
                 } catch (IOException | IllegalStateException e) {
-                    // 연결이 끊긴 emitter 제거
-                    log.warn("[SSE] Heartbeat 전송 실패 → emitter 제거: {}", memberId);
                     sseEmitterRegistry.removeEmitter(memberId);
                 }
             }
         }
-
-        log.debug("[SSE Heartbeat] 완료 - 현재 등록 사용자 수: {}", all.size());
     }
 
 
     // 멤버 상태 변경(온라인/자리비움/오프라인) - 다중 연결 브로드캐스트 + 이벤트명 지정
     public void changeMemberStatus(MemberStatusResDto memberStatusResDto) {
         String memberId = memberStatusResDto.getMemberId();
-        if (memberId == null || memberId.isBlank()) {
-            log.info("[SSE] memberId가 null/blank - member-status 전송 건너뛰기: memberId={}", memberId);
-            return;
-        }
 
         String payload;
         try {
@@ -168,9 +166,6 @@ public class SseService implements MessageListener {
         targetMemberList.addAll(workSpaceMemberList);
 
         // 4. 각 사용자의 emitter를 찾아서 전송
-        int successCount = 0;
-        int failCount = 0;
-
         for (String targetMemberId : targetMemberList) {
             log.info("target: " + targetMemberId);
             // 자기 자신은 제외 (이미 상태를 알고 있음)
@@ -187,18 +182,12 @@ public class SseService implements MessageListener {
                             .name("member-status")
                             .data(payload)
                             .reconnectTime(3000L));
-                    successCount++;
-                    log.info("[SSE] member-status 전송 성공: from={}, to={}", memberId, targetMemberId);
                 } catch (IOException | IllegalStateException e) {
-                    failCount++;
                     log.info("[SSE] member-status 전송 실패: from={}, to={}, error={}",
                             memberId, targetMemberId, e.getMessage());
                 }
             }
         }
-
-        log.info("[SSE] member-status 전송 완료: memberId={}, 총 대상={}, 성공={}, 실패={}",
-                memberId, targetMemberList.size(), successCount, failCount);
     }
 
     // pub/sub으로 들어온 알림 → 실시간 전송

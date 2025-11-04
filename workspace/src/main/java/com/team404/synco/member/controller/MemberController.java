@@ -1,5 +1,6 @@
 package com.team404.synco.member.controller;
 
+import com.team404.synco.alarm.dto.AlarmTurnOnOffReqDto;
 import com.team404.synco.common.dto.ResponseDto;
 import com.team404.synco.common.util.CookieUtil;
 import com.team404.synco.member.dto.*;
@@ -151,4 +152,10 @@ public class MemberController {
         return ResponseEntity.ok(ResponseDto.ok("상태가 성공적으로 변경되었습니다.", HttpStatus.OK));
     }
 
+    @PatchMapping("/alarmTurnOnOff")
+    public ResponseEntity<ResponseDto<?>> updateActiveStatus(@RequestHeader("X-Member-Seq") Long memberSeq,
+                                                             @RequestBody @Validated AlarmTurnOnOffReqDto alarmTurnOnOffReqDto) {
+        memberService.turnOnOffAlarm(memberSeq, alarmTurnOnOffReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("상태가 성공적으로 변경되었습니다.", HttpStatus.OK));
+    }
 }

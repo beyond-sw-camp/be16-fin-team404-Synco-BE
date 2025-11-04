@@ -375,7 +375,8 @@ public class ChatService {
         List<ChatChannelMember> chatChannelMembers = chatChannelMemberRepository.findByChatChannel(chatChannel);
         chatChannelMembers.stream().filter(chatChannelMember -> chatChannelMember.getMemberSeq() != sender.getMemberSeq())
                         .forEach(chatChannelMember -> redisEventPublisher.publish("alarm-chat",
-                AlarmResDto.of(String.valueOf(chatChannelMember.getMemberSeq()), "alarm-chat", savedMessage.getChatMessageText(),
+                AlarmResDto.of(String.valueOf(chatChannelMember.getMemberSeq()), "alarm-chat",
+                        savedMessage.getChatMessageText(),
                         chatChannel.getWorkSpaceSeq(), chatChannel.getChatChannelSeq())));
 
         // ChatMessageResDto 생성하여 반환

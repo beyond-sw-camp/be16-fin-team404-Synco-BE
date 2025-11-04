@@ -97,4 +97,8 @@ public class Member extends BaseEntity {
             this.activeStatus = ActiveStatus.ONLINE;
         }
     }
+
+    public void updateYnAlarmOffSet(String ynAlarmOffSet){
+        this.ynAlarmOffSet = ynAlarmOffSet;
+    }
 }

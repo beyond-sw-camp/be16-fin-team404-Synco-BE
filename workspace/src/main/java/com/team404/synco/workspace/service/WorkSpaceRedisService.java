@@ -161,10 +161,8 @@ public class WorkSpaceRedisService {
                     .toList();
 
         } catch (DataAccessException e) {
-            log.warn("Redis 접근 실패 (memberSeq={})", memberSeq);
             throw e;
         } catch (Exception e) {
-            log.warn("Redis 조회 예외 (memberSeq={}): {}", memberSeq, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -202,10 +200,8 @@ public class WorkSpaceRedisService {
                     .toList();
 
         } catch (DataAccessException e) {
-            log.warn("Redis 접근 실패 (workSpaceSeq={})", workSpaceSeq);
             throw e;
         } catch (Exception e) {
-            log.warn("Redis 조회 예외 (workSpaceSeq={}): {}", workSpaceSeq, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -240,23 +236,4 @@ public class WorkSpaceRedisService {
     public void removeWorkspace(Long workspaceSeq) throws Exception {
         workSpaceRedisTemplate.delete(WORKSPACE_KEY_PREFIX + workspaceSeq);
     }
-
-    // 친구 목록 조회
-    // ToDo : 개발중
-    /*public List<Long> getFriendList(Long workSpaceSeq) {
-        String key = "workSpaceSeq:" + workSpaceSeq;
-        Object redisValue = workSpaceRedisTemplate.opsForHash().get(key, "memberList");
-
-        if (redisValue == null) return new ArrayList<>();
-
-        try {
-            String json = redisValue.toString();
-            if (json.startsWith("\"") && json.endsWith("\"")) {
-                json = json.substring(1, json.length() - 1);
-            }
-            return objectMapper.readValue(json, new TypeReference<List<Long>>() {});
-        } catch (Exception e) {
-            throw new SerializationException("Redis memberList 역직렬화 실패", e);
-        }
-    }*/
 }
