@@ -23,10 +23,7 @@ public class MeetingEventConsumer {
     public void consumeMeetingSummaryCreated(Map<String, Object> data, Acknowledgment acknowledgment) {
         try {
             MeetingEvent event = objectMapper.convertValue(data, MeetingEvent.class);
-            log.info("📥 MeetingSummary 생성 이벤트 수신: recordingSummarySeq={}", event.getRecordingSummarySeq());
-
-            // content = summary + transcript
-            String content = combineContent(event.getSummary(), event.getTranscript());
+            log.info("새 MeetingSummary 생성 이벤트 수신: recordingSummarySeq={}", event.getRecordingSummarySeq());
 
             MeetingSummaryDocument document = MeetingSummaryDocument.builder()
                     .id("meeting_" + event.getRecordingSummarySeq())
@@ -34,7 +31,7 @@ public class MeetingEventConsumer {
                     .recordingSeq(event.getRecordingSeq())
                     .title(event.getTitle())
                     .description(event.getDescription())
-                    .content(content)
+                    .content(event.getSummary())
                     .workspaceSeq(event.getWorkspaceSeq())
                     .roomSeq(event.getRoomSeq())
                     .hostId(event.getHostId())
@@ -45,24 +42,8 @@ public class MeetingEventConsumer {
             meetingIndexService.index(document);
             acknowledgment.acknowledge();
         } catch (Exception e) {
-            log.error("❌ MeetingSummary 생성 처리 실패: error={}", e.getMessage(), e);
+            log.error("MeetingSummary 생성 처리 실패: error={}", e.getMessage(), e);
         }
-    }
-
-    /**
-     * summary와 transcript를 결합하여 content 생성
-     */
-    private String combineContent(String summary, String transcript) {
-        if (summary == null && transcript == null) {
-            return null;
-        }
-        if (summary == null) {
-            return transcript;
-        }
-        if (transcript == null) {
-            return summary;
-        }
-        return summary + " " + transcript;
     }
 }
 

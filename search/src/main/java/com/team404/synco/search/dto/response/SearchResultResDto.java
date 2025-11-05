@@ -40,6 +40,7 @@ public class SearchResultResDto {
                 .type("file")
                 .title(doc.getTitle())
                 .subtitle(doc.getFolderName())
+                .channelId("folder_"+doc.getFolderSeq())
                 .build();
     }
     
@@ -58,7 +59,7 @@ public class SearchResultResDto {
                 .id("meeting_" + doc.getRecordingSummarySeq())
                 .type("meeting")
                 .title(doc.getTitle())
-                .subtitle("회의 요약")
+                .subtitle(doc.getContent())
                 .build();
     }
 }

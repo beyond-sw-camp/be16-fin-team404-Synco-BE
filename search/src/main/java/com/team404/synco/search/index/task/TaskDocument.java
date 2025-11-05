@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
  * 인덱스: task-search-index
  */
 @Document(indexName = "task-search-index")
+@Setting(settingPath = "/elasticsearch/nori_custom_analyzer.json")
 @Getter
 @Builder
 @AllArgsConstructor
@@ -26,10 +28,10 @@ public class TaskDocument {
     @Field(type = FieldType.Long)
     private Long taskSeq;
     
-    @Field(type = FieldType.Text, analyzer = "nori")
+    @Field(type = FieldType.Text, analyzer = "nori_synco_custom")
     private String title;  // taskTitle
     
-    @Field(type = FieldType.Text, analyzer = "nori")
+    @Field(type = FieldType.Text, analyzer = "nori_synco_custom")
     private String content;  // taskContent
     
     @Field(type = FieldType.Keyword)

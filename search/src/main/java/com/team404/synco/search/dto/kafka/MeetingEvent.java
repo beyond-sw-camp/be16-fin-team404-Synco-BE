@@ -17,7 +17,6 @@ public class MeetingEvent {
     private String title;  // Room의 roomName
     private String description;  // Room의 roomDescription
     private String summary;
-    private String transcript;
     private Long workspaceSeq;
     private Long roomSeq;
     private Long hostId;

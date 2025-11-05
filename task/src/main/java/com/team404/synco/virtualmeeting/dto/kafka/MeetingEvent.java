@@ -20,24 +20,22 @@ public class MeetingEvent {
     private String title;  // Room의 roomName
     private String description;  // Room의 roomDescription
     private String summary;
-    private String transcript;
     private Long workspaceSeq;
     private Long roomSeq;
     private Long hostId;
     private LocalDateTime startedAt;
     private LocalDateTime createdAt;
-    
+
     public static MeetingEvent fromEntity(RecordingSummary summary) {
         Recording recording = summary.getRecording();
         Room room = recording.getRoom();
-        
+
         return MeetingEvent.builder()
                 .recordingSummarySeq(summary.getRecordingSummarySeq())
                 .recordingSeq(recording.getRecordingSeq())
                 .title(room.getRoomName())
                 .description(room.getRoomDescription())
                 .summary(summary.getSummary())
-                .transcript(summary.getTranscript())
                 .workspaceSeq(room.getVirtualMeetingChannel().getWorkSpaceSeq())
                 .roomSeq(room.getRoomSeq())
                 .hostId(room.getHostId())

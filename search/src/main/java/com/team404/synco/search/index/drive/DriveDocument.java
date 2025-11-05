@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
  * 인덱스: drive-search-index
  */
 @Document(indexName = "drive-search-index")
+@Setting(settingPath = "/elasticsearch/nori_custom_analyzer.json")
 @Getter
 @Builder
 @AllArgsConstructor
@@ -25,7 +27,7 @@ public class DriveDocument {
     @Field(type = FieldType.Long)
     private Long documentSeq;
     
-    @Field(type = FieldType.Text, analyzer = "nori")
+    @Field(type = FieldType.Text, analyzer = "nori_synco_custom")
     private String title;  // documentName
     
     @Field(type = FieldType.Keyword)
@@ -38,7 +40,10 @@ public class DriveDocument {
     private String folderName;  // subtitle용 (null 가능 - 최상위일 경우)
     
     @Field(type = FieldType.Long)
-    private Long memberSeq;  // 업로더
+    private Long folderSeq;  // 폴더 ID (null 가능 - 최상위일 경우)
+    
+    @Field(type = FieldType.Long)
+    private Long memberSeq;  // 소유자
     
     @Field(type = FieldType.Date, format = {}, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;

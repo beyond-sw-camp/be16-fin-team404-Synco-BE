@@ -93,15 +93,9 @@ public class UnifiedSearchService {
      */
     private List<SearchResultResDto> searchTasks(String keyword, Long workspaceSeq) {
         Page<TaskDocument> page;
-        if (keyword != null && keyword.trim().length() <= 4) {
-            // 짧은 키워드(4글자 이하): 접두(prefix)로 title 또는 content 검색
-            page = taskSearchRepository.searchTitleOrContentPrefixByWorkspace(
-                    workspaceSeq, keyword, Pageable.unpaged());
-        } else {
-            // 긴 키워드(5글자 이상): match로 title 또는 content 검색
-            page = taskSearchRepository.searchTitleOrContentByWorkspace(
-                    workspaceSeq, keyword, Pageable.unpaged());
-        }
+
+        page = taskSearchRepository.searchTitleOrContentByWorkspace(
+                workspaceSeq, keyword, Pageable.unpaged());
 
         return page.getContent().stream()
                 .map(SearchResultResDto::fromTaskDocument)
@@ -113,7 +107,7 @@ public class UnifiedSearchService {
      */
     private List<SearchResultResDto> searchDrives(String keyword, Long workspaceSeq) {
         Page<DriveDocument> page = driveSearchRepository
-                .findByWorkspaceSeqAndTitleContaining(workspaceSeq, keyword, Pageable.unpaged());
+                .searchTitleByWorkspace(workspaceSeq, keyword, Pageable.unpaged()); // 변경
 
         return page.getContent().stream()
                 .map(SearchResultResDto::fromDriveDocument)
@@ -137,7 +131,7 @@ public class UnifiedSearchService {
      */
     private List<SearchResultResDto> searchMeetings(String keyword, Long workspaceSeq) {
         Page<MeetingSummaryDocument> page = meetingSearchRepository
-                .findByWorkspaceSeqAndTitleContaining(workspaceSeq, keyword, Pageable.unpaged());
+                .searchTitleOrContentByWorkspace(workspaceSeq, keyword, Pageable.unpaged());
 
         return page.getContent().stream()
                 .map(SearchResultResDto::fromMeetingSummaryDocument)

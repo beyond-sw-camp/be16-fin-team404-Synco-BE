@@ -34,6 +34,7 @@ public class DriveEventConsumer {
                     .fileSize(event.getFileSize())
                     .workspaceSeq(event.getWorkspaceSeq())
                     .folderName(event.getFolderName())
+                    .folderSeq(event.getFolderSeq())
                     .memberSeq(event.getMemberSeq())
                     .createdAt(event.getCreatedAt())
                     .build();
@@ -60,6 +61,7 @@ public class DriveEventConsumer {
                     .fileSize(event.getFileSize())
                     .workspaceSeq(event.getWorkspaceSeq())
                     .folderName(event.getFolderName())
+                    .folderSeq(event.getFolderSeq())
                     .memberSeq(event.getMemberSeq())
                     .createdAt(event.getCreatedAt())
                     .build();

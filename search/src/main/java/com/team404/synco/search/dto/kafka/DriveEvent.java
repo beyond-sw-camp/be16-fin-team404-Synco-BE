@@ -16,7 +16,8 @@ public class DriveEvent {
     private String documentName;
     private String documentType;
     private Long workspaceSeq;
-    private String folderName;  // null 가능 (최상위일 경우)
+    private String folderName;  // null 가능(최상위일 경우)
+    private Long folderSeq;
     private Long memberSeq;
     private LocalDateTime createdAt;
     private String documentUrl;
