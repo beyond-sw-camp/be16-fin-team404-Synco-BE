@@ -190,7 +190,6 @@ public class MemberService {
         }
         member.registerMemberId(memberIdReqDto.getMemberId());
         workSpaceService.createIndividualWorkSpace(member.getMemberSeq());
-        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
     }
 
     public LoginResDto googleLogin(RedirectDto redirectDto) throws IOException {
