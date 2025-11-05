@@ -90,10 +90,13 @@ public class ProjectScheduleManagementService {
         // 담당자에게 알림 전송
         String workSpaceName = memberRedisComponent.getWorkSpaceName(picMember.getWorkSpaceSeq());
 
-        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(picMember.getMemberSeq()),
-                "alarm-task", "[업무 등록] " +  workSpaceName + " 프로젝트에 새로운 업무가 할당되었습니다.",
-                picMember.getWorkSpaceSeq(), task.getTaskSeq());
-        redisEventPublisher.publish("alarm-task", alarmResDto);
+        // 내가 담당자라면 알림 전송 생략
+        if(picMember.getMemberSeq() != memberSeq){
+            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(picMember.getMemberSeq()),
+                    "alarm-task", "[업무 등록] " +  workSpaceName + " 프로젝트에 새로운 업무가 할당되었습니다.",
+                    picMember.getWorkSpaceSeq(), task.getTaskSeq());
+            redisEventPublisher.publish("alarm-task", alarmResDto);
+        }
         return task.getTaskSeq();
     }
 

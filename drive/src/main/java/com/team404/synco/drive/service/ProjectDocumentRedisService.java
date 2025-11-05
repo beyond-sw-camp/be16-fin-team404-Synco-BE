@@ -1,6 +1,5 @@
 package com.team404.synco.drive.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team404.synco.drive.dto.*;
@@ -472,6 +471,18 @@ public class ProjectDocumentRedisService implements MessageListener {
             log.error("❌ 워크스페이스 멤버 목록 조회 실패 - WorkspaceSeq: {}", workspaceSeq, e);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * 워크스페이스 이름 가져오기
+     */
+    public String getWorkSpaceName(final long workSpaceSeq){
+        String workSpaceName = Objects.requireNonNull(workspaceMembersTemplate.opsForHash().get(WORKSPACE_KEY_PREFIX + workSpaceSeq, "name")).toString();
+        // 따옴표 제거 (있는 경우)
+        if (workSpaceName.startsWith("\"") && workSpaceName.endsWith("\"")) {
+            workSpaceName = workSpaceName.substring(1, workSpaceName.length() - 1);
+        }
+        return workSpaceName;
     }
 
     // ==================== 유틸리티 메서드들 ====================

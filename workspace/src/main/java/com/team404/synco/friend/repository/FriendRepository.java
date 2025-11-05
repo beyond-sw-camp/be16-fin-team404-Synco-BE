@@ -32,6 +32,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, JpaSpecif
     // 친구 목록 & 보낸 요청 목록 (member와 friendStatus로 조회)
     Page<Friend> findAllByMemberAndFriendStatus(Member member, FriendStatus friendStatus, Pageable pageable);
 
+
     // 받은 요청 목록 (상대방이 나에게 보낸 PENDING)
     Page<Friend> findAllByFriendMemberAndFriendStatus(Member member, FriendStatus friendStatus, Pageable pageable);
 

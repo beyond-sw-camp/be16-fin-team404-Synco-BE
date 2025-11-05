@@ -21,6 +21,7 @@ public class MemberResDto {
     private String telNo;
     private ActiveStatus activeStatus;
     private SocialType socialType;
+    private String ynAlarmOffSet;
     private LocalDate birthDate;
     private LocalDateTime createdAt;
 
@@ -34,6 +35,7 @@ public class MemberResDto {
                 .telNo(member.getTelNo())
                 .activeStatus(member.getActiveStatus())
                 .socialType(member.getSocialType())
+                .ynAlarmOffSet(member.getYnAlarmOffSet())
                 .birthDate(member.getBirthDate())
                 .createdAt(member.getCreatedAt())
                 .build();

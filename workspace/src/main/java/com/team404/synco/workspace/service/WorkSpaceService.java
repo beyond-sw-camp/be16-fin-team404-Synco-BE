@@ -147,7 +147,6 @@ public class WorkSpaceService {
 
         // DB에서 개별 조회하여 DTO로 변환
         if (!myWorkSpaceList.isEmpty() && myWorkSpaceList.get(0) instanceof Long) {
-            log.info("Redis 조회 실패 → Feign fallback 결과(Long 리스트)");
             List<Long> seqList = (List<Long>) myWorkSpaceList;
 
             return seqList.stream()
@@ -159,8 +158,6 @@ public class WorkSpaceService {
         }
 
         // 기타 예외 상황 (비어있거나 예측 불가 타입)
-        log.warn("Redis 조회 결과가 비어있거나 예측 불가한 타입입니다. (type={})",
-                myWorkSpaceList.isEmpty() ? "EMPTY" : myWorkSpaceList.get(0).getClass().getName());
         return Collections.emptyList();
     }
 
@@ -179,7 +176,6 @@ public class WorkSpaceService {
 
         // Redis 실패 (Fallback으로 Long 타입 리스트)
         if (!workSpaceMemberList.isEmpty() && workSpaceMemberList.get(0) instanceof Long) {
-            log.info("Redis 조회 실패 → Feign fallback 결과(Long 리스트)");
             List<Long> seqList = (List<Long>) workSpaceMemberList;
 
             return seqList.stream()
@@ -195,8 +191,6 @@ public class WorkSpaceService {
         }
 
         // 기타 예외 상황 (비어있거나 예측 불가 타입)
-        log.warn("Redis 조회 결과가 비어있거나 예측 불가한 타입입니다. (type={})",
-                workSpaceMemberList.isEmpty() ? "EMPTY" : workSpaceMemberList.get(0).getClass().getName());
         return Collections.emptyList();
     }
 
@@ -211,7 +205,6 @@ public class WorkSpaceService {
         checkAuthority(workSpace, memberSeq);
 
         MultipartFile profileImage = teamWorkSpaceEditReqDto.getWorkSpaceThumbnailImage();
-        log.info("수정할 이미지 : {}", profileImage);
 
         // 이름 수정
         String newName = teamWorkSpaceEditReqDto.getWorkSpaceName();
@@ -242,7 +235,6 @@ public class WorkSpaceService {
                 throw new IllegalArgumentException("워크스페이스 썸네일 수정 중 오류가 발생했습니다: " + e.getMessage());
             }
         } else {
-            log.info("썸네일이 null 또는 비어 있으므로 S3 및 DB 수정 건너뜀");
         }
 
         // redis 반영
@@ -347,17 +339,16 @@ public class WorkSpaceService {
         List<Long> inviteMemberList = channelInviteReqDto.getMemberList();
         inviteMemberList.stream().map(inviteMemberSeq -> memberRepository.findById(inviteMemberSeq)
                 .orElseThrow(() -> new EntityNotFoundException("없는 회원입니다."))).forEach(inviteMember -> {
-            workSpaceRedisService.addMemberInfo(inviteMember);
+            chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
+            taskFeign.addMemberToTaskChannel(channelInviteReqDto);
+            taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto, memberSeq);
+
             workSpaceRedisService.addWorkSpace(workSpace, inviteMember.getMemberSeq());
             workSpaceRedisService.addMemberToWorkSpace(workSpace, inviteMember.getMemberSeq());
 
             // 대상 멤버에게 알림 전달
             sendAlarm(inviteMember.getMemberSeq(),"[프로젝트 초대] " + workSpace.getWorkSpaceName() + "에 초대되었습니다.", workSpace.getWorkSpaceSeq());
         });
-
-        chatFeign.addMemberToChannel(channelInviteReqDto, memberSeq);
-        taskFeign.addMemberToTaskChannel(channelInviteReqDto);
-        taskFeign.addMemberToVirtualMeetingChannel(channelInviteReqDto, memberSeq);
     }
 
     // 프로젝트 SUPER 권한 위임
