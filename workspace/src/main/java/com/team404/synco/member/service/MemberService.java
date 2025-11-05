@@ -1,8 +1,11 @@
 package com.team404.synco.member.service;
 
-import com.team404.synco.alarm.service.AlarmService;
+import com.team404.synco.alarm.dto.AlarmTurnOnOffReqDto;
 import com.team404.synco.common.auth.JwtTokenProvider;
-import com.team404.synco.common.constant.*;
+import com.team404.synco.common.constant.ActiveStatus;
+import com.team404.synco.common.constant.FriendStatus;
+import com.team404.synco.common.constant.SocialType;
+import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.EmailService;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.common.service.SseService;
@@ -47,7 +50,6 @@ public class MemberService {
     private final KakaoService kakaoService;
     private final NaverService naverService;
     private final WorkSpaceRedisService workSpaceRedisService;
-    private final AlarmService alarmService;
     private final SseService sseService;
     private final FriendRepository friendRepository;
 
@@ -95,6 +97,7 @@ public class MemberService {
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
         workSpaceRedisService.addMemberInfo(member);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
 
         return LoginResDto.builder()
                 .accessToken(accessToken)
@@ -137,7 +140,7 @@ public class MemberService {
                 try {
                     s3Uploader.delete(member.getProfileImageUrl());
                 } catch (Exception e) {
-                    log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
+                    throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
                 }
             }
             member.updateImageUrl(null);
@@ -150,7 +153,7 @@ public class MemberService {
                     try {
                         s3Uploader.delete(member.getProfileImageUrl());
                     } catch (Exception e) {
-                        log.warn("기존 프로필 이미지 삭제 실패 (계속 진행): {}", e.getMessage());
+                        throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
                     }
                 }
                 String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
@@ -237,8 +240,11 @@ public class MemberService {
         String accessToken = jwtTokenProvider.createAtToken(member);
         String refreshToken = jwtTokenProvider.createRtToken(member);
 
+
         workSpaceRedisService.addMemberInfo(member);
-        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberSeq(), member.getLastActiveStatus()));
+        if(member.getMemberId() != null){
+            sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getLastActiveStatus()));
+        }
         return LoginResDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -310,6 +316,7 @@ public class MemberService {
 
         workSpaceRedisService.addMemberInfo(member);
         jwtTokenProvider.deleteRt(memberSeq);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), member.getActiveStatus()));
     }
 
     @Transactional(readOnly = true)
@@ -353,7 +360,7 @@ public class MemberService {
     private String getRequestStatus(Member currentMember, Member targetMember) {
         // 내가 보낸 요청인지 확인
         if (friendRepository.existsByMemberAndFriendMemberAndFriendStatus(
-                currentMember, targetMember, FriendStatus.PENDING)) {
+                    currentMember, targetMember, FriendStatus.PENDING)) {
             return "sent";
         }
         // 나에게 온 요청인지 확인
@@ -374,5 +381,17 @@ public class MemberService {
         // 상태 변경
         member.updateActiveStatus(reqDto.getActiveStatus());
         workSpaceRedisService.addMemberInfo(member);
+        sseService.changeMemberStatus(MemberStatusResDto.of(member.getMemberId(), member.getMemberSeq(), reqDto.getActiveStatus()));
+    }
+
+    // 알림 설정(On/Off)
+    public void turnOnOffAlarm(Long memberSeq, AlarmTurnOnOffReqDto alarmTurnOnOffReqDto){
+        Member member = memberRepository.findById(memberSeq).orElseThrow(
+                () -> new EntityNotFoundException("존재하지 않는 회원입니다."));
+        if(alarmTurnOnOffReqDto.getYnAlarmOffSet().equals(YnColumn.IS_TRUE)){
+            member.updateYnAlarmOffSet(YnColumn.IS_TRUE);
+        } else {
+            member.updateYnAlarmOffSet(YnColumn.IS_FALSE);
+        }
     }
 }

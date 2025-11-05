@@ -4,6 +4,7 @@ import com.team404.synco.alarm.dto.AlarmFindReqDto;
 import com.team404.synco.alarm.dto.AlarmResDto;
 import com.team404.synco.alarm.entity.Alarm;
 import com.team404.synco.alarm.repository.AlarmRepository;
+import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.common.constant.YnColumn;
 import com.team404.synco.common.service.SseService;
 import com.team404.synco.member.entity.Member;
@@ -37,25 +38,22 @@ public class AlarmService {
         Member member = memberRepository.findById(Long.valueOf(alarmResDto.getReceiverId()))
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
 
-        log.info("멤버 ID : {}", member.getMemberSeq());
 
-        try {
-            // DB 저장 시도
-            Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
-            log.info("알림 DB 저장 성공");
+        if(!YnColumn.IS_FALSE.equals(member.getYnAlarmOffSet()) || alarmResDto.getAlarmType().equals(AlarmType.CHAT)){
+            try {
+                // DB 저장 시도
+                Alarm alarm = alarmRepository.save(alarmResDto.toEntity(member, workSpace, alarmResDto));
 
-            // 저장 성공 시에만 SSE 전송
-            sseService.sendToClient(AlarmResDto.fromEntity(alarm));
-            log.info("SSE 전송 성공");
+                // 저장 성공 시에만 SSE 전송
+                sseService.sendToClient(AlarmResDto.fromEntity(alarm));
 
-        } catch (DataAccessException e) {
-            // DB 관련 예외 (JPA, JDBC, Hibernate 등)
-            log.error("DB 저장 실패로 인해 SSE 전송이 중단되었습니다. 원인: {}", e.getMessage(), e);
-            throw new RuntimeException("알림 저장 중 오류가 발생했습니다.", e);
-        } catch (Exception e) {
-            // 기타 예외 처리
-            log.error("알림 생성 중 알 수 없는 오류 발생: {}", e.getMessage(), e);
-            throw new RuntimeException("알림 생성 중 오류가 발생했습니다.", e);
+            } catch (DataAccessException e) {
+                // DB 관련 예외 (JPA, JDBC, Hibernate 등)
+                throw new RuntimeException("알림 저장 중 오류가 발생했습니다.", e);
+            } catch (Exception e) {
+                // 기타 예외 처리
+                throw new RuntimeException("알림 생성 중 오류가 발생했습니다.", e);
+            }
         }
     }
 
@@ -115,24 +113,21 @@ public class AlarmService {
     // 알림 삭제 처리(개인 모두)
     public void deleteAllPersonalAlarm(Long memberSeq){
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        alarmRepository.deleteAllByMemberAndYnRead(member, YnColumn.IS_FALSE)
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMember(member);
     }
 
     // 알림 삭제 처리(프로젝트 모두)
-    public void deleteAllProjectAlarm(Long memberSeq, AlarmFindReqDto alarmFindReqDto){
-        Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
+    public void deleteAllProjectAlarm(Long memberSeq, AlarmFindReqDto alarmFindReqDto) {
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmFindReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
-        alarmRepository.deleteAllByMemberAndWorkSpaceAndYnRead(member, workSpace, YnColumn.IS_FALSE)
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndWorkSpace(member, workSpace);
     }
 
     // 특정 그룹 알림 모두 삭제(개인)
     public void deleteAllPersonalAlarmByType(Long memberSeq, AlarmFindReqDto alarmFindReqDto){
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        alarmRepository.deleteAllByMemberAndAlarmType(member, alarmFindReqDto.getAlarmType())
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndAlarmType(member, alarmFindReqDto.getAlarmType());
     }
 
     // 특정 그룹 알림 모두 삭제(프로젝트)
@@ -140,7 +135,6 @@ public class AlarmService {
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmFindReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
-        alarmRepository.deleteAllByMemberAndWorkSpaceAndAlarmType(member, workSpace, alarmFindReqDto.getAlarmType())
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndWorkSpaceAndAlarmType(member, workSpace, alarmFindReqDto.getAlarmType());
     }
 }

@@ -19,20 +19,10 @@ public class SseEmitterRegistry {
 
     public void registerEmitter(String userId, SseEmitter emitter) {
         emittersByUser.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
-        // 콜백은 SseService.connect에서 emitter 개별로 등록해도 되지만,
-        // 여기서 공통으로도 안전하게 처리할 수 있습니다. (중복 등록 방지만 유의)
     }
 
-    public void removeEmitter(String userId, SseEmitter emitter) {
-        CopyOnWriteArrayList<SseEmitter> list = emittersByUser.get(userId);
-        if (list != null) {
-            if (emitter != null) {
-                list.remove(emitter);
-            }
-            if (list.isEmpty()) {
-                emittersByUser.remove(userId);
-            }
-        }
+    public void removeEmitter(String userId) {
+        emittersByUser.remove(userId);
     }
 
     public List<SseEmitter> getEmitters(String userId) {

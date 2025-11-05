@@ -2,6 +2,7 @@ package com.team404.synco.common.service;
 
 import com.team404.synco.common.dto.ResponseDto;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,7 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(SerializationException.class)
     public ResponseEntity<?> handleSerializationException(SerializationException e) {
+        
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ResponseDto.fail(HttpStatus.NOT_FOUND, e.getMessage()));
     }
@@ -44,6 +46,7 @@ public class CommonExceptionHandler {
     public ResponseEntity<ResponseDto<?>> handleValidationException(MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         String errorMessage = fieldError != null ? fieldError.getDefaultMessage() : "입력값이 올바르지 않습니다.";
+        
         return ResponseEntity.badRequest()
                 .body(ResponseDto.fail(HttpStatus.BAD_REQUEST, errorMessage));
     }
@@ -55,10 +58,17 @@ public class CommonExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ResponseDto<?>> handleGeneralException(Exception e) {
-        e.printStackTrace();
+    public ResponseEntity<?> handleGeneralException(Exception e, HttpServletRequest request) {
+        String acceptHeader = request.getHeader("Accept");
+        // SSE(text/event-stream) 요청일 경우 ResponseDto 반환하지 않음
+        if (acceptHeader != null && acceptHeader.contains("text/event-stream")) {
+            return ResponseEntity.ok().build(); // 아무 내용도 보내지 않음 (스트림 유지 or 종료)
+        }
+
+        // 일반 요청일 경우 기존 ResponseDto 그대로 반환
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다: " + e.getMessage()));
+                .body(ResponseDto.fail(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "서버 오류가 발생했습니다: " + e.getMessage()));
     }
 
     @ExceptionHandler(SecurityException.class)

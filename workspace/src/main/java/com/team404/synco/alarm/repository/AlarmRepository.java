@@ -5,16 +5,34 @@ import com.team404.synco.common.constant.AlarmType;
 import com.team404.synco.member.entity.Member;
 import com.team404.synco.workspace.entity.WorkSpace;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findAllByMemberOrderByAlarmSeqDesc(Member member);
     List<Alarm> findAllByMemberAndYnRead(Member member, String isFalse);
     List<Alarm> findAllByMemberAndYnReadAndAlarmType(Member member, String isFalse, AlarmType alarmType);
     List<Alarm> findAllByMemberAndWorkSpaceAndYnRead(Member member, WorkSpace workSpace, String isFalse);
     List<Alarm> findAllByMemberAndWorkSpaceAndYnReadAndAlarmType(Member member, WorkSpace workSpace, String isFalse, AlarmType alarmType);
-    Iterable<Alarm> deleteAllByMemberAndAlarmType(Member member, AlarmType alarmType);
-    Iterable<Alarm> deleteAllByMemberAndWorkSpaceAndAlarmType(Member member, WorkSpace workSpace, AlarmType alarmType);   Iterable<Alarm> deleteAllByMemberAndYnRead(Member member, String isFalse);
-    Iterable<Alarm> deleteAllByMemberAndWorkSpaceAndYnRead(Member member, WorkSpace workSpace, String isFalse);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.alarmType = alarmType")
+    void deleteByMemberAndAlarmType(@Param("member") Member member, @Param("alarmType")AlarmType alarmType);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.workSpace = :workSpace AND a.alarmType = :alarmType")
+    void deleteByMemberAndWorkSpaceAndAlarmType(@Param("member") Member member, @Param("workSpace") WorkSpace workSpace, @Param("alarmType")AlarmType alarmType);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alarm a WHERE a.member = :member")
+    void deleteByMember(@Param("member") Member member);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.workSpace = :workSpace")
+    void deleteByMemberAndWorkSpace(@Param("member")Member member, @Param("workSpace")  WorkSpace workSpace);
 }
