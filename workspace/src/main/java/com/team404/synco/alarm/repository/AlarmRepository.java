@@ -8,10 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findAllByMemberOrderByAlarmSeqDesc(Member member);
     List<Alarm> findAllByMemberAndYnRead(Member member, String isFalse);
@@ -19,22 +20,18 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findAllByMemberAndWorkSpaceAndYnRead(Member member, WorkSpace workSpace, String isFalse);
     List<Alarm> findAllByMemberAndWorkSpaceAndYnReadAndAlarmType(Member member, WorkSpace workSpace, String isFalse, AlarmType alarmType);
 
-    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.alarmType = alarmType")
     void deleteByMemberAndAlarmType(@Param("member") Member member, @Param("alarmType")AlarmType alarmType);
 
-    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.workSpace = :workSpace AND a.alarmType = :alarmType")
     void deleteByMemberAndWorkSpaceAndAlarmType(@Param("member") Member member, @Param("workSpace") WorkSpace workSpace, @Param("alarmType")AlarmType alarmType);
 
-    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Alarm a WHERE a.member = :member")
     void deleteByMember(@Param("member") Member member);
 
-    @Transactional
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Alarm a WHERE a.member = :member AND a.workSpace = :workSpace")
     void deleteByMemberAndWorkSpace(@Param("member")Member member, @Param("workSpace")  WorkSpace workSpace);

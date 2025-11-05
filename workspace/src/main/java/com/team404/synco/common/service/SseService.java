@@ -51,11 +51,9 @@ public class SseService implements MessageListener {
 
         // 🔹 1. 콜백 등록 (여기에 onCompletion / onTimeout 넣기)
         sseEmitter.onCompletion(() -> {
-            log.info("정상적으로 브라우저에서 연결이 종료되었습니다. onCompletion()");
             sseEmitterRegistry.removeEmitter(receiver);
         });
         sseEmitter.onTimeout(() -> {
-            log.info("sseEmitter의 연결시간이 초과되었습니다.");
             sseEmitter.complete();
             sseEmitterRegistry.removeEmitter(receiver);
         });
@@ -68,7 +66,6 @@ public class SseService implements MessageListener {
             sseEmitter.send(SseEmitter.event()
                     .name("connect")
                     .data("SSE connected"));
-            log.info("sseEmitter 연결 성공");
         } catch (IOException e) {
             throw new RuntimeException("SSE 연결 중 오류 발생", e);
         }
@@ -76,7 +73,6 @@ public class SseService implements MessageListener {
         return sseEmitter;
     }
     public void unSubscribe(Long userId) {
-        log.info("연결 종료");
         sseEmitterRegistry.removeEmitter(getReceiver(userId));
     }
 
@@ -120,7 +116,6 @@ public class SseService implements MessageListener {
                             .name("ping")
                             .data("keep-alive"));
                 } catch (IOException | IllegalStateException e) {
-                    log.info("연결 종료, 사용자에 의해 연결이 종료되었습니다.");
                     sseEmitterRegistry.removeEmitter(memberId);
                 }
             }
@@ -182,7 +177,6 @@ public class SseService implements MessageListener {
                 try {
                     emitter.send(SseEmitter.event().name("member-status").data(payload));
                 } catch (IOException | IllegalStateException e) {
-                    log.info("연결 종료 : {}", e.getMessage());
                     sseEmitterRegistry.removeEmitter(targetMemberId); // broken-pipe 정리
                 }
             }
