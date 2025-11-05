@@ -113,24 +113,21 @@ public class AlarmService {
     // 알림 삭제 처리(개인 모두)
     public void deleteAllPersonalAlarm(Long memberSeq){
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        alarmRepository.deleteAllByMember(member)
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMember(member);
     }
 
     // 알림 삭제 처리(프로젝트 모두)
-    public void deleteAllProjectAlarm(Long memberSeq, AlarmFindReqDto alarmFindReqDto){
-        Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
+    public void deleteAllProjectAlarm(Long memberSeq, AlarmFindReqDto alarmFindReqDto) {
+        Member member = memberRepository.findById(memberSeq).orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmFindReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
-        alarmRepository.deleteAllByMemberAndWorkSpace(member, workSpace)
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndWorkSpace(member, workSpace);
     }
 
     // 특정 그룹 알림 모두 삭제(개인)
     public void deleteAllPersonalAlarmByType(Long memberSeq, AlarmFindReqDto alarmFindReqDto){
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
-        alarmRepository.deleteAllByMemberAndAlarmType(member, alarmFindReqDto.getAlarmType())
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndAlarmType(member, alarmFindReqDto.getAlarmType());
     }
 
     // 특정 그룹 알림 모두 삭제(프로젝트)
@@ -138,7 +135,6 @@ public class AlarmService {
         Member member = memberRepository.findById(memberSeq).orElseThrow(()-> new EntityNotFoundException("존재하지 않는 회원입니다."));
         WorkSpace workSpace = workSpaceRepository.findById(alarmFindReqDto.getWorkSpaceSeq()).orElseThrow(() ->
                 new EntityNotFoundException("존재하지 않는 워크스페이스입니다."));
-        alarmRepository.deleteAllByMemberAndWorkSpaceAndAlarmType(member, workSpace, alarmFindReqDto.getAlarmType())
-                .forEach(Alarm::updateReadStatus);
+        alarmRepository.deleteByMemberAndWorkSpaceAndAlarmType(member, workSpace, alarmFindReqDto.getAlarmType());
     }
 }
