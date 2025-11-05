@@ -102,10 +102,6 @@ public class ProjectScheduleManagementService {
                     picMember.getWorkSpaceSeq(), task.getTaskSeq());
             redisEventPublisher.publish("alarm-task", alarmResDto);
         }
-        AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(picMember.getMemberSeq()),
-                "alarm-task", "[업무 등록] " +  workSpaceName + " 프로젝트에 새로운 업무가 할당되었습니다.",
-                picMember.getWorkSpaceSeq(), task.getTaskSeq());
-        redisEventPublisher.publish("alarm-task", alarmResDto);
 
         // Kafka 이벤트 발행
         publishTaskCreated(task);
