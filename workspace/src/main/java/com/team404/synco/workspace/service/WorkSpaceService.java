@@ -241,7 +241,9 @@ public class WorkSpaceService {
         workSpaceRedisService.editWorkSpaceInfo(
                 workSpace.getWorkSpaceSeq(),
                 newName,
-                newThumbnailImageUrl
+                newThumbnailImageUrl,
+                startDate,
+                endDate
         );
         return WorkSpaceResDto.fromEntity(workSpace);
     }
