@@ -5,7 +5,7 @@ faster-whisper==1.0.3
 ctranslate2==4.6.0
 
 # PyTorch (CPU 전용 - lighter weight)
-torch --index-url https://download.pytorch.org/whl/cpu
+# torch는 Dockerfile에서 별도 설치 (--index-url 옵션 필요)
 
 # Kafka
 kafka-python==2.0.2

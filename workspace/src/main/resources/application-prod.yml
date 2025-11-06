@@ -1,0 +1,79 @@
+server:
+  port: 0
+
+eureka:
+  client:
+    enabled: false
+spring:
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
+  application:
+    name: workspace-service
+  redis:
+    host: redis-service
+    port: 6379
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${DB_HOST}/sync-database
+    username: admin
+    password: ${DB_PW}
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show__sql: true
+    open-in-view: false
+  # Email 설정
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: chanjin9727@gmail.com
+    password: ${GMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: synco-bucket
+
+jwt:
+  expirationAt: 7200
+  secretKeyAt: ${JWT_SECRET_KEY_AT}
+  expirationRt: 6720
+  secretKeyRt: ${JWT_SECRET_KEY_RT}
+
+oauth:
+  google:
+    client-id: ${OAUTH_GOOGLE_CLIENT_ID}
+    client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET}
+    redirect-uri: https://www.synco1.shop/oauth/google/redirect
+  kakao:
+    client-id: ${OAUTH_KAKAO_CLIENT_ID}
+    redirect-uri: https://www.synco1.shop/oauth/kakao/redirect
+  naver:
+    client-id: ${OAUTH_NAVER_CLIENT_ID}
+    client-secret: ${OAUTH_NAVER_CLIENT_SECRET}
+    redirect-uri: https://www.synco1.shop/oauth/naver/redirect
+
+cookie:
+  secure: true       # 프로덕션 환경 (HTTP만 허용)
+  max-age: 604800     # 7일 (초 단위)
+  same-site: Lax      # CSRF 방어 (Lax: 일반적, None: 크로스 도메인 필요 시)

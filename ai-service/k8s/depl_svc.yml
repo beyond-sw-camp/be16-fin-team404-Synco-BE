@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service-depl
+  namespace: synco-namespace
+spec:
+  replicas: 1
+  # 아래의 label은 replicaset이 관리해야 할 파드를 결정하는데 사용
+  selector:
+    matchLabels:
+      app: ai-service
+  template:
+    metadata:
+    # 아래의 labels는 service의 selector.app과 일치해야함
+      labels:
+        app: ai-service
+    spec:
+      containers:
+      - name: ai-service-container # 이름 의미없음.
+        image: 864981729633.dkr.ecr.ap-northeast-2.amazonaws.com/synco-namespace/ai-service:latest
+        env:
+        # Kafka 설정
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka-service:9092"
+        - name: KAFKA_REQUEST_TOPIC
+          value: "recording-completed"
+        - name: KAFKA_RESPONSE_TOPIC
+          value: "transcript-completed"
+        # ASR 모델 설정
+        - name: ASR_MODEL
+          value: "medium"
+        - name: ASR_COMPUTE_TYPE
+          value: "int8"
+        - name: ASR_DEVICE
+          value: "cpu"
+        # 로깅 레벨
+        - name: LOG_LEVEL
+          value: "INFO"
+        # AWS 설정 (S3 접근용)
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: synco-secrets
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: synco-secrets
+              key: AWS_SECRET_ACCESS_KEY
+        resources:
+        # 컨테이너가 사용할 수 있는 리소스의 최대치
+        # AI 모델 로딩으로 인해 메모리 사용량이 큼
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        # 컨테이너가 시작될때 보장받아야 하는 최소 자원
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: synco-namespace
+spec:
+  type: ClusterIP
+  # ai-service는 Kafka Consumer만 실행하므로 HTTP 포트가 필요 없음
+  # Service는 다른 서비스에서 참조할 수 있도록 유지
+  selector:
+    app: ai-service
+

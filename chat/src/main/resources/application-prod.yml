@@ -1,0 +1,49 @@
+server:
+  port: 0
+
+eureka:
+  client:
+    enabled: false
+
+spring:
+  application:
+    name: chat-service
+  redis:
+    host: redis-service
+    port: 6379
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${DB_HOST}/sync-database
+    username: admin
+    password: ${DB_PW}
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show__sql: true
+  kafka:
+    bootstrap-servers: kafka-service:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-serializer: org.apache.kafka.common.serialization.StringDeserializer
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: synco-bucket
+
+jwt:
+  secretKey : ${JWT_SECRET_KEY}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    com.team404.synco: DEBUG

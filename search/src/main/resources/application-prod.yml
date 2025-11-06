@@ -1,0 +1,25 @@
+server:
+  port: 0
+
+eureka:
+  client:
+    enabled: false
+
+spring:
+  application:
+    name: search-service
+  elasticsearch:
+    uris: http://elasticsearch-service:9200
+  kafka:
+    bootstrap-servers: kafka-service:9092
+    consumer:
+      group-id: search-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual_immediate
+
+spring.data.elasticsearch:
+  repositories:
+    enabled: true
+
