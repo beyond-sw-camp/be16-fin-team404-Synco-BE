@@ -4,20 +4,55 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'ai-service/**'
+      - 'apigateway/**'
+      - 'chat/**'
+      - 'drive/**'
+      - 'search/**'
+      - 'task/**'
+      - 'workspace/**'
+      - '.github/workflows/backend-deploy.yml'
 
 jobs:
-  build-and-deploy:
+  # 변경된 서비스 감지
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      ai-service: ${{ steps.filter.outputs.ai-service }}
+      apigateway: ${{ steps.filter.outputs.apigateway }}
+      chat: ${{ steps.filter.outputs.chat }}
+      drive: ${{ steps.filter.outputs.drive }}
+      search: ${{ steps.filter.outputs.search }}
+      task: ${{ steps.filter.outputs.task }}
+      workspace: ${{ steps.filter.outputs.workspace }}
     steps:
-      - name: checkout github
-        uses: actions/checkout@v2
-      
-      - name: install kubectl
-        uses: azure/setup-kubectl@v3
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
         with:
-          version: "v1.25.9"
-        id: install
-        
+          filters: |
+            ai-service:
+              - 'ai-service/**'
+            apigateway:
+              - 'apigateway/**'
+            chat:
+              - 'chat/**'
+            drive:
+              - 'drive/**'
+            search:
+              - 'search/**'
+            task:
+              - 'task/**'
+            workspace:
+              - 'workspace/**'
+
+  # 공통 설정 (AWS, kubectl)
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      registry: 864981729633.dkr.ecr.ap-northeast-2.amazonaws.com
+    steps:
       - name: configure aws
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -28,9 +63,36 @@ jobs:
       - name: update cluster information
         run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
 
-      # AI Service (Python)
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
+  # AI Service (Python)
+  deploy-ai-service:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.ai-service == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-ai
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push ai-service docker image to ecr
@@ -49,9 +111,31 @@ jobs:
           kubectl apply -f ./ai-service/k8s/depl_svc.yml
           kubectl rollout restart deployment ai-service-depl -n synco-namespace
 
-      # API Gateway
+  # API Gateway
+  deploy-apigateway:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.apigateway == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-apigateway
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push apigateway docker image to ecr
@@ -70,9 +154,31 @@ jobs:
           kubectl apply -f ./apigateway/k8s/depl_svc.yml
           kubectl rollout restart deployment apigateway-depl -n synco-namespace
 
-      # Chat Service
+  # Chat Service
+  deploy-chat:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.chat == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-chat
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push chat docker image to ecr
@@ -91,9 +197,31 @@ jobs:
           kubectl apply -f ./chat/k8s/depl_svc.yml
           kubectl rollout restart deployment chat-depl -n synco-namespace
 
-      # Drive Service
+  # Drive Service
+  deploy-drive:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.drive == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-drive
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push drive docker image to ecr
@@ -112,9 +240,31 @@ jobs:
           kubectl apply -f ./drive/k8s/depl_svc.yml
           kubectl rollout restart deployment drive-depl -n synco-namespace
 
-      # Search Service
+  # Search Service
+  deploy-search:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.search == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-search
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push search docker image to ecr
@@ -133,9 +283,31 @@ jobs:
           kubectl apply -f ./search/k8s/depl_svc.yml
           kubectl rollout restart deployment search-depl -n synco-namespace
 
-      # Task Service
+  # Task Service
+  deploy-task:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.task == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-task
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push task docker image to ecr
@@ -154,9 +326,31 @@ jobs:
           kubectl apply -f ./task/k8s/depl_svc.yml
           kubectl rollout restart deployment task-depl -n synco-namespace
 
-      # Workspace Service
+  # Workspace Service
+  deploy-workspace:
+    needs: [detect-changes, setup]
+    if: needs.detect-changes.outputs.workspace == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout github
+        uses: actions/checkout@v3
+
+      - name: configure aws
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: update cluster information
+        run: aws eks update-kubeconfig --region ap-northeast-2 --name synco-cluster
+
+      - name: install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
       - name: Login to ECR
-        id: login-ecr-workspace
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: build and push workspace docker image to ecr

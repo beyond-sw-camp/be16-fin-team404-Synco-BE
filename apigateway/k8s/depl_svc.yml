@@ -36,16 +36,6 @@ spec:
             secretKeyRef:
               name: synco-secrets
               key: JWT_SECRET_KEY
-        # 컨테이너 상태 확인을 통해 롤링업데이트 최적화 
-        readinessProbe:
-          httpGet:
-            # healthcheck 경로
-            path: /health
-            port: 8080
-          # 컨테이너 시작 후 지연
-          initialDelaySeconds: 10
-          # 확인 반복 주기
-          periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
