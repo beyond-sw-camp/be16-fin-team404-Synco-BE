@@ -1,0 +1,37 @@
+{
+  "index": {
+    "max_ngram_diff": 9
+  },
+  "analysis": {
+    "tokenizer": {
+      "nori_mixed_tokenizer": {
+        "type": "nori_tokenizer",
+        "decompound_mode": "mixed",
+        "discard_punctuation": "false"
+      }
+    },
+    "filter": {
+      "nori_pos_filter_keep_affix": {
+        "type": "nori_part_of_speech",
+        "stoptags": [ "J", "E" ]
+      },
+      "ngram_filter": {
+        "type": "ngram",
+        "min_gram": 2,
+        "max_gram": 10
+      }
+    },
+    "analyzer": {
+      "nori_synco_custom": {
+        "type": "custom",
+        "tokenizer": "nori_mixed_tokenizer",
+        "filter": [
+          "nori_pos_filter_keep_affix",
+          "nori_readingform",
+          "lowercase",
+          "ngram_filter"
+        ]
+      }
+    }
+  }
+}

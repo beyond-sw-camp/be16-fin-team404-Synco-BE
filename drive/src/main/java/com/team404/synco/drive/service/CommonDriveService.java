@@ -7,6 +7,10 @@ import com.team404.synco.common.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
 import com.team404.synco.common.service.S3Uploader;
 import com.team404.synco.drive.dto.*;
+import com.team404.synco.drive.dto.DocDetailListResDto;
+import com.team404.synco.drive.dto.DriveItemDto;
+import com.team404.synco.drive.dto.FolderTreeDto;
+import com.team404.synco.drive.dto.kafka.DriveEvent;
 import com.team404.synco.drive.entity.Document;
 import com.team404.synco.drive.entity.DocumentLine;
 import com.team404.synco.drive.entity.DriveChannel;
@@ -18,6 +22,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartException;
@@ -38,6 +43,7 @@ public class CommonDriveService {
     private final ProjectDocumentRedisService projectDocumentRedisService;
     private final RedisEventPublisher redisEventPublisher;
     private final S3Uploader s3Uploader;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String folderNamePrefix = "drive/";
 
     // 드라이브 아이템 목록 조회 (더보기 버튼 방식 페이지네이션)
@@ -235,6 +241,10 @@ public class CommonDriveService {
             redisEventPublisher.publish("alarm-drive", alarmResDto);
         }
 
+
+        // Kafka 이벤트 발행
+        publishDriveCreated(savedDocument);
+
         return DriveItemDto.fromDocument(savedDocument);
     }
 
@@ -282,6 +292,10 @@ public class CommonDriveService {
                         .build();
 
                 Document savedDocument = documentRepository.save(document);
+
+                // Kafka 이벤트 발행
+                publishDriveCreated(savedDocument);
+
                 uploadedFiles.add(DriveItemDto.fromDocument(savedDocument));
 
             } catch (IllegalArgumentException e) {
@@ -322,6 +336,9 @@ public class CommonDriveService {
                     .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
             }
             document.updateFolder(newFolder);
+
+            // Kafka 이벤트 발행
+            publishDriveUpdated(document);
         }
     }
 
@@ -475,6 +492,12 @@ public class CommonDriveService {
 
         folder.updateFolderName(newFolderName);
 
+        // 폴더 내 하위 문서들의 folderName 업데이트를 위한 Kafka 이벤트 발행
+        List<Document> documents = documentRepository.findByFolderFolderSeq(folderId);
+        for (Document doc : documents) {
+            publishDriveUpdated(doc);
+        }
+
         return DriveItemDto.fromFolder(folder);
     }
 
@@ -496,7 +519,11 @@ public class CommonDriveService {
                 s3Uploader.delete(document.getDocumentUrl());
             }
 
+            Long documentSeq = document.getDocumentSeq();
             documentRepository.delete(document);
+
+            // Kafka 이벤트 발행
+            publishDriveDeleted(documentSeq);
         }
     }
 
@@ -625,7 +652,8 @@ public class CommonDriveService {
         collectAllSubFolderIds(driveChannel, folderId, allFolderIds);
         allFolderIds.add(folderId);
 
-        // S3 파일들 수집 및 삭제
+        // 폴더 내 문서 수집 및 S3 파일 수집
+        List<Document> allDocumentsToDelete = new ArrayList<>();
         List<String> s3UrlsToDelete = new ArrayList<>();
         for (Long folderIdToDelete : allFolderIds) {
             List<Document> documents = documentRepository.findByFolderFolderSeq(folderIdToDelete);
@@ -634,12 +662,14 @@ public class CommonDriveService {
                 if (!doc.getDriveChannel().getDriveChannelSeq().equals(driveChannelSeq)) {
                     continue; // 다른 채널의 문서는 무시
                 }
+                allDocumentsToDelete.add(doc);
                 if (doc.getDocumentType() == DocumentType.LOCAL) {
                     s3UrlsToDelete.add(doc.getDocumentUrl());
                 }
             }
         }
 
+        // S3 파일 삭제
         if (!s3UrlsToDelete.isEmpty()) {
             try {
                 for (String s3Url : s3UrlsToDelete) {
@@ -648,6 +678,11 @@ public class CommonDriveService {
             } catch (Exception e) {
                 throw new  RuntimeException("S3 파일 삭제 중 오류가 발생했습니다.", e);
             }
+        }
+
+        // 문서 삭제 이벤트 발행
+        for (Document doc : allDocumentsToDelete) {
+            publishDriveDeleted(doc.getDocumentSeq());
         }
 
         // 폴더 삭제 (CASCADE로 해당 폴더의 문서들과 DocumentLine들 자동 삭제)
@@ -796,7 +831,51 @@ public class CommonDriveService {
         
         // 문서 이름 변경
         document.updateDocumentName(newDocumentName);
+
+        // Kafka 이벤트 발행
+        publishDriveUpdated(document);
+
         log.info("문서 이름 변경 완료 - DocumentSeq: {}, NewName: {}", documentSeq, newDocumentName);
+    }
+
+    // ========== Kafka 이벤트 발행 메서드 ==========
+
+    /**
+     * Drive 생성/업로드 이벤트 발행
+     */
+    private void publishDriveCreated(Document document) {
+        try {
+            DriveEvent event = DriveEvent.fromEntity(document);
+            kafkaTemplate.send("drive.document.created", event);
+            log.info("📤 Drive 생성/업로드 이벤트 발행: documentSeq={}", document.getDocumentSeq());
+        } catch (Exception e) {
+            log.error("❌ Drive 생성 이벤트 발행 실패: documentSeq={}, error={}", document.getDocumentSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Drive 업데이트 이벤트 발행
+     */
+    private void publishDriveUpdated(Document document) {
+        try {
+            DriveEvent event = DriveEvent.fromEntity(document);
+            kafkaTemplate.send("drive.document.updated", event);
+            log.info("📤 Drive 업데이트 이벤트 발행: documentSeq={}", document.getDocumentSeq());
+        } catch (Exception e) {
+            log.error("❌ Drive 업데이트 이벤트 발행 실패: documentSeq={}, error={}", document.getDocumentSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Drive 삭제 이벤트 발행
+     */
+    private void publishDriveDeleted(Long documentSeq) {
+        try {
+            kafkaTemplate.send("drive.document.deleted", documentSeq);
+            log.info("📤 Drive 삭제 이벤트 발행: documentSeq={}", documentSeq);
+        } catch (Exception e) {
+            log.error("❌ Drive 삭제 이벤트 발행 실패: documentSeq={}, error={}", documentSeq, e.getMessage(), e);
+        }
     }
 
 }

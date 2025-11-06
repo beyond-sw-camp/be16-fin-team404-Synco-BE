@@ -22,10 +22,10 @@ public class VirtualMeetingChannel extends BaseEntity {
     @Column(nullable = false)
     private long workSpaceSeq;
     @Builder.Default
-    @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true)
+    @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<VirtualMeetingChannelMember> virtualMeetingChannelmemberList = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true)
+    @OneToMany(mappedBy = "virtualMeetingChannel", orphanRemoval = true, cascade = CascadeType.ALL)
     private List<Room> roomList = new ArrayList<>();
 }

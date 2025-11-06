@@ -120,7 +120,8 @@ public class WorkSpaceRedisService {
     }
 
     // 프로젝트 정보 수정
-    public void editWorkSpaceInfo(Long workSpaceSeq, String name, String thumbnailImage){
+    public void editWorkSpaceInfo(Long workSpaceSeq, String name, String thumbnailImage,
+                                  LocalDateTime startDate, LocalDateTime endDate){
         String workSpaceKey = WORKSPACE_KEY_PREFIX + workSpaceSeq;
         if(name != null){
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "name", name);
@@ -129,6 +130,14 @@ public class WorkSpaceRedisService {
             workSpaceRedisTemplate.opsForHash().put(workSpaceKey, "thumbnailImage",
                     thumbnailImage
             );
+        }
+        if (startDate != null) {
+            String startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey,"startDate", startDateStr);
+        }
+        if (endDate != null) {
+            String endDateStr = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            workSpaceRedisTemplate.opsForHash().put(workSpaceKey,"endDate", endDateStr);
         }
     }
 

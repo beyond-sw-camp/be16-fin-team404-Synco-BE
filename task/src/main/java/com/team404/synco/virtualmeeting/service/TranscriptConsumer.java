@@ -1,5 +1,6 @@
 package com.team404.synco.virtualmeeting.service;
 
+import com.team404.synco.virtualmeeting.dto.kafka.MeetingEvent;
 import com.team404.synco.common.component.MemberRedisComponent;
 import com.team404.synco.common.constant.dto.AlarmResDto;
 import com.team404.synco.common.service.RedisEventPublisher;
@@ -14,6 +15,7 @@ import com.team404.synco.virtualmeeting.repository.RecordingSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class TranscriptConsumer {
     private final RecordingRepository recordingRepository;
     private final RecordingSummaryRepository recordingSummaryRepository;
     private final SummaryService summaryService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final MemberRedisComponent memberRedisComponent;
     private final RedisEventPublisher redisEventPublisher;
 
@@ -75,9 +78,27 @@ public class TranscriptConsumer {
                 redisEventPublisher.publish("alarm-meeting", res);
             }
 
+
+            // MeetingSummary 생성 이벤트 발행
+            publishMeetingSummaryCreated(summary);
+
             acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("❌ Transcript 처리 실패: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * MeetingSummary 생성 이벤트 발행
+     */
+    private void publishMeetingSummaryCreated(RecordingSummary summary) {
+        try {
+            MeetingEvent event = MeetingEvent.fromEntity(summary);
+            kafkaTemplate.send("meeting.summary.created", event);
+            log.info("📤 MeetingSummary 생성 이벤트 발행: recordingSummarySeq={}", summary.getRecordingSummarySeq());
+        } catch (Exception e) {
+            log.error("❌ MeetingSummary 이벤트 발행 실패: recordingSummarySeq={}, error={}",
+                    summary.getRecordingSummarySeq(), e.getMessage(), e);
         }
     }
 }
