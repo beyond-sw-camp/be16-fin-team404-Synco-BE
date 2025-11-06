@@ -16,7 +16,7 @@ spring:
     port: 6379
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://${DB_HOST}/sync-database
+    url: jdbc:mariadb://${DB_HOST}/synco
     username: admin
     password: ${DB_PW}
   jpa:
