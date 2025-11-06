@@ -1,0 +1,221 @@
+package com.team404.synco.drive.controller;
+
+import com.team404.synco.common.dto.ResponseDto;
+import com.team404.synco.drive.dto.*;
+import com.team404.synco.drive.dto.DriveCreateReqDto;
+import com.team404.synco.drive.service.PersonalDriveService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@Slf4j
+@RestController
+@RequestMapping("/drive/personal")
+@RequiredArgsConstructor
+public class PersonalDriveController {
+
+    private final PersonalDriveService personalDriveService;
+
+    // 드라이브 생성
+    @PostMapping("/create")
+    public ResponseEntity<ResponseDto<?>> createChannel(@RequestBody DriveCreateReqDto driveCreateReqDto) {
+        Long id = personalDriveService.createChannel(driveCreateReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(id, HttpStatus.CREATED));
+    }
+
+    // 개인 드라이브 아이템 목록 조회
+    @GetMapping("/{driveChannelSeq}/items")
+    public ResponseEntity<ResponseDto<?>> getPersonalDriveItems(
+            @PathVariable Long driveChannelSeq,
+            @RequestParam(required = false) Long parentFolderId,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
+        Page<DriveItemDto> items = personalDriveService.getPersonalDriveItems(driveChannelSeq, parentFolderId, pageable, sortBy, sortOrder);
+        return ResponseEntity.ok(ResponseDto.ok(items, HttpStatus.OK));
+    }
+
+    // 개인 드라이브 폴더 생성
+    @PostMapping("/folder")
+    public ResponseEntity<ResponseDto<?>> createPersonalFolder(@RequestBody CreateFolderReqDto createFolderReqDto) {
+        DriveItemDto folder = personalDriveService.createPersonalFolder(createFolderReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(folder, HttpStatus.CREATED));
+    }
+
+    // 개인 드라이브 공유문서 생성
+    @PostMapping("/create/shared-docs")
+    public ResponseEntity<ResponseDto<?>> createPersonalSharedDoc(
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @RequestBody CreateSharedDocReqDto createSharedDocReqDto) {
+
+        DriveItemDto sharedDoc = personalDriveService.createPersonalSharedDoc(userId, createSharedDocReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(sharedDoc, HttpStatus.CREATED));
+    }
+
+    // 개인 드라이브 파일 업로드
+    @PostMapping("/upload")
+    public ResponseEntity<ResponseDto<?>> uploadPersonalFiles(
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @ModelAttribute FileUploadReqDto fileUploadReqDto) {
+
+        List<DriveItemDto> uploadedFiles = personalDriveService.uploadPersonalFiles(userId, fileUploadReqDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ResponseDto.ok(uploadedFiles, HttpStatus.CREATED));
+    }
+
+    // 개인 드라이브 아이템 이동
+    @PatchMapping("/move")
+    public ResponseEntity<ResponseDto<?>> movePersonalItem(
+            @RequestBody MoveItemReqDto moveItemReqDto) {
+
+        personalDriveService.movePersonalItem(moveItemReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 이동하였습니다.", HttpStatus.OK));
+    }
+
+    // 개인 드라이브 폴더 순서 변경
+    @PatchMapping("/reorder")
+    public ResponseEntity<ResponseDto<?>> reorderPersonalFolder(@RequestBody ReorderItemReqDto reorderItemReqDto) {
+
+        personalDriveService.reorderPersonalFolder(reorderItemReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 순서를 변경하였습니다.", HttpStatus.OK));
+    }
+
+    // 개인 드라이브 파일 다운로드
+    @GetMapping("/{driveChannelSeq}/download/{documentSeq}")
+    public ResponseEntity<byte[]> downloadPersonalFile(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        return personalDriveService.downloadPersonalFile(driveChannelSeq, documentSeq);
+    }
+
+    // 개인 드라이브 공유문서 다운로드
+    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/download")
+    public ResponseEntity<byte[]> downloadPersonalDocument(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        return personalDriveService.downloadPersonalDocument(driveChannelSeq, documentSeq);
+    }
+
+    // 폴더 이름 변경
+    @PatchMapping("/folder/rename")
+    public ResponseEntity<ResponseDto<?>> renamePersonalFolder(@RequestBody RenameFolderReqDto renameFolderReqDto) {
+        DriveItemDto renamedFolder = personalDriveService.renamePersonalFolder(renameFolderReqDto);
+        return ResponseEntity.ok(ResponseDto.ok(renamedFolder, HttpStatus.OK));
+    }
+
+    // 개인 드라이브 아이템 삭제
+    @DeleteMapping("/{driveChannelSeq}")
+    public ResponseEntity<ResponseDto<?>> deletePersonalItem(
+            @PathVariable Long driveChannelSeq,
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @RequestBody DeleteItemReqDto deleteItemReqDto) {
+
+        personalDriveService.deletePersonalItem(driveChannelSeq, userId, deleteItemReqDto.getItemType(), deleteItemReqDto.getItemId());
+        return ResponseEntity.ok(ResponseDto.ok("성공적으로 삭제하였습니다.", HttpStatus.OK));
+    }
+
+    // 개인 드라이브 공유문서 잠금/해제 토글
+    @PatchMapping("/documents/lock")
+    public ResponseEntity<ResponseDto<?>> togglePersonalDocumentLock(@RequestBody ToggleReqDto toggleReqDto) {
+        DriveItemDto document = personalDriveService.togglePersonalDocumentLock(toggleReqDto);
+        return ResponseEntity.ok(ResponseDto.ok(document, HttpStatus.OK));
+    }
+
+    // 개인 드라이브 폴더 트리 조회
+    @GetMapping("/{driveChannelSeq}/folders/tree")
+    public ResponseEntity<ResponseDto<?>> getPersonalFolderTree(@PathVariable Long driveChannelSeq) {
+        List<FolderTreeDto> folderTree = personalDriveService.getPersonalFolderTree(driveChannelSeq);
+        return ResponseEntity.ok(ResponseDto.ok(folderTree, HttpStatus.OK));
+    }
+
+    // 개인 드라이브 문서 이름 변경
+    @PatchMapping("/document/rename")
+    public ResponseEntity<ResponseDto<?>> renamePersonalDocument(@RequestBody RenameDocumentReqDto renameDocumentReqDto) {
+        personalDriveService.renamePersonalDocument(renameDocumentReqDto);
+        return ResponseEntity.ok(ResponseDto.ok("문서 이름이 성공적으로 변경되었습니다.", HttpStatus.OK));
+    }
+
+    // 개인 공유문서 프로젝트 드라이브로 복사
+
+
+    // ==================== 개인 공유문서 라인 관리 ====================
+
+    // 개인 공유문서 라인 목록 조회
+    @GetMapping("/{driveChannelSeq}/documents/{documentSeq}/lines")
+    public ResponseEntity<ResponseDto<?>> getPersonalSharedDocuments(
+            @PathVariable Long driveChannelSeq,
+            @PathVariable Long documentSeq) {
+        var sharedDocs = personalDriveService.getPersonalSharedDocuments(driveChannelSeq, documentSeq);
+        return ResponseEntity.ok(ResponseDto.ok(sharedDocs, HttpStatus.OK));
+    }
+
+    // 단일 라인 생성
+    @PostMapping("/{driveChannelSeq}/documents/lines/create")
+    public ResponseEntity<ResponseDto<?>> createPersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.createPersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 생성되었습니다.", HttpStatus.OK));
+    }
+
+    // 단일 라인 수정
+    @PutMapping("/{driveChannelSeq}/documents/lines/update")
+    public ResponseEntity<ResponseDto<?>> updatePersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.updatePersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 수정되었습니다.", HttpStatus.OK));
+    }
+
+    // 단일 라인 삭제
+    @DeleteMapping("/{driveChannelSeq}/documents/lines/delete")
+    public ResponseEntity<ResponseDto<?>> deletePersonalDocumentLine(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.deletePersonalDocumentLine(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인이 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 생성
+    @PostMapping("/{driveChannelSeq}/documents/lines/batch-create")
+    public ResponseEntity<ResponseDto<?>> createPersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.createPersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 생성되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 수정
+    @PutMapping("/{driveChannelSeq}/documents/lines/batch-update")
+    public ResponseEntity<ResponseDto<?>> updatePersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.updatePersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 수정되었습니다.", HttpStatus.OK));
+    }
+
+    // 배치 라인 삭제
+    @DeleteMapping("/{driveChannelSeq}/documents/lines/batch-delete")
+    public ResponseEntity<ResponseDto<?>> deletePersonalDocumentLines(
+            @PathVariable Long driveChannelSeq,
+            @RequestBody EditorMessageDto message) {
+        personalDriveService.deletePersonalDocumentLines(driveChannelSeq, message);
+        return ResponseEntity.ok(ResponseDto.ok("라인들이 성공적으로 삭제되었습니다.", HttpStatus.OK));
+    }
+
+    // 개인 공유문서를 프로젝트 공유문서로 이동
+    @PostMapping("/move-to-project")
+    public ResponseEntity<ResponseDto<?>> movePersonalToProject(
+            @RequestHeader(value = "X-Member-Seq") Long userId,
+            @RequestBody MovePersonalToProjectReqDto reqDto) {
+        DriveItemDto movedDocument = personalDriveService.movePersonalToProject(userId, reqDto);
+        return ResponseEntity.ok(ResponseDto.ok(movedDocument, HttpStatus.OK));
+    }
+}

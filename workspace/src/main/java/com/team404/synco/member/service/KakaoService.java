@@ -1,0 +1,59 @@
+package com.team404.synco.member.service;
+
+import com.team404.synco.member.dto.AccessTokenDto;
+import com.team404.synco.member.dto.KakaoProfileDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
+
+@Service
+public class KakaoService {
+
+    @Value("${oauth.kakao.client-id}")
+    private String kakaoClientId;
+
+    @Value("${oauth.kakao.redirect-uri}")
+    private String kakaoRedirectUri;
+
+
+    public AccessTokenDto getAccessToken(String code){
+        try {
+            RestClient restClient = RestClient.create();
+
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("code", code);
+            params.add("client_id", kakaoClientId);
+            params.add("redirect_uri", kakaoRedirectUri);
+            params.add("grant_type", "authorization_code");
+
+            ResponseEntity<AccessTokenDto> response =  restClient.post()
+                    .uri("https://kauth.kakao.com/oauth/token")
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .body(params)
+                    .retrieve()
+                    .toEntity(AccessTokenDto.class);
+
+            return response.getBody();
+        } catch (Exception e) {
+            throw new IllegalStateException("카카오 로그인 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    public KakaoProfileDto getKakaoProfile(String token){
+        try {
+            RestClient restClient = RestClient.create();
+            ResponseEntity<KakaoProfileDto> response =  restClient.get()
+                    .uri("https://kapi.kakao.com/v2/user/me")
+                    .header("Authorization", "Bearer "+token)
+                    .retrieve()
+                    .toEntity(KakaoProfileDto.class);
+            
+            return response.getBody();
+        } catch (Exception e) {
+            throw new IllegalStateException("카카오 사용자 정보를 가져오는 중 오류가 발생했습니다.", e);
+        }
+    }
+}

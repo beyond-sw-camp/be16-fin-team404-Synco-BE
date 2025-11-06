@@ -1,0 +1,28 @@
+server:
+  port: 0
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+spring:
+  application:
+    name: search-service
+  elasticsearch:
+    uris: http://localhost:9200
+    username: elastic
+    password: password
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: search-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    listener:
+      ack-mode: manual_immediate
+
+spring.data.elasticsearch:
+  repositories:
+    enabled: true
+

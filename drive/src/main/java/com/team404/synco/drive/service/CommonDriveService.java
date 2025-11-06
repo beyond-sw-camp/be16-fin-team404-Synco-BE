@@ -1,0 +1,881 @@
+package com.team404.synco.drive.service;
+
+import com.team404.synco.common.constant.DocumentType;
+import com.team404.synco.common.constant.DriveItemType;
+import com.team404.synco.common.constant.YnColumn;
+import com.team404.synco.common.dto.AlarmResDto;
+import com.team404.synco.common.service.RedisEventPublisher;
+import com.team404.synco.common.service.S3Uploader;
+import com.team404.synco.drive.dto.*;
+import com.team404.synco.drive.dto.DocDetailListResDto;
+import com.team404.synco.drive.dto.DriveItemDto;
+import com.team404.synco.drive.dto.FolderTreeDto;
+import com.team404.synco.drive.dto.kafka.DriveEvent;
+import com.team404.synco.drive.entity.Document;
+import com.team404.synco.drive.entity.DocumentLine;
+import com.team404.synco.drive.entity.DriveChannel;
+import com.team404.synco.drive.entity.Folder;
+import com.team404.synco.drive.repository.DocumentLineRepository;
+import com.team404.synco.drive.repository.DocumentRepository;
+import com.team404.synco.drive.repository.FolderRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.*;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@Transactional
+@RequiredArgsConstructor
+public class CommonDriveService {
+
+    private final FolderRepository folderRepository;
+    private final DocumentRepository documentRepository;
+    private final DocumentLineRepository documentLineRepository;
+    private final ProjectDocumentRedisService projectDocumentRedisService;
+    private final RedisEventPublisher redisEventPublisher;
+    private final S3Uploader s3Uploader;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final String folderNamePrefix = "drive/";
+
+    // 드라이브 아이템 목록 조회 (더보기 버튼 방식 페이지네이션)
+    @Transactional(readOnly = true)
+    public Page<DriveItemDto> getDriveItems(DriveChannel driveChannel,
+                                            Long parentFolderSeq,
+                                            Pageable pageable,
+                                            String sortBy,
+                                            String sortOrder) {
+        
+        // 폴더와 문서용 정렬된 Pageable 생성
+        Pageable folderPageable = createFolderSortedPageable(pageable, sortBy, sortOrder);
+        Pageable documentPageable = createDocumentSortedPageable(pageable, sortBy, sortOrder);
+        
+        // 폴더와 문서를 각각 페이징해서 조회
+        Page<Folder> folders = folderRepository.findFoldersByDriveChannelAndParent(
+            driveChannel.getDriveChannelSeq(), parentFolderSeq, folderPageable);
+        Page<Document> documents = documentRepository.findDocumentsByDriveChannelAndParent(
+            driveChannel.getDriveChannelSeq(), parentFolderSeq, documentPageable);
+        
+        // 폴더 우선으로 합치기
+        List<DriveItemDto> allItems = new ArrayList<>();
+        allItems.addAll(folders.getContent().stream().map(DriveItemDto::fromFolder).toList());
+        allItems.addAll(documents.getContent().stream().map(DriveItemDto::fromDocument).toList());
+        
+        // 총 개수 계산
+        long totalElements = folders.getTotalElements() + documents.getTotalElements();
+        
+        return new PageImpl<>(allItems, pageable, totalElements);
+    }
+    
+    // 폴더용 정렬된 Pageable 생성
+    private Pageable createFolderSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        
+        List<Sort.Order> orders = new ArrayList<>();
+        
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            // ✅ 기본 정렬: orders 기준 (폴더 순서)
+            orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC));
+            orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+        } else {
+            switch (sortBy.toLowerCase()) {
+                case "name":
+                    orders.add(Sort.Order.by("folderName").with(direction));
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                case "date":
+                    orders.add(Sort.Order.by("updatedAt").with(direction));
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                case "orders":
+                    orders.add(Sort.Order.by("orders").with(direction));
+                    orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                default:
+                    // ✅ 기본 정렬: orders 기준
+                    orders.add(Sort.Order.by("orders").with(Sort.Direction.ASC));
+                    orders.add(Sort.Order.by("folderName").with(Sort.Direction.ASC));
+            }
+        }
+        
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(orders)
+        );
+    }
+    
+    // 문서용 정렬된 Pageable 생성
+    private Pageable createDocumentSortedPageable(Pageable pageable, String sortBy, String sortOrder) {
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        
+        List<Sort.Order> orders = new ArrayList<>();
+        
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            // ✅ 기본 정렬: 생성일 기준 (Document에 orders 필드 추가 시 orders 기준으로 변경 예정)
+            orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC));
+            orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
+        } else {
+            switch (sortBy.toLowerCase()) {
+                case "name":
+                    orders.add(Sort.Order.by("documentName").with(direction));
+                    orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC)); // 보조 정렬
+                    break;
+                    
+                case "date":
+                    orders.add(Sort.Order.by("updatedAt").with(direction));
+                    orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC)); // 보조 정렬
+                    break;
+                    
+                default:
+                    // ✅ 기본 정렬: 생성일 기준
+                    orders.add(Sort.Order.by("createdAt").with(Sort.Direction.DESC));
+                    orders.add(Sort.Order.by("documentName").with(Sort.Direction.ASC));
+            }
+        }
+        
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(orders)
+        );
+    }
+    
+    // 폴더 생성
+    public DriveItemDto createFolder(DriveChannel driveChannel, String folderName, Long parentFolderId) {
+
+        // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 폴더가 있는지 확인
+        if(parentFolderId != null) {
+            // 하위 폴더 중복 검증
+            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, parentFolderId).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+            }
+        } else {
+            // 최상위 폴더 중복 검증
+            if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folderName, null, driveChannel, null).isPresent()) {
+                throw new IllegalArgumentException("최상위에 같은 이름의 폴더가 이미 존재합니다.");
+            }
+        }
+
+        // 부모폴더가 있는 경우에만 존재 여부 확인
+        if(parentFolderId != null){
+            folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+        }
+
+        // 최대 orders 조회
+        long maxOrder;
+        if(parentFolderId != null) {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq()).orElse(0L);
+        } else {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannel.getDriveChannelSeq()).orElse(0L);
+        }
+
+        Folder folder = Folder.builder()
+                .folderName(folderName)
+                .parentFolderSeq(parentFolderId)  // null이면 최상위 폴더
+                .orders(maxOrder + 1L)
+                .driveChannel(driveChannel)
+                .build();
+
+        Folder savedFolder = folderRepository.save(folder);
+        return DriveItemDto.fromFolder(savedFolder);
+    }
+
+
+    // 공유문서 생성
+    public DriveItemDto createSharedDoc(DriveChannel driveChannel, Long userId, String documentName, Long parentFolderId, Boolean isLocked) {
+
+        // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인
+        if(parentFolderId != null) {
+            // 폴더 내 문서 중복 검증
+            if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(documentName, null, driveChannel, parentFolderId).isPresent()) {
+                throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+            }
+        } else {
+            // 최상위 문서 중복 검증
+            if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(documentName, driveChannel.getDriveChannelSeq()).isPresent()) {
+                throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
+            }
+        }
+
+        // 부모폴더가 있는 경우에만 폴더 설정
+        Folder folder = null;
+        if(parentFolderId != null){
+            folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+        }
+
+        Document document = Document.builder()
+                .documentType(DocumentType.CUSTOM)
+                .documentName(documentName)
+                .documentUrl("/documents/" + UUID.randomUUID() + ".txt")
+                .memberSeq(userId)
+                .fileSize(0L) // 공유문서는 파일 크기를 0으로 설정
+                .ynLock(isLocked != null && isLocked ? YnColumn.IS_TRUE : YnColumn.IS_FALSE)
+                .folder(folder)
+                .driveChannel(driveChannel)
+                .build();
+
+        Document savedDocument = documentRepository.save(document);
+
+        // 워크스페이스 멤버 목록 조회
+        List<Long> workSpaceMemberList = projectDocumentRedisService.getWorkSpaceMemberList(driveChannel.getWorkspaceSeq());
+
+        // 워크스페이스의 모든 멤버에게 알림 전송
+        for(Long memberSeq : workSpaceMemberList) {
+            if(memberSeq.equals(userId)) continue; // 본인 제외
+            AlarmResDto alarmResDto = AlarmResDto.of(String.valueOf(memberSeq), "alarm-drive",
+                    "[공유문서 생성] " + projectDocumentRedisService.getWorkSpaceName(driveChannel.getWorkspaceSeq()) + "프로젝트에 새로운 공유문서가 등록되었습니다.", driveChannel.getWorkspaceSeq(), driveChannel.getDriveChannelSeq());
+            redisEventPublisher.publish("alarm-drive", alarmResDto);
+        }
+
+
+        // Kafka 이벤트 발행
+        publishDriveCreated(savedDocument);
+
+        return DriveItemDto.fromDocument(savedDocument);
+    }
+
+
+    // 파일 업로드
+    public List<DriveItemDto> uploadFiles(DriveChannel driveChannel, Long userId, List<MultipartFile> files, Long parentFolderId) {
+        List<DriveItemDto> uploadedFiles = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            try {
+                String fileName = file.getOriginalFilename();
+                
+                // 같은 위치에 같은 이름의 파일이 있는지 확인 (S3 업로드 전에 검증)
+                if(parentFolderId != null) {
+                    // 폴더 내 파일 중복 검증
+                    if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(fileName, null, driveChannel, parentFolderId).isPresent()) {
+                        throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 파일이 이미 존재합니다: " + fileName);
+                    }
+                } else {
+                    // 최상위 파일 중복 검증
+                    if(documentRepository.findTopLevelDocumentByNameAndChannelForNewFile(fileName, driveChannel.getDriveChannelSeq()).isPresent()) {
+                        throw new IllegalArgumentException("최상위에 같은 이름의 파일이 이미 존재합니다: " + fileName);
+                    }
+                }
+                
+                // 중복 검증 통과 후 S3 업로드
+                String fileUrl = s3Uploader.upload(file, folderNamePrefix + driveChannel.getDriveChannelSeq());
+
+                // 부모폴더가 있는 경우에만 폴더 설정
+                Folder folder = null;
+                if(parentFolderId != null){
+                    folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(parentFolderId, driveChannel.getDriveChannelSeq())
+                        .orElseThrow(() -> new EntityNotFoundException("부모 폴더를 찾을 수 없습니다. 폴더 ID: " + parentFolderId));
+                }
+
+                Document document = Document.builder()
+                        .documentType(DocumentType.LOCAL)
+                        .documentName(fileName)
+                        .documentUrl(fileUrl)
+                        .memberSeq(userId)
+                        .fileSize(file.getSize())
+                        .ynLock(YnColumn.IS_FALSE)
+                        .folder(folder)
+                        .driveChannel(driveChannel)
+                        .build();
+
+                Document savedDocument = documentRepository.save(document);
+
+                // Kafka 이벤트 발행
+                publishDriveCreated(savedDocument);
+
+                uploadedFiles.add(DriveItemDto.fromDocument(savedDocument));
+
+            } catch (IllegalArgumentException e) {
+                throw e; // 중복 파일명 예외는 그대로 던짐
+            } catch (Exception e) {
+                throw new MultipartException("파일 업로드 중 예상치 못한 오류가 발생했습니다: " + file.getOriginalFilename(), e);
+            }
+        }
+
+        return uploadedFiles;
+    }
+
+
+    // 아이템 이동
+    public void moveItem(DriveChannel driveChannel, String itemType, Long itemId, Long newParentId) {
+        if (DriveItemType.FOLDER.equals(itemType)) {
+            moveFolderWithOrderAdjustment(driveChannel, itemId, newParentId);
+        } else {
+            Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            
+            // 같은 드라이브 채널 내에서 같은 위치에 같은 이름의 문서가 있는지 확인 (자기 자신 제외)
+            if(newParentId != null) {
+                // 폴더로 이동하는 경우
+                if(documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(document.getDocumentName(), itemId, document.getDriveChannel(), newParentId).isPresent()) {
+                    throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 문서가 이미 존재합니다.");
+                }
+            } else {
+                // 최상위로 이동하는 경우
+                if(documentRepository.findTopLevelDocumentByNameAndChannelExcluding(document.getDocumentName(), itemId, document.getDriveChannel().getDriveChannelSeq()).isPresent()) {
+                    throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다.");
+                }
+            }
+
+            Folder newFolder = null;
+            if(newParentId != null) {
+                newFolder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(newParentId, document.getDriveChannel().getDriveChannelSeq())
+                    .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
+            }
+            document.updateFolder(newFolder);
+
+            // Kafka 이벤트 발행
+            publishDriveUpdated(document);
+        }
+    }
+
+    // 폴더 이동 시 순서 조정 포함
+    private void moveFolderWithOrderAdjustment(DriveChannel driveChannel, Long folderId, Long newParentId) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+        // 이동할 부모폴더가 있는 경우 존재 여부 확인
+        if(newParentId != null) {
+            folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(newParentId, folder.getDriveChannel().getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("이동할 부모 폴더를 찾을 수 없습니다. 폴더 ID: " + newParentId));
+            
+            // 순환 참조 방지: 이동할 폴더가 현재 폴더의 하위 폴더인지 확인
+            if (isCircularReference(folderId, newParentId)) {
+                throw new IllegalArgumentException("자기 자신의 하위 폴더로는 이동할 수 없습니다.");
+            }
+        }
+
+        // 현재 위치와 이동할 위치가 같은지 확인
+        Long currentParentId = folder.getParentFolderSeq();
+//        if (Objects.equals(currentParentId, newParentId)) {
+//            throw new IllegalArgumentException("이미 해당 위치에 있는 폴더입니다.");
+//        }
+
+        // 같은 드라이브 채널 내에서 같은 부모 폴더 하위에 같은 이름의 폴더가 있는지 확인
+        if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(folder.getFolderName(), folderId, folder.getDriveChannel(), newParentId).isPresent()) {
+            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+        }
+        Long currentOrder = folder.getOrders();
+        Long driveChannelSeq = folder.getDriveChannel().getDriveChannelSeq();
+
+        // 1. 기존 위치에서 순서 조정 (현재 폴더보다 뒤에 있던 폴더들의 순서를 -1)
+        if (currentParentId != null) {
+            folderRepository.decrementOrdersFrom(currentParentId, driveChannelSeq, currentOrder + 1);
+        } else {
+            folderRepository.decrementOrdersFromTopLevel(driveChannelSeq, currentOrder + 1);
+        }
+
+        //  새 위치에서 최대 순서 조회 및 설정
+        long maxOrder;
+        if(newParentId != null) {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(newParentId, driveChannelSeq).orElse(0L);
+        } else {
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq).orElse(0L);
+        }
+
+        // 폴더의 부모와 순서 업데이트
+        folder.updateParentFolderSeq(newParentId);
+        folder.updateOrder(maxOrder + 1L);
+        
+        // 이동하기 전 위치의 모든 폴더 순서를 연속적으로 재정렬
+        reorderFoldersSequentially(currentParentId, driveChannelSeq);
+    }
+    
+    // 폴더 순서를 연속적으로 재정렬
+    private void reorderFoldersSequentially(Long parentFolderId, Long driveChannelSeq) {
+        List<Folder> folders;
+        
+        if (parentFolderId != null) {
+            // 하위 폴더들 조회
+            folders = folderRepository.findByParentFolderSeqAndDriveChannelDriveChannelSeqOrderByOrders(parentFolderId, driveChannelSeq);
+        } else {
+            // 최상위 폴더들 조회
+            folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+        }
+        
+        // 순서를 1부터 연속적으로 재설정
+        for (int i = 0; i < folders.size(); i++) {
+            Folder folder = folders.get(i);
+            folder.updateOrder((long) (i + 1));
+        }
+    }
+
+    // 폴더 순서 변경
+    public void reorderFolder(DriveChannel driveChannel, Long folderId, Long newOrder) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+        Long currentOrder = folder.getOrders();
+        Long parentFolderSeq = folder.getParentFolderSeq();
+        Long driveChannelSeq = folder.getDriveChannel().getDriveChannelSeq();
+
+        // 같은 순서로 변경하는 경우는 아무것도 하지 않음
+        if (currentOrder.equals(newOrder)) {
+            return;
+        }
+
+        // 유효한 순서 범위 검증
+        Long maxOrder;
+        if (parentFolderSeq != null) {
+            // 하위 폴더인 경우
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqAndDriveChannelSeq(parentFolderSeq, driveChannelSeq)
+                    .orElse(0L);
+        } else {
+
+            // 최상위 폴더인 경우
+            maxOrder = folderRepository.findMaxOrdersByParentFolderSeqIsNullAndDriveChannelSeq(driveChannelSeq)
+                    .orElse(0L);
+        }
+
+        // 순서가 유효한 범위를 벗어나는 경우 예외 발생
+        if (newOrder < 1 || newOrder > maxOrder) {
+            throw new IllegalArgumentException(
+                String.format("유효하지 않은 순서입니다. 순서는 1부터 %d까지 가능합니다.", maxOrder)
+            );
+        }
+
+        if (currentOrder < newOrder) {
+            // 뒤로 이동: 현재 순서보다 크고 새로운 순서 이하인 아이템들을 -1
+            if (parentFolderSeq != null) {
+                folderRepository.decrementOrdersInRange(parentFolderSeq, driveChannelSeq, currentOrder + 1, newOrder);
+            } else {
+                // 최상위 폴더인 경우 별도 처리 필요
+                List<Folder> folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+                for (Folder f : folders) {
+                    if (f.getOrders() > currentOrder && f.getOrders() <= newOrder) {
+                        f.updateOrder(f.getOrders() - 1);
+                    }
+                }
+            }
+        } else {
+            // 앞으로 이동: 새로운 순서 이상이고 현재 순서 미만인 아이템들을 +1
+            if (parentFolderSeq != null) {
+                folderRepository.incrementOrdersInRange(parentFolderSeq, driveChannelSeq, newOrder, currentOrder - 1);
+            } else {
+                // 최상위 폴더인 경우 별도 처리 필요
+                List<Folder> folders = folderRepository.findByParentFolderSeqIsNullAndDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+                for (Folder f : folders) {
+                    if (f.getOrders() >= newOrder && f.getOrders() < currentOrder) {
+                        f.updateOrder(f.getOrders() + 1);
+                    }
+                }
+            }
+        }
+
+        // 폴더의 순서 업데이트
+        folder.updateOrder(newOrder);
+    }
+
+
+    // 폴더 이름 변경
+    public DriveItemDto renameFolder(DriveChannel driveChannel, Long folderId, String newFolderName) {
+        Folder folder = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+
+        // 같은 위치에서 폴더 이름 중복 검사
+        if(folderRepository.findByFolderNameAndFolderSeqNotAndDriveChannelAndParentFolderSeq(newFolderName, folderId, folder.getDriveChannel(), folder.getParentFolderSeq()).isPresent()) {
+            throw new IllegalArgumentException("해당 폴더 위치에 같은 이름의 폴더가 이미 존재합니다.");
+        }
+
+        folder.updateFolderName(newFolderName);
+
+        // 폴더 내 하위 문서들의 folderName 업데이트를 위한 Kafka 이벤트 발행
+        List<Document> documents = documentRepository.findByFolderFolderSeq(folderId);
+        for (Document doc : documents) {
+            publishDriveUpdated(doc);
+        }
+
+        return DriveItemDto.fromFolder(folder);
+    }
+
+    // 아이템 삭제
+    public void deleteItem(DriveChannel driveChannel, Long userId, String itemType, Long itemId) {
+        if (DriveItemType.FOLDER.equals(itemType)) {
+            // 폴더 삭제 전 권한 체크 (재귀적으로 내부 모든 문서가 내가 올린 것인지 확인)
+            validateFolderDeletePermission(driveChannel, userId, itemId);
+            deleteFolderRecursively(driveChannel, itemId);
+        } else {
+            Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(itemId, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다."));
+            // 문서 삭제 권한 체크
+            if (document.getMemberSeq() != userId) {
+                throw new SecurityException("자신이 생성한 문서만 삭제할 수 있습니다.");
+            }
+            
+            if (document.getDocumentType() == DocumentType.LOCAL) {
+                s3Uploader.delete(document.getDocumentUrl());
+            }
+
+            Long documentSeq = document.getDocumentSeq();
+            documentRepository.delete(document);
+
+            // Kafka 이벤트 발행
+            publishDriveDeleted(documentSeq);
+        }
+    }
+
+    // 공유문서 목록 조회
+    @Transactional(readOnly = true)
+    public List<DocDetailListResDto> getSharedDoc(DriveChannel driveChannel, Long document) {
+        log.info("공유문서 목록 조회 시작 - DriveChannelSeq: {}, DocumentSeq: {}", driveChannel.getDriveChannelSeq(), document);
+        
+        // 특정 문서의 모든 DocumentLine들을 조회
+        List<DocumentLine> allDocumentLines = documentLineRepository.findByDocumentDocumentSeqOrderByDocumentLineSeq(document);
+        
+        // 계층 구조로 변환
+        return buildHierarchicalStructure(allDocumentLines);
+    }
+
+    /**
+     * DocumentLine 리스트를 연결 리스트 순서대로 정렬 (O(n) 시간복잡도)
+     */
+    private List<DocDetailListResDto> buildHierarchicalStructure(List<DocumentLine> documentLines) {
+        if (documentLines.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // O(n): DocumentLine을 DocDetailListResDto로 변환하면서 Map 생성
+        Map<String, DocDetailListResDto> dtoMap = new HashMap<>();
+        Map<String, String> nextBlockMap = new HashMap<>(); // prevFeId -> feId 매핑
+        
+        for (DocumentLine documentLine : documentLines) {
+            DocDetailListResDto dto = convertToDocDetailListResDto(documentLine);
+            dtoMap.put(documentLine.getLineId(), dto);
+            
+            // 다음 블록 매핑 생성 (prevFeId -> feId)
+            if (documentLine.getPrevId() != null && !documentLine.getPrevId().isEmpty()) {
+                nextBlockMap.put(documentLine.getPrevId(), documentLine.getLineId());
+            }
+        }
+        
+        List<DocDetailListResDto> orderedList = new ArrayList<>(documentLines.size());
+        
+        // O(n): 첫 번째 블록 찾기 (prevFeId가 null인 블록)
+        String firstFeId = null;
+        for (DocumentLine documentLine : documentLines) {
+            if (documentLine.getPrevId() == null || documentLine.getPrevId().isEmpty()) {
+                firstFeId = documentLine.getLineId();
+                break;
+            }
+        }
+        
+        // O(n): 연결 리스트 순서대로 순회
+        String currentFeId = firstFeId;
+        while (currentFeId != null) {
+            DocDetailListResDto currentDto = dtoMap.get(currentFeId);
+            if (currentDto != null) {
+                orderedList.add(currentDto);
+                currentFeId = nextBlockMap.get(currentFeId);
+            } else {
+                break;
+            }
+        }
+        
+        return orderedList;
+    }
+
+    /**
+     * DocumentLine을 DocDetailListResDto로 변환
+     */
+    private DocDetailListResDto convertToDocDetailListResDto(DocumentLine documentLine) {
+        return DocDetailListResDto.builder()
+                .id(documentLine.getDocumentLineSeq())
+                .parentId(documentLine.getPrevId())
+                .content(documentLine.getDocumentContent())
+                .feId(documentLine.getLineId())
+//                .indent(documentLine.getIndent())
+//                .level(documentLine.getLevel())
+//                .type(documentLine.getType())
+                .build();
+    }
+
+    // 폴더 삭제 권한 검증
+    private void validateFolderDeletePermission(DriveChannel driveChannel, Long userId, Long folderId) {
+        Set<Long> visitedFolders = new HashSet<>();
+        validateFolderDeletePermissionRecursive(driveChannel, userId, folderId, visitedFolders);
+    }
+    
+    // 폴더 삭제 권한 검증 (재귀, 방문 추적)
+    private void validateFolderDeletePermissionRecursive(DriveChannel driveChannel, Long userId, Long folderId, Set<Long> visitedFolders) {
+        // 이미 방문한 폴더라면 스킵
+        if (visitedFolders.contains(folderId)) {
+            return;
+        }
+        
+        // 현재 폴더를 방문한 것으로 표시
+        visitedFolders.add(folderId);
+        
+        // 1. 현재 폴더의 모든 문서 확인
+        List<Document> documentsInFolder = documentRepository.findByFolderFolderSeq(folderId);
+        for (Document document : documentsInFolder) {
+            // 문서가 해당 채널에 속하는지 확인
+            if (!document.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 문서는 무시
+            }
+            if(document.getMemberSeq() != userId) {
+                throw new SecurityException("자신이 생성한 문서가 아닌 폴더는 삭제할 수 없습니다.");
+            }
+        }
+
+        // 하위 폴더들 재귀적으로 확인
+        List<Folder> subFolders = folderRepository.findByParentFolderSeq(folderId);
+        for (Folder subFolder : subFolders) {
+            // 하위 폴더가 해당 채널에 속하는지 확인
+            if (!subFolder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 폴더는 무시
+            }
+            validateFolderDeletePermissionRecursive(driveChannel, userId, subFolder.getFolderSeq(), visitedFolders);
+        }
+    }
+
+    private void deleteFolderRecursively(DriveChannel driveChannel, Long folderId) {
+        Folder folderToDelete = folderRepository.findByFolderSeqAndDriveChannelDriveChannelSeq(folderId, driveChannel.getDriveChannelSeq())
+            .orElseThrow(() -> new EntityNotFoundException("폴더를 찾을 수 없습니다."));
+        Long parentFolderId = folderToDelete.getParentFolderSeq();
+        Long driveChannelSeq = folderToDelete.getDriveChannel().getDriveChannelSeq();
+
+        // 하위 폴더 ID 재귀적으로 수집
+        List<Long> allFolderIds = new ArrayList<>();
+        collectAllSubFolderIds(driveChannel, folderId, allFolderIds);
+        allFolderIds.add(folderId);
+
+        // 폴더 내 문서 수집 및 S3 파일 수집
+        List<Document> allDocumentsToDelete = new ArrayList<>();
+        List<String> s3UrlsToDelete = new ArrayList<>();
+        for (Long folderIdToDelete : allFolderIds) {
+            List<Document> documents = documentRepository.findByFolderFolderSeq(folderIdToDelete);
+            for (Document doc : documents) {
+                // 문서가 해당 채널에 속하는지 확인
+                if (!doc.getDriveChannel().getDriveChannelSeq().equals(driveChannelSeq)) {
+                    continue; // 다른 채널의 문서는 무시
+                }
+                allDocumentsToDelete.add(doc);
+                if (doc.getDocumentType() == DocumentType.LOCAL) {
+                    s3UrlsToDelete.add(doc.getDocumentUrl());
+                }
+            }
+        }
+
+        // S3 파일 삭제
+        if (!s3UrlsToDelete.isEmpty()) {
+            try {
+                for (String s3Url : s3UrlsToDelete) {
+                    s3Uploader.delete(s3Url);
+                }
+            } catch (Exception e) {
+                throw new  RuntimeException("S3 파일 삭제 중 오류가 발생했습니다.", e);
+            }
+        }
+
+        // 문서 삭제 이벤트 발행
+        for (Document doc : allDocumentsToDelete) {
+            publishDriveDeleted(doc.getDocumentSeq());
+        }
+
+        // 폴더 삭제 (CASCADE로 해당 폴더의 문서들과 DocumentLine들 자동 삭제)
+        Collections.reverse(allFolderIds);
+        for (Long folderIdToDelete : allFolderIds) {
+            folderRepository.deleteById(folderIdToDelete);
+        }
+        log.info("폴더 CASCADE 삭제 완료: {} 개 폴더", allFolderIds.size());
+        
+        // 삭제 후 부모 폴더의 순서를 연속적으로 재정렬
+        reorderFoldersSequentially(parentFolderId, driveChannelSeq);
+    }
+
+    private void collectAllSubFolderIds(DriveChannel driveChannel, Long parentFolderId, List<Long> allFolderIds) {
+        Set<Long> visitedFolders = new HashSet<>();
+        collectAllSubFolderIdsRecursive(driveChannel, parentFolderId, allFolderIds, visitedFolders);
+    }
+    
+    // 하위 폴더 ID 재귀적으로 수집 (방문 추적)
+    private void collectAllSubFolderIdsRecursive(DriveChannel driveChannel, Long parentFolderId, List<Long> allFolderIds, Set<Long> visitedFolders) {
+        // 이미 방문한 폴더라면 스킵
+        if (visitedFolders.contains(parentFolderId)) {
+            return;
+        }
+        
+        // 현재 폴더를 방문한 것으로 표시
+        visitedFolders.add(parentFolderId);
+        
+        List<Folder> subFolders = folderRepository.findByParentFolderSeq(parentFolderId);
+        for (Folder subFolder : subFolders) {
+            // 하위 폴더가 해당 채널에 속하는지 확인
+            if (!subFolder.getDriveChannel().getDriveChannelSeq().equals(driveChannel.getDriveChannelSeq())) {
+                continue; // 다른 채널의 폴더는 무시
+            }
+            allFolderIds.add(subFolder.getFolderSeq());
+            collectAllSubFolderIdsRecursive(driveChannel, subFolder.getFolderSeq(), allFolderIds, visitedFolders);
+        }
+    }
+
+    // 순환 참조 검증: 이동할 폴더가 현재 폴더의 하위 폴더인지 확인
+    private boolean isCircularReference(Long folderId, Long newParentId) {
+        if (folderId.equals(newParentId)) {
+            return true; // 자기 자신으로 이동하는 경우
+        }
+        
+        // 방문한 폴더를 추적하는 Set
+        Set<Long> visitedFolders = new HashSet<>();
+        return isCircularReferenceRecursive(folderId, newParentId, visitedFolders);
+    }
+    
+    // 재귀적으로 순환 참조 검증 (방문한 폴더 추적)
+    private boolean isCircularReferenceRecursive(Long folderId, Long newParentId, Set<Long> visitedFolders) {
+        // 이미 방문한 폴더라면 순환 참조가 아님 (이미 체크했으므로)
+        if (visitedFolders.contains(folderId)) {
+            return false;
+        }
+        
+        // 현재 폴더를 방문한 것으로 표시
+        visitedFolders.add(folderId);
+        
+        // 재귀적으로 하위 폴더들을 확인
+        List<Folder> subFolders = folderRepository.findByParentFolderSeq(folderId);
+        for (Folder subFolder : subFolders) {
+            if (subFolder.getFolderSeq().equals(newParentId)) {
+                return true; // 직접 하위 폴더인 경우
+            }
+            if (isCircularReferenceRecursive(subFolder.getFolderSeq(), newParentId, visitedFolders)) {
+                return true; // 간접 하위 폴더인 경우
+            }
+        }
+        
+        return false;
+    }
+
+    // ✅ 드라이브 폴더 트리 조회
+    @Transactional(readOnly = true)
+    public List<FolderTreeDto> getFolderTree(Long driveChannelSeq) {
+        // 모든 폴더 조회
+        List<Folder> allFolders = folderRepository.findByDriveChannelDriveChannelSeqOrderByOrders(driveChannelSeq);
+        
+        // 폴더 ID를 키로 하는 맵 생성
+        Map<Long, FolderTreeDto> folderMap = allFolders.stream()
+                .collect(Collectors.toMap(
+                    Folder::getFolderSeq,
+                    FolderTreeDto::fromEntity
+                ));
+        
+        List<FolderTreeDto> rootFolders = new ArrayList<>();
+        
+        // 1단계: 최상위 폴더들 먼저 처리
+        for (Folder folder : allFolders) {
+            if (folder.getParentFolderSeq() == null) {
+                FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
+                folderDto.setDepthAndPath(0, folder.getFolderName());
+                folderDto.setFolderName(folder.getFolderName()); // 폴더명 명시적 설정
+                rootFolders.add(folderDto);
+            }
+        }
+        
+        // 2단계: 하위 폴더들을 부모에 연결
+        for (Folder folder : allFolders) {
+            if (folder.getParentFolderSeq() != null) {
+                FolderTreeDto folderDto = folderMap.get(folder.getFolderSeq());
+                FolderTreeDto parentDto = folderMap.get(folder.getParentFolderSeq());
+                
+                if (parentDto != null && parentDto.getDepth() != null) {
+                    // 부모의 깊이와 경로를 기반으로 자식 설정
+                    int childDepth = parentDto.getDepth() + 1;
+                    String childPath = parentDto.getPath() + "/" + folder.getFolderName();
+                    folderDto.setDepthAndPath(childDepth, childPath);
+                    folderDto.setFolderName(folder.getFolderName()); // 폴더명 명시적 설정
+                    
+                    // 부모의 children에 추가
+                    parentDto.addChild(folderDto);
+                }
+            }
+        }
+        
+        log.info("폴더 트리 조회 완료 - DriveChannelSeq: {}, 총 폴더 수: {}, 루트 폴더 수: {}", 
+                driveChannelSeq, allFolders.size(), rootFolders.size());
+        return rootFolders;
+    }
+
+    // ✅ 문서 이름 변경
+    public void renameDocument(DriveChannel driveChannel, Long documentSeq, String newDocumentName) {
+        // 문서 조회
+        Document document = documentRepository.findByDocumentSeqAndDriveChannelDriveChannelSeq(documentSeq, driveChannel.getDriveChannelSeq())
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentSeq));
+        
+        // 같은 폴더 내에 같은 이름의 문서가 있는지 확인
+        if (document.getFolder() != null) {
+            // 폴더 내 문서 중복 검증
+            documentRepository.findByDocumentNameAndDocumentSeqNotAndDriveChannelAndFolderFolderSeq(
+                    newDocumentName, documentSeq, driveChannel, document.getFolder().getFolderSeq()
+            ).ifPresent(existingDoc -> {
+                throw new IllegalArgumentException("해당 폴더에 같은 이름의 문서가 이미 존재합니다: " + newDocumentName);
+            });
+        } else {
+            // 최상위 문서 중복 검증
+            documentRepository.findTopLevelDocumentByNameAndChannelExcluding(
+                    newDocumentName, documentSeq, driveChannel.getDriveChannelSeq()
+            ).ifPresent(existingDoc -> {
+                throw new IllegalArgumentException("최상위에 같은 이름의 문서가 이미 존재합니다: " + newDocumentName);
+            });
+        }
+        
+        // 문서 이름 변경
+        document.updateDocumentName(newDocumentName);
+
+        // Kafka 이벤트 발행
+        publishDriveUpdated(document);
+
+        log.info("문서 이름 변경 완료 - DocumentSeq: {}, NewName: {}", documentSeq, newDocumentName);
+    }
+
+    // ========== Kafka 이벤트 발행 메서드 ==========
+
+    /**
+     * Drive 생성/업로드 이벤트 발행
+     */
+    private void publishDriveCreated(Document document) {
+        try {
+            DriveEvent event = DriveEvent.fromEntity(document);
+            kafkaTemplate.send("drive.document.created", event);
+            log.info("📤 Drive 생성/업로드 이벤트 발행: documentSeq={}", document.getDocumentSeq());
+        } catch (Exception e) {
+            log.error("❌ Drive 생성 이벤트 발행 실패: documentSeq={}, error={}", document.getDocumentSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Drive 업데이트 이벤트 발행
+     */
+    private void publishDriveUpdated(Document document) {
+        try {
+            DriveEvent event = DriveEvent.fromEntity(document);
+            kafkaTemplate.send("drive.document.updated", event);
+            log.info("📤 Drive 업데이트 이벤트 발행: documentSeq={}", document.getDocumentSeq());
+        } catch (Exception e) {
+            log.error("❌ Drive 업데이트 이벤트 발행 실패: documentSeq={}, error={}", document.getDocumentSeq(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Drive 삭제 이벤트 발행
+     */
+    private void publishDriveDeleted(Long documentSeq) {
+        try {
+            kafkaTemplate.send("drive.document.deleted", documentSeq);
+            log.info("📤 Drive 삭제 이벤트 발행: documentSeq={}", documentSeq);
+        } catch (Exception e) {
+            log.error("❌ Drive 삭제 이벤트 발행 실패: documentSeq={}, error={}", documentSeq, e.getMessage(), e);
+        }
+    }
+
+}
