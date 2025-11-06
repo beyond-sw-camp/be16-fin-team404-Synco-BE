@@ -84,6 +84,6 @@ oauth:
     redirect-uri: https://www.synco1.shop/oauth/naver/redirect
 
 cookie:
-  secure: true       # 프로덕션 환경 (HTTP만 허용)
+  secure: true       # 프로덕션 환경 (HTTPS만 허용)
   max-age: 604800     # 7일 (초 단위)
-  same-site: Lax      # CSRF 방어 (Lax: 일반적, None: 크로스 도메인 필요 시)
+  same-site: None    # 크로스 도메인 쿠키 전송 필요 (None 사용 시 secure: true 필수)
