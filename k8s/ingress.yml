@@ -15,10 +15,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - www.synco1.shop
-    secretName: www-synco1-shop-tls
+    - server.synco1.shop
+    secretName: server-synco1-shop-tls
   rules:
-  - host: www.synco1.shop  # 설정하려는 도메인 이름.
+  - host: server.synco1.shop  # 설정하려는 도메인 이름.
     http:
       paths:
       - path: /
