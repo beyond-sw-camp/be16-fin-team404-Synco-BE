@@ -65,8 +65,12 @@ metadata:
   namespace: synco-namespace
 spec:
   type: ClusterIP
-  # ai-service는 Kafka Consumer만 실행하므로 HTTP 포트가 필요 없음
-  # Service는 다른 서비스에서 참조할 수 있도록 유지
+  # ai-service는 Kafka Consumer만 실행하므로 HTTP 포트가 실제로 사용되지 않음
+  # 하지만 Kubernetes Service는 최소 하나의 port가 필요하므로 더미 포트 추가
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
   selector:
     app: ai-service
 
