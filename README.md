@@ -246,6 +246,21 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 ---
 
 ## 🛠️ 트러블 슈팅
+<details> 
+  <summary><b> 김건동</b></summary>
+</details>
+<details> 
+  <summary><b> 권수연</b></summary>
+</details>
+<details> 
+  <summary><b> 김찬진</b></summary>
+</details>
+<details> 
+  <summary><b> 김지현</b></summary>
+</details>
+<details> 
+  <summary><b> 윤수오</b></summary>
+</details>
 
 ---
 
