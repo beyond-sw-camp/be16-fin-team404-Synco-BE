@@ -5,6 +5,16 @@ eureka:
   client:
     enabled: false
 spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          drive-service:
+            url: http://drive-service:80
+          chat-service:
+            url: http://chat-service:80
+          task-service:
+            url: http://task-service:80
   servlet:
     multipart:
       max-file-size: 200MB
