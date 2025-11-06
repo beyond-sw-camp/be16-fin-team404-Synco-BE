@@ -18,7 +18,7 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins:
-              - 'https://www.synco1.shop'
+            - 'https://www.synco1.shop'
             allowedMethods: '*'
             allowedHeaders: '*'
             allowCredentials: true
@@ -28,35 +28,35 @@ spring:
             - Path=/chat-service/**
           filters:
             - StripPrefix=1
-          uri: lb://chat-service
+          uri: http://chat-service:80
         - id: drive-service
           predicates:
             - Path=/drive-service/**
           filters:
             - StripPrefix=1
-          uri: lb://drive-service
+          uri: http://drive-service:80
         - id: task-service
           predicates:
             - Path=/task-service/**
           filters:
             - StripPrefix=1
-          uri: lb://task-service
+          uri: http://task-service:80
         - id: workspace-service
           predicates:
             - Path=/workspace-service/**
           filters:
             - StripPrefix=1
-          uri: lb://workspace-service
+          uri: http://workspace-service:80
         - id: search-service
           predicates:
             - Path=/search-service/**
           filters:
             - StripPrefix=1
-          uri: lb://search-service
+          uri: http://search-service:80
         - id: livekit-webhook
           predicates:
             - Path=/livekit/**
-          uri: lb://task-service
+          uri: http://task-service:80
 
 jwt:
   secretKey : ${JWT_SECRET_KEY}
