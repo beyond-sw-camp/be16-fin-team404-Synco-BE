@@ -1,6 +1,6 @@
 # 👩‍💻 synco - 통합 협업 지식관리 툴
 
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/66816532-78c9-4394-a3c0-a74edc72693e" />
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/3b6f4d87-7c0e-4575-a2af-2910df5dc87b" />
 
 ## 🙋🏻 팀원 소개
 
@@ -241,7 +241,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 ## 🧾 화면 테스트 결과
 <details> 
   <summary><b> 화면 테스트 결과</b></summary>
-</detail>
+</details>
 
 ---
 
