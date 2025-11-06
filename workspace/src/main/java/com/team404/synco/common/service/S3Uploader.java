@@ -71,6 +71,16 @@ public class S3Uploader {
     }
 
     /**
+     * S3 URL인지 확인
+     */
+    public boolean isS3Url(String fileUrl) {
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            return false;
+        }
+        return fileUrl.contains(".amazonaws.com/");
+    }
+
+    /**
      * 파일명 검증
      */
     private void validateFile(MultipartFile file) {
