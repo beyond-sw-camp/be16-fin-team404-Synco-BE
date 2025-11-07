@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    enabled: false
+
+spring:
+  application:
+    name: task-service
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${DB_HOST}/synco
+    username: admin
+    password: ${DB_PW}
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show__sql: true
+  redis:
+    host: redis-service
+    port: 6379
+  kafka:
+    bootstrap-servers: kafka-service:9092
+    consumer:
+      group-id: task-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+## LiveKit 설정
+livekit:
+  api:
+    host: ${LIVEKIT_HOST}
+    key: ${LIVEKIT_KEY}
+    secret: ${LIVEKIT_SECRET}
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region:
+      static: ap-northeast-2
+    s3:
+      bucket: synco-bucket
+
+## 네이버 Summary API 설정
+naver:
+  summary:
+    api:
+      url: https://clovastudio.stream.ntruss.com/v1/api-tools/summarization/v2
+      api-key: ${NAVER_SUMMARY_API_KEY}
