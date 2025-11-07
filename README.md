@@ -118,6 +118,13 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <a href="https://livekit.io/" target="_blank"><img src="https://img.shields.io/badge/LiveKit-1FD5F9?style=for-the-badge&logo=livekit&logoColor=white"/></a>
 <a href="https://fastapi.tiangolo.com/" target="_blank"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/></a>
 <a><img src="https://img.shields.io/badge/OAuth2-3A3A3A?style=for-the-badge&logo=oauth&logoColor=white"/></a>
+<a href="https://fastapi.tiangolo.com/" target="_blank"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/></a>
+<a><img src="https://img.shields.io/badge/OAuth2-3A3A3A?style=for-the-badge&logo=oauth&logoColor=white"/></a>
+
+<a href="https://github.com/openai/whisper" target="_blank"><img src="https://img.shields.io/badge/Whisper-STT-74AA9C?style=for-the-badge&logo=openai&logoColor=white"/></a>
+<a href="https://www.ncloud.com/product/aiService/clovaStudio" target="_blank"><img src="https://img.shields.io/badge/Naver%20CLOVA%20Studio-Summary%20API-03C75A?style=for-the-badge&logo=naver&logoColor=white"/></a>
+
+
 
 ### 🚀 Deployment & DevOps
 
