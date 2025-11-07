@@ -190,28 +190,45 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>회원가입 / 로그인</b></summary>
 
-<details><summary>회원가입</summary></details>
-<details><summary>소셜회원가입</summary></details>
-<details><summary>로그인</summary></details>
-<details><summary>자동로그인</summary></details>
-<details><summary>ID 찾기</summary></details>
-<details><summary>비밀번호 찾기</summary></details>
-<details><summary>비밀번호 설정</summary></details>
-<details><summary>회원탈퇴</summary></details>
+<details><summary>회원가입</summary>
+
+</details>
+<details><summary>소셜회원가입</summary>
+![Image](https://github.com/user-attachments/assets/4c5159f9-87ea-49f7-850b-0a86856e54a0)
+</details>
+<details><summary>로그인 및 자동로그인</summary>
+
+</details>
+<details><summary>ID / 비밀번호 찾기</summary>
+
+</details>
+<details><summary>비밀번호 설정</summary>
+![Image](https://github.com/user-attachments/assets/63f8f5c7-bdb1-47a5-9c2b-f258c3fab306)
+</details>
+<details><summary>회원탈퇴</summary>
+![Image](https://github.com/user-attachments/assets/83ef9527-b81d-4699-a3fb-f09b13b204d0)
+</details>
 
 </details>
 
 
 <details><summary><b>마이페이지 / 알림설정 / 친구</b></summary>
 
-<details><summary>마이페이지 정보 조회</summary></details>
-<details><summary>마이페이지 정보 수정</summary></details>
-<details><summary>친구 추가(알림 OFF), 이후 거부</summary></details>
+<details><summary>마이페이지 정보 조회 및 수정</summary>
+
+</details>
+<details><summary>친구 추가 및 알림 ON/OFF</summary>
+
+</details>
 <details><summary>친구 추가(알림 ON), 이후 취소</summary></details>
 <details><summary>친구 추가(알림 ON), 이후 수락</summary></details>
 <details><summary>친구 수락(알림 ON)</summary></details>
-<details><summary>친구 상태 조회</summary></details>
-<details><summary>친구 삭제</summary></details>
+<details><summary>친구 상태 조회</summary>
+
+</details>
+<details><summary>친구 삭제</summary>
+![친구삭제](https://github.com/user-attachments/assets/ab4032ca-4208-4f59-b5b0-8ed7a2180726)
+</details>
 
 </details>
 
