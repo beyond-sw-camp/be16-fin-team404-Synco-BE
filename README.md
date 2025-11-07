@@ -626,42 +626,51 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 | **최종 배포 (AWS EKS)** | AWS EKS Kubernetes 클러스터 사용. AWS Load Balancer Controller로 ALB 기반 Ingress 관리. Kafka KRaft 모드로 Zookeeper 없이 단일 노드 Kafka 실행. GitHub Actions로 CI/CD 파이프라인 구축. Docker + ECR로 컨테이너 이미지 관리. |
 
 ---
-
-## 🛠️ 트러블 슈팅
 <details> 
   <summary><b> 김건동</b></summary>
 
   <details>
     <summary><b>화상회의 - ICE Participant Connection Error</b></summary>
 
-    **증상**
-    - 화상회의 방에 참가하려고 할 때 브라우저 콘솔에 "ICE participant connection failed" 에러 발생
-    - 참가자가 LiveKit 서버에 연결되지 않음
-    - WebRTC 연결이 실패하여 비디오/오디오 스트림이 전송되지 않음
-    - LiveKit 웹훅 이벤트가 서버로 전달되지 않음
+  **증상**
+
+  - 화상회의 방에 참가하려고 할 때 브라우저 콘솔에 "ICE participant connection failed" 에러 발생
+  - 참가자가 LiveKit 서버에 연결되지 않음
+  - WebRTC 연결이 실패하여 비디오/오디오 스트림이 전송되지 않음
+  - LiveKit 웹훅 이벤트가 서버로 전달되지 않음
 
     **원인 분석**
+
     1. LiveKit 서버가 웹훅 URL을 외부에서 접근 가능한 주소로 설정해야 하는데, 개발 환경에서는 localhost로만 실행 중
     2. LiveKit 서버가 웹훅 이벤트를 전송하려 하지만, 외부에서 접근 불가능한 주소로 인해 연결 실패
     3. ICE (Interactive Connectivity Establishment) 프로세스가 완료되지 않아 WebRTC 연결 실패
 
     **해결 과정**
+
     1. **로컬 웹훅 서버 실행**: Spring Boot 애플리케이션을 localhost에서 실행하여 웹훅 엔드포인트 준비
-    2. **ngrok 설치 및 실행**: 
+
+    2. **ngrok 설치 및 실행**:
+
        ```bash
        ngrok http 8080
        ```
+
        - ngrok이 제공하는 공개 URL 획득 (예: `https://xxxx-xxx-xxx.ngrok.io`)
+
     3. **LiveKit 서버 설정**: LiveKit 서버의 `config.yaml`에 웹훅 URL 설정
+
        ```yaml
        webhook:
          urls:
            - https://xxxx-xxx-xxx.ngrok.io/task-service/livekit/webhook
        ```
+
     4. **웹훅 검증**: LiveKit 서버가 ngrok URL을 통해 웹훅 이벤트를 성공적으로 전송하는지 확인
+
     5. **재연결 테스트**: 화상회의 방 참가 시 정상적으로 연결되는지 확인
 
     **결과**
+
     - ngrok을 통한 터널링으로 외부에서 웹훅 이벤트 수신 가능
     - ICE 연결 성공 및 WebRTC 스트림 정상 전송
     - 참가자 입장/퇴장 이벤트가 정상적으로 서버에 전달됨
@@ -671,30 +680,38 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>화상회의 - 중복 참가 방지</b></summary>
 
-    **증상**
-    - 한 사용자가 여러 화상회의 방에 동시에 참가할 수 있음
-    - 같은 사용자가 여러 방에 중복으로 참가자로 등록됨
-    - 데이터베이스에 중복된 `RoomParticipant` 레코드 생성
+  **증상**
+
+  - 한 사용자가 여러 화상회의 방에 동시에 참가할 수 있음
+  - 같은 사용자가 여러 방에 중복으로 참가자로 등록됨
+  - 데이터베이스에 중복된 `RoomParticipant` 레코드 생성
 
     **원인 분석**
+
     - 방 참가 시 이미 다른 방에 참가 중인지 확인하는 로직이 없음
     - `joinRoom()` 메서드에서 기존 참가 여부를 체크하지 않음
 
     **해결 과정**
-    1. **기존 참가자 조회 로직 추가**: 
+
+    1. **기존 참가자 조회 로직 추가**:
+
        ```java
        List<RoomParticipant> activeParticipants = 
            participantRepository.findByVirtualMeetingChannelMember_MemberSeqAndLeftAtIsNull(memberSeq);
        ```
-    2. **중복 참가 체크**: 
+
+    2. **중복 참가 체크**:
+
        ```java
        if(!activeParticipants.isEmpty()){
            throw new IllegalStateException("이미 참여중인 화상회의 방이 있습니다.");
        }
        ```
+
     3. **방 생성 시에도 동일 로직 적용**: `createImmediateRoom()` 메서드에도 동일한 체크 로직 추가
 
     **결과**
+
     - 한 사용자가 동시에 하나의 방에만 참가 가능
     - 중복 참가 시도 시 명확한 에러 메시지 반환
     - 데이터 무결성 보장
@@ -704,23 +721,28 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>문서 편집 - 동시 편집 충돌</b></summary>
 
-    **증상**
-    - 여러 사용자가 같은 라인을 동시에 편집할 때 마지막에 저장한 내용만 남음
-    - 한 사용자의 편집 내용이 다른 사용자의 편집으로 덮어씌워짐
-    - 데이터 손실 발생
+  **증상**
+
+  - 여러 사용자가 같은 라인을 동시에 편집할 때 마지막에 저장한 내용만 남음
+  - 한 사용자의 편집 내용이 다른 사용자의 편집으로 덮어씌워짐
+  - 데이터 손실 발생
 
     **원인 분석**
+
     - 라인 단위로 편집 제어 메커니즘이 없음
     - 동시 편집 시 충돌을 방지하는 락(Lock) 시스템이 없음
     - CRDT를 사용하지 않고 단순 DB 업데이트 방식 사용
 
     **해결 과정**
+
     1. **라인 락 메커니즘 설계**:
+
        - 사용자가 라인 편집 시작 시 Redis에 락 정보 저장
        - 락 키 형식: `document:locks:{documentId}:{lineId}`
        - 락 정보: `userId`, `userName`, `timestamp`
 
     2. **락 설정 로직 구현**:
+
        ```java
        public void publishLineLockToRedis(EditorMessageDto lockDto) {
            String lockKey = LINE_LOCKS_KEY + lockDto.getDocumentId() + ":" + lockDto.getLineId();
@@ -739,9 +761,11 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **TTL 기반 자동 해제**:
+
        - 락에 30초 TTL 설정 (`LINE_LOCK_TTL_SECONDS = 30`)
        - 비정상 종료 시(브라우저 종료, 네트워크 끊김 등) 자동으로 락 해제
        - Redis Key 만료 이벤트 리스너 구현:
+
        ```java
        @EventListener
        public void handleKeyExpiration(RedisKeyExpiredEvent<String> event) {
@@ -753,15 +777,18 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **STOMP를 통한 실시간 락 상태 전달**:
+
        - 락 설정/해제 시 Redis Pub/Sub으로 다른 서버 인스턴스에 브로드캐스트
        - STOMP를 통해 같은 문서를 보고 있는 모든 클라이언트에 락 상태 전달
        - 프론트엔드에서 락된 라인을 시각적으로 표시 (회색 처리 등)
 
     5. **락 해제 로직**:
+
        - 편집 종료 시 명시적으로 락 해제
        - 락을 건 사용자만 해제 가능하도록 권한 체크
 
     **결과**
+
     - 동시 편집 시 충돌 없이 각 라인을 안전하게 편집 가능
     - 비정상 종료 시에도 30초 후 자동으로 락 해제되어 다른 사용자가 편집 가능
     - 실시간으로 락 상태가 모든 사용자에게 표시됨
@@ -771,22 +798,27 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>문서 편집 - 멀티 인스턴스 동기화</b></summary>
 
-    **증상**
-    - 서버가 여러 인스턴스로 실행될 때, 한 인스턴스에서 편집한 내용이 다른 인스턴스에 반영되지 않음
-    - 사용자 A가 인스턴스 1에서 편집 → 사용자 B가 인스턴스 2에서 같은 문서를 보고 있어도 변경사항이 보이지 않음
-    - STOMP 메시지가 같은 인스턴스 내의 클라이언트에게만 전달됨
+  **증상**
+
+  - 서버가 여러 인스턴스로 실행될 때, 한 인스턴스에서 편집한 내용이 다른 인스턴스에 반영되지 않음
+  - 사용자 A가 인스턴스 1에서 편집 → 사용자 B가 인스턴스 2에서 같은 문서를 보고 있어도 변경사항이 보이지 않음
+  - STOMP 메시지가 같은 인스턴스 내의 클라이언트에게만 전달됨
 
     **원인 분석**
+
     - STOMP는 기본적으로 단일 서버 인스턴스 내에서만 메시지 브로드캐스트
     - 여러 서버 인스턴스 간 메시지 동기화 메커니즘 없음
     - 각 인스턴스가 독립적으로 동작하여 변경사항이 공유되지 않음
 
     **해결 과정**
+
     1. **Redis Pub/Sub 도입**:
+
        - Redis를 메시지 브로커로 사용하여 인스턴스 간 통신
        - 각 인스턴스가 Redis 채널을 구독하여 다른 인스턴스의 메시지 수신
 
     2. **메시지 발행 로직**:
+
        ```java
        public void publishDocumentUpdateToRedis(EditorMessageDto messageDto) {
            String channel = TOPIC_PREFIX + messageDto.getDocumentId() + SUFFIX_DOCUMENT_UPDATE;
@@ -796,6 +828,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **메시지 수신 및 재브로드캐스트**:
+
        ```java
        @Override
        public void onMessage(org.springframework.data.redis.connection.Message message, byte[] pattern) {
@@ -812,11 +845,13 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **채널 구독 설정**:
+
        ```java
        container.addMessageListener(messageListenerAdapter, new PatternTopic("/topic/document/*"));
        ```
 
     **결과**
+
     - 여러 서버 인스턴스에서도 실시간으로 편집 내용이 동기화됨
     - 모든 사용자가 동일한 문서 상태를 실시간으로 확인 가능
     - 수평 확장(Scale Out) 가능한 아키텍처 구성
@@ -826,22 +861,27 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>문서 편집 - 라인 순서 관리</b></summary>
 
-    **증상**
-    - 라인을 삽입하거나 삭제할 때 순서가 꼬임
-    - 라인 간 연결 관계가 깨져서 문서 구조가 망가짐
-    - 라인 삭제 시 다음 라인들이 사라지거나 순서가 뒤바뀜
+  **증상**
+
+  - 라인을 삽입하거나 삭제할 때 순서가 꼬임
+  - 라인 간 연결 관계가 깨져서 문서 구조가 망가짐
+  - 라인 삭제 시 다음 라인들이 사라지거나 순서가 뒤바뀜
 
     **원인 분석**
+
     - 라인을 배열 인덱스로 관리하려고 시도
     - 라인 삽입/삭제 시 모든 라인의 인덱스를 재정렬해야 하는 문제
     - 동시 편집 시 인덱스 충돌 발생
 
     **해결 과정**
+
     1. **연결 리스트 방식 채택**:
+
        - 각 라인에 `prevId` 필드를 두어 이전 라인과의 연결 관계 표현
        - 배열 인덱스 대신 `prevId`로 순서 관리
 
     2. **라인 삽입 로직**:
+
        ```java
        public void createDocumentLine(EditorMessageDto message) {
            // 중간에 끼어들어갈 경우 순서 바꿔주기
@@ -860,6 +900,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **라인 삭제 로직**:
+
        ```java
        public void deleteDocumentLines(EditorMessageDto message) {
            for (EditorMessageDto.LineChange change : message.getChanges()) {
@@ -877,10 +918,12 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **문서 조회 시 순서 정렬**:
+
        - `prevId`를 따라가며 연결 리스트 순회
        - 프론트엔드에서 순서대로 렌더링
 
     **결과**
+
     - 라인 삽입/삭제 시에도 순서가 정확하게 유지됨
     - 동시 편집 시에도 라인 순서 충돌 없음
     - 문서 구조가 안정적으로 관리됨
@@ -890,24 +933,30 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>모니터링 - PVC 바인딩 실패</b></summary>
 
-    **증상**
-    - Grafana와 Prometheus Pod가 `Pending` 상태로 유지됨
-    - `kubectl describe pod` 명령 시 "unbound immediate PersistentVolumeClaims" 에러
-    - PVC가 생성되었지만 실제 볼륨에 바인딩되지 않음
+  **증상**
+
+  - Grafana와 Prometheus Pod가 `Pending` 상태로 유지됨
+  - `kubectl describe pod` 명령 시 "unbound immediate PersistentVolumeClaims" 에러
+  - PVC가 생성되었지만 실제 볼륨에 바인딩되지 않음
 
     **원인 분석**
+
     1. `values-monitoring.yml`에서 `storageClassName`을 명시하지 않음
     2. EKS 클러스터에 `gp2` StorageClass가 있지만, PVC가 이를 참조하지 않음
     3. 기본 StorageClass가 없거나 설정되지 않음
 
     **해결 과정**
+
     1. **StorageClass 확인**:
+
        ```bash
        kubectl get storageclass
        ```
+
        - `gp2` StorageClass가 존재하는지 확인
 
     2. **values-monitoring.yml 수정**:
+
        ```yaml
        grafana:
          persistence:
@@ -928,6 +977,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **기존 PVC 삭제 및 재생성**:
+
        ```bash
        # 기존 PVC 삭제
        kubectl delete pvc -n monitoring monitoring-grafana
@@ -940,12 +990,14 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **PVC 바인딩 확인**:
+
        ```bash
        kubectl get pvc -n monitoring
        kubectl get pods -n monitoring
        ```
 
     **결과**
+
     - PVC가 `gp2` StorageClass를 사용하여 EBS 볼륨에 정상 바인딩됨
     - Grafana와 Prometheus Pod가 `Running` 상태로 전환
     - 데이터 영속성 보장
@@ -955,24 +1007,30 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>모니터링 - OIDC Provider 누락</b></summary>
 
-    **증상**
-    - AWS Load Balancer Controller Pod가 정상 동작하지 않음
-    - Ingress 리소스를 생성해도 ALB가 생성되지 않음
-    - Controller 로그에 "InvalidIdentityToken: No OpenIDConnect provider found" 에러
+  **증상**
+
+  - AWS Load Balancer Controller Pod가 정상 동작하지 않음
+  - Ingress 리소스를 생성해도 ALB가 생성되지 않음
+  - Controller 로그에 "InvalidIdentityToken: No OpenIDConnect provider found" 에러
 
     **원인 분석**
+
     1. EKS 클러스터의 OIDC Provider가 IAM에 등록되지 않음
     2. AWS Load Balancer Controller가 IAM Role을 사용하려 하지만, OIDC Provider가 없어서 인증 실패
     3. IRSA (IAM Roles for Service Accounts) 설정이 완료되지 않음
 
     **해결 과정**
+
     1. **EKS 클러스터 OIDC Issuer URL 확인**:
+
        ```bash
        aws eks describe-cluster --name <CLUSTER_NAME> --query "cluster.identity.oidc.issuer" --output text
        ```
+
        - 예: `https://oidc.eks.ap-northeast-2.amazonaws.com/id/BA2425E8EFC00C321C0D312B330F7F78`
 
     2. **OIDC Provider 등록**:
+
        ```bash
        aws iam create-open-id-connect-provider \
          --url https://oidc.eks.ap-northeast-2.amazonaws.com/id/BA2425E8EFC00C321C0D312B330F7F78 \
@@ -981,6 +1039,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **IAM Policy 생성 및 Role 연결**:
+
        ```bash
        # IAM Policy 다운로드
        curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
@@ -994,11 +1053,13 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **Controller 재시작**:
+
        ```bash
        kubectl rollout restart deployment -n kube-system aws-load-balancer-controller
        ```
 
     **결과**
+
     - OIDC Provider가 정상 등록되어 IAM 인증 가능
     - AWS Load Balancer Controller가 정상 동작
     - Ingress 리소스 생성 시 ALB가 자동으로 생성됨
@@ -1008,21 +1069,26 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>모니터링 - ServiceMonitor 라벨 오류</b></summary>
 
-    **증상**
-    - ServiceMonitor를 적용했지만 Prometheus가 타겟을 발견하지 못함
-    - `kubectl apply` 시 "Invalid value: \"/actuator/prometheus\"" 에러 발생
-    - Kubernetes 라벨에 `/` 문자를 포함할 수 없다는 오류
+  **증상**
+
+  - ServiceMonitor를 적용했지만 Prometheus가 타겟을 발견하지 못함
+  - `kubectl apply` 시 "Invalid value: \"/actuator/prometheus\"" 에러 발생
+  - Kubernetes 라벨에 `/` 문자를 포함할 수 없다는 오류
 
     **원인 분석**
+
     1. Service 리소스에 `prometheus.io/path: "/actuator/prometheus"` 라벨을 직접 추가하려고 시도
     2. Kubernetes 라벨은 RFC 1123 규칙을 따라야 하며, `/` 문자를 포함할 수 없음
     3. 라벨 값에 허용되지 않는 문자가 포함됨
 
     **해결 과정**
+
     1. **Service 리소스에서 잘못된 라벨 제거**:
+
        - `prometheus.io/path` 라벨을 Service에서 제거
 
     2. **ServiceMonitor에서 직접 경로 지정**:
+
        ```yaml
        apiVersion: monitoring.coreos.com/v1
        kind: ServiceMonitor
@@ -1040,6 +1106,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **Service에 올바른 라벨만 추가**:
+
        ```bash
        kubectl label svc -n synco-namespace task-service app.kubernetes.io/name=springboot
        kubectl label svc -n synco-namespace chat-service app.kubernetes.io/name=springboot
@@ -1047,6 +1114,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **Prometheus 타겟 확인**:
+
        ```bash
        # Prometheus UI에서 Status > Targets 확인
        # 또는
@@ -1054,6 +1122,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     **결과**
+
     - ServiceMonitor가 정상적으로 적용됨
     - Prometheus가 Spring Boot 서비스의 `/actuator/prometheus` 엔드포인트를 정상적으로 스크랩
     - 모든 서비스의 메트릭이 수집됨
@@ -1063,19 +1132,23 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>최종 배포 - ALB Ingress 생성 실패</b></summary>
 
-    **증상**
-    - Ingress 리소스를 생성했지만 ALB가 생성되지 않음
-    - `kubectl get ingress` 시 ADDRESS가 비어있음
-    - AWS Load Balancer Controller 로그에 에러 메시지
+  **증상**
+
+  - Ingress 리소스를 생성했지만 ALB가 생성되지 않음
+  - `kubectl get ingress` 시 ADDRESS가 비어있음
+  - AWS Load Balancer Controller 로그에 에러 메시지
 
     **원인 분석**
+
     1. AWS Load Balancer Controller가 설치되지 않음
     2. OIDC Provider가 IAM에 등록되지 않음
     3. IAM Role/Policy가 올바르게 설정되지 않음
     4. ServiceAccount에 IAM Role이 연결되지 않음
 
     **해결 과정**
+
     1. **AWS Load Balancer Controller 설치**:
+
        ```bash
        # Helm repo 추가
        helm repo add eks https://aws.github.io/eks-charts
@@ -1094,6 +1167,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
     2. **OIDC Provider 등록** (위의 "OIDC Provider 누락" 섹션 참조)
 
     3. **IAM Policy 및 Role 설정**:
+
        ```bash
        # IAM Policy 생성
        aws iam create-policy \
@@ -1105,6 +1179,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **Ingress 리소스 확인**:
+
        ```yaml
        apiVersion: networking.k8s.io/v1
        kind: Ingress
@@ -1132,11 +1207,13 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     5. **Controller 로그 확인**:
+
        ```bash
        kubectl logs -n kube-system deploy/aws-load-balancer-controller
        ```
 
     **결과**
+
     - Ingress 리소스 생성 시 ALB가 자동으로 생성됨
     - ALB DNS 이름이 Ingress의 ADDRESS에 표시됨
     - 외부에서 서비스 접근 가능
@@ -1146,22 +1223,27 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>최종 배포 - Kafka Zookeeper 의존성</b></summary>
 
-    **증상**
-    - Kafka를 실행하려고 하면 Zookeeper가 필요하다는 에러 발생
-    - 기존 Kafka 설정이 Zookeeper에 의존적
-    - Zookeeper를 별도로 설치하고 관리해야 하는 부담
+  **증상**
+
+  - Kafka를 실행하려고 하면 Zookeeper가 필요하다는 에러 발생
+  - 기존 Kafka 설정이 Zookeeper에 의존적
+  - Zookeeper를 별도로 설치하고 관리해야 하는 부담
 
     **원인 분석**
+
     - Kafka 2.8 이전 버전은 Zookeeper가 필수
     - Zookeeper는 별도의 클러스터 관리가 필요하여 복잡도 증가
     - 단일 노드 환경에서는 Zookeeper가 불필요한 오버헤드
 
     **해결 과정**
+
     1. **Kafka KRaft 모드 채택**:
+
        - Kafka 3.0+ 버전에서 지원하는 Zookeeper 없는 모드
        - KRaft (Kafka Raft)는 Kafka 자체의 메타데이터 관리 시스템
 
     2. **Kafka Deployment 설정**:
+
        ```yaml
        apiVersion: apps/v1
        kind: Deployment
@@ -1194,6 +1276,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **초기 포맷팅** (최초 실행 시):
+
        ```bash
        kubectl exec -it kafka-pod -- kafka-storage.sh format \
          -t <CLUSTER_ID> \
@@ -1201,10 +1284,12 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **애플리케이션 설정 확인**:
+
        - Spring Boot의 `application-prod.yml`에서 `bootstrap-servers: kafka-service:9092` 설정 확인
        - Consumer/Producer 설정이 정상 동작하는지 확인
 
     **결과**
+
     - Zookeeper 없이 Kafka 단일 노드 실행 성공
     - 메타데이터 관리가 Kafka 내부에서 처리되어 간소화
     - 프로덕션 환경에서는 여러 노드로 확장 가능 (주의: 여러 노드 구성 시 `KAFKA_CONTROLLER_QUORUM_VOTERS` 수정 필요)
@@ -1214,35 +1299,44 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>최종 배포 - ACM 인증서 검증 실패</b></summary>
 
-    **증상**
-    - Ingress에 ACM 인증서 ARN을 설정했지만 에러 발생
-    - "Certificate ARN is not valid" 에러
-    - ALB가 생성되지 않거나 HTTPS 연결 실패
+  **증상**
+
+  - Ingress에 ACM 인증서 ARN을 설정했지만 에러 발생
+  - "Certificate ARN is not valid" 에러
+  - ALB가 생성되지 않거나 HTTPS 연결 실패
 
     **원인 분석**
+
     1. ACM 인증서가 아직 발급되지 않았거나 검증이 완료되지 않음
     2. 인증서 ARN에 잘못된 값이 입력됨 (예: placeholder `<CERT_ID>` 그대로 사용)
     3. 인증서가 다른 리전에 있거나 다른 계정에 속함
     4. DNS 검증 레코드가 Route53에 추가되지 않음
 
     **해결 과정**
+
     1. **ACM 인증서 확인**:
+
        ```bash
        aws acm list-certificates --region ap-northeast-2
        ```
+
        - 발급된 인증서 목록 확인
        - 인증서 상태가 "Issued"인지 확인
 
     2. **인증서 상세 정보 확인**:
+
        ```bash
        aws acm describe-certificate \
          --certificate-arn <CERT_ARN> \
          --region ap-northeast-2
        ```
+
        - 인증서 상태, 도메인, 검증 상태 확인
 
     3. **DNS 검증 레코드 추가** (인증서가 "Pending validation" 상태인 경우):
+
        - ACM에서 제공하는 CNAME 레코드를 Route53에 추가
+
        ```bash
        aws route53 change-resource-record-sets \
          --hosted-zone-id <ZONE_ID> \
@@ -1250,6 +1344,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     4. **새 인증서 발급** (필요한 경우):
+
        ```bash
        aws acm request-certificate \
          --domain-name "*.synco1.shop" \
@@ -1258,6 +1353,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     5. **values-monitoring.yml에 올바른 ARN 설정**:
+
        ```yaml
        grafana:
          ingress:
@@ -1266,6 +1362,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     6. **Ingress 재적용**:
+
        ```bash
        helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
          -n monitoring \
@@ -1273,6 +1370,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     **결과**
+
     - ACM 인증서가 정상적으로 인식됨
     - ALB에 HTTPS 리스너가 정상적으로 생성됨
     - 브라우저에서 HTTPS로 접근 시 정상적으로 인증서 표시
@@ -1282,19 +1380,23 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <details>
     <summary><b>최종 배포 - 서비스 간 통신 실패</b></summary>
 
-    **증상**
-    - Kubernetes 내부에서 서비스 간 HTTP 호출이 실패함
-    - `Connection refused` 또는 `Name resolution failed` 에러
-    - 한 서비스가 다른 서비스의 엔드포인트를 찾지 못함
+  **증상**
+
+  - Kubernetes 내부에서 서비스 간 HTTP 호출이 실패함
+  - `Connection refused` 또는 `Name resolution failed` 에러
+  - 한 서비스가 다른 서비스의 엔드포인트를 찾지 못함
 
     **원인 분석**
+
     1. Service 리소스의 `selector`와 Pod의 `labels`가 일치하지 않음
     2. 잘못된 네임스페이스에서 서비스를 찾으려고 시도
     3. DNS 이름 형식이 잘못됨
     4. Service가 생성되지 않았거나 Pod가 Ready 상태가 아님
 
     **해결 과정**
+
     1. **Service와 Pod 라벨 확인**:
+
        ```bash
        # Service의 selector 확인
        kubectl get svc task-service -n synco-namespace -o yaml | grep selector
@@ -1302,11 +1404,14 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        # Pod의 labels 확인
        kubectl get pods -n synco-namespace -l app=task-service --show-labels
        ```
+
        - `selector.app`과 Pod의 `app` 라벨이 일치해야 함
 
     2. **네임스페이스 확인**:
+
        - 모든 서비스가 `synco-namespace`에 있는지 확인
        - 애플리케이션 설정에서 서비스 이름이 올바른지 확인:
+
        ```yaml
        spring:
          kafka:
@@ -1316,27 +1421,34 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
        ```
 
     3. **DNS 이름 형식 확인**:
+
        - 같은 네임스페이스: `service-name:port`
        - 다른 네임스페이스: `service-name.namespace.svc.cluster.local:port`
        - 예: `kafka-service.synco-namespace.svc.cluster.local:9092`
 
     4. **Service 엔드포인트 확인**:
+
        ```bash
        kubectl get endpoints -n synco-namespace
        ```
+
        - Service에 Pod IP가 등록되어 있는지 확인
        - 엔드포인트가 비어있으면 selector와 labels 불일치
 
     5. **Pod 상태 확인**:
+
        ```bash
        kubectl get pods -n synco-namespace
        ```
+
        - Pod가 `Running` 상태이고 `Ready`가 `1/1`인지 확인
 
     6. **네트워크 정책 확인** (NetworkPolicy가 있는 경우):
+
        - NetworkPolicy가 서비스 간 통신을 차단하지 않는지 확인
 
     **결과**
+
     - 서비스 간 통신이 정상적으로 동작
     - DNS 이름으로 서비스를 찾을 수 있음
     - 마이크로서비스 간 API 호출이 성공
