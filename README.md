@@ -1,6 +1,8 @@
 # 👩‍💻 synco - 통합 협업 지식관리 툴
 
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/3b6f4d87-7c0e-4575-a2af-2910df5dc87b" />
+<img width="1919" height="516" alt="image" src="https://github.com/user-attachments/assets/24f50d70-d527-4300-807d-f55ba138a899" />
+
+<!-- <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/3b6f4d87-7c0e-4575-a2af-2910df5dc87b" /> -->
 
 ## 🙋🏻 팀원 소개
 
@@ -71,52 +73,20 @@
 ---
 ## 🎬 프로젝트 개요
 
-### 1. 프로젝트 소개
+### 프로젝트 소개
 Synco는 분산된 협업 도구들을 하나로 통합한 **워크스페이스 기반 협업 플랫폼**이다.  
 노션(Notion)의 문서·보드·캘린더 관리 기능과 디스코드(Discord)의 실시간 음성·채팅·화상회의 기능을 결합하여, 팀과 개인이 동시에 효율적으로 협업할 수 있는 환경을 제공한다.  
 Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 **업무/커뮤니케이션 단일 경험**이다.
 
 ---
 
-### 2. 프로젝트 배경 및 필요성
+### 프로젝트 배경 및 필요성
 - 기존 툴은 문서 기반 협업(노션)과 실시간 커뮤니케이션(디스코드)이 분리되어 있다.
 - 협업 기록이 파편화되고, 히스토리/맥락 추적이 어렵다.
 - 개인 프로젝트·스터디·소규모 팀도 바로 쓸 수 있는 일체형 협업툴이 필요하다.
 - 회의/업무/드라이브가 연결되는 흐름형 협업 수요가 증가하고 있다.
 
 ---
-
-### 3. 프로젝트 목표
-- 워크스페이스 기반 협업 경험 제공
-- 문서/보드 + 채팅/회의 통합
-- 통합 검색/알림 경험 제공
-- 회의 종료 → 요약 자동화 (AI)
-
----
-
-### 4. 시스템 구성
-- **Frontend:** Vue.js (SPA)
-- **Backend:** Spring Boot (REST API)
-- **DB:** MariaDB / MySQL
-- **Infra:** AWS EC2, S3, RDS, Nginx
-- **Storage:** S3
-- **실시간:** WebSocket + WebRTC
-
----
-
-### 5. 기대효과
-- 문서/업무/회의 통합으로 생산성 극대화
-- 소규모 팀도 빠른 도입 가능
-- 회의록 자동화
-- 지식/히스토리 축적 용이
-
----
-
-### 6. 향후 계획
-- 모바일 앱
-- 외부 서비스 연동 (Google Drive, Slack, Github)
-- AI 기반 업무 추천
-- 다국어/타임존 대응
 
 <br>
 
@@ -205,6 +175,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <summary><b>시스템 아키텍처</b></summary>
 <!-- <img width="900" alt="시스템 아키텍처" src="https://github.com/user-attachments/assets/6a0b09ef-e692-4e70-aecf-91aa6212cca4" /> -->
 </details>
+
+---
+
+## 🧾 주요 화면
 
 ---
 
@@ -411,7 +385,9 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 </details>
 
+---
 
+## 📌 주요 기술
 
 ---
 
