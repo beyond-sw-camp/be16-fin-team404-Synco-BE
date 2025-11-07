@@ -1,4 +1,4 @@
-# 👩‍💻 synco - 통합 협업 지식관리 툴
+# 🔄 synco - 통합 협업 지식관리 툴
 
 <!-- <img width="1918" height="909" alt="image" src="https://github.com/user-attachments/assets/0497f4c8-dc34-43a3-9964-b6e58021eed8" /> -->
 <img width="1695" height="884" alt="스크린샷 2025-11-07 오후 5 45 37" src="https://github.com/user-attachments/assets/4c303e06-73f4-45ac-b9e9-3b48b71f607b" />
@@ -121,13 +121,12 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ### 🚀 Deployment & DevOps
 
-<div> <a href="https://aws.amazon.com/ec2/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white"/> </a> <a href="https://aws.amazon.com/rds/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white"/> </a> <a href="https://aws.amazon.com/s3/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white"/> </a> <a href="https://aws.amazon.com/cloudfront/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20CloudFront-8C4FFF?style=for-the-badge&logo=amazonaws&logoColor=white"/> </a> <a href="https://nginx.org/" target="_blank"> <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white"/> </a> <a href="https://github.com/features/actions" target="_blank"> <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/> </a> <a href="https://www.docker.com/" target="_blank"> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/> </a> <a href="https://swagger.io/" target="_blank"> <img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black"/> </a> </div>
-<a href="https://kubernetes.io/" target="_blank"><img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/></a>
+<div> <a href="https://aws.amazon.com/ec2/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white"/> </a> <a href="https://aws.amazon.com/rds/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white"/> </a> <a href="https://aws.amazon.com/s3/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white"/> </a> <a href="https://aws.amazon.com/cloudfront/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20CloudFront-8C4FFF?style=for-the-badge&logo=amazonaws&logoColor=white"/> </a> <a href="https://nginx.org/" target="_blank"> <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white"/> </a> <a href="https://github.com/features/actions" target="_blank"> <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/> </a> <a href="https://www.docker.com/" target="_blank"> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/> </a>
+<a href="https://kubernetes.io/" target="_blank"><img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/></a> <a href="https://prometheus.io/" target="_blank"> <img src="https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white"/> </a> <a href="https://grafana.com/" target="_blank"> <img src="https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white"/> </a> </div>
 
 <h2>DB</h2>
 
 <a href="https://mariadb.org" target="_blank"> <img src="https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white"/> </a> 
-<a href="https://www.mysql.com/" target="_blank"> <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/> </a>
 <a href="https://redis.io/" target="_blank"> <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white"/> </a>
 
 <h2>Tool</h2>
@@ -147,21 +146,22 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 
 
+
+
 ## 📂 산출물
 <details>
   <summary><b> <a href='https://docs.google.com/spreadsheets/d/1T9HX4fSAoEJpjI7ewdls1ylfE5ZluGYYnR-oLL4OooU/edit?gid=1270453977#gid=1270453977' style="text-decoration: none; color: inherit;"> WBS</a></b></summary>
-  <img width="1914" height="880" alt="Image" src="https://github.com/user-attachments/assets/e6f469ae-015a-42ab-bb51-5916073e2f78" />
+  <img width="2048" height="2106" alt="sheet_merged_vertical" src="https://github.com/user-attachments/assets/3a5c2142-e174-4372-9e9a-88a86ac8a7b4" />
 </details>
 
 <details>
   <summary><b><a href='https://docs.google.com/spreadsheets/d/1T9HX4fSAoEJpjI7ewdls1ylfE5ZluGYYnR-oLL4OooU/edit?gid=1270453977#gid=1270453977' style="text-decoration: none; color: inherit;"> 요구사항 명세서</a></b></summary>
-  <img width="1747" height="879" alt="Image" src="https://github.com/user-attachments/assets/0888daf1-93d7-4193-bb4f-bf2b402256a7" />
+  <img width="1949" height="3142" alt="sheet_merged_vertical_set2" src="https://github.com/user-attachments/assets/1827f5e4-1d71-433a-b021-0330a511dda8" />
 </details>
 
 <details>
   <summary><b> <a href='https://www.erdcloud.com/d/4XEmWM7BEZB2zLQPo' style="text-decoration: none; color: inherit;"> ERD</a></b></summary>
-  <img width="927" height="710" alt="image" src="https://github.com/user-attachments/assets/529ad9cc-0923-4bd1-954a-fef993b46736" />
-
+  <img width="2048" height="1740" alt="erd_merged_vertical_2" src="https://github.com/user-attachments/assets/b22cb670-45f9-4057-88ef-1fd6dc3c223d" />
 
   <a href="https://www.erdcloud.com/...">
 </details>
@@ -170,16 +170,16 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <summary><b> <a href='https://tranquil-fuchsia-64e.notion.site/Synco-2717cd1f5ed981d685b1c0a1776dc85b?source=copy_link' style="text-decoration: none; color: inherit;"> 프로젝트 기획서</a></b></summary>
 </details>
 
+
 <details>
   <summary><b> <a href='https://www.figma.com/design/JQZDxh0wwj80OqMN1poe7o/synco?node-id=0-1&p=f&t=zr4p7P0tSrSaxWi3-0'  style="text-decoration: none; color: inherit;"> 피그마</a></b></summary>
-  <img width="1869" height="501" alt="Image" src="https://github.com/user-attachments/assets/ef9ef133-1a50-4a5a-aae1-bbf911f592ff" />
+  <img width="1758" height="1085" alt="스크린샷 2025-11-08 오전 1 02 08" src="https://github.com/user-attachments/assets/a4468337-0a60-470c-9b7b-692d909592d2" />
 </details>
 
 <details>
   <summary><b>시스템 아키텍처</b></summary>
   <img width="1287" height="1143" alt="Image" src="https://github.com/user-attachments/assets/534d3d19-097f-4a4e-a0f1-7a1029138d48" />
 </details>
-
 ---
 
 ## 🧾 주요 화면
