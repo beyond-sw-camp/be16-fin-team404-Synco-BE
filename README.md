@@ -357,7 +357,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ![프로젝트 강제탈퇴](https://github.com/user-attachments/assets/ba55692a-a251-45ee-bb11-fa30bcc2fe85)
 </details>
-<details><summary>프로젝트 삭제</summary></details>
+<details><summary>프로젝트 삭제</summary>
+
+![프로젝트 삭제](https://github.com/user-attachments/assets/e1d82208-a706-413f-b3de-55b0f0ca3f3b)
+</details>
 </details>
 
 <details><summary><b>프로젝트 업무</b></summary>
