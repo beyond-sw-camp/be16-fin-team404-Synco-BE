@@ -227,7 +227,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details>
   <summary><b>피그마</b></summary>
-  <a href='https://www.figma.com/design/0r1vmACeBTegtlH9OHZaMn/%EC%9A%94%EB%A6%AC%ED%95%9C%EC%88%98?node-id=0-1&t=eIxg72ONjSulXOTA-1' style="text-decoration: none; color: inherit;">🎨 피그마 바로가기</a>
+  <a href='https://www.figma.com/design/JQZDxh0wwj80OqMN1poe7o/synco?node-id=0-1&p=f&t=zr4p7P0tSrSaxWi3-0' style="text-decoration: none; color: inherit;">🎨 피그마 바로가기</a>
 </details>
 
 <details>
