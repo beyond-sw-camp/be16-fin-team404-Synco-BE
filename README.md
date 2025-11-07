@@ -190,22 +190,36 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>회원가입 / 로그인</b></summary>
 
-<details><summary>회원가입</summary>
+<details><summary>회원가입
+
+![회원가입](https://github.com/user-attachments/assets/c0ea5412-97ba-48d7-aae2-647d51f35dd1)
+</summary>
 
 </details>
 <details><summary>소셜회원가입</summary>
+  
 ![Image](https://github.com/user-attachments/assets/4c5159f9-87ea-49f7-850b-0a86856e54a0)
 </details>
-<details><summary>로그인 및 자동로그인</summary>
 
+<details><summary>로그인 및 ID 기억하기</summary>
+  
+![로그인 및 아이디 저장](https://github.com/user-attachments/assets/e5f20cf1-873b-49b3-a417-147d86f2dd09)
 </details>
-<details><summary>ID / 비밀번호 찾기</summary>
+<details><summary>ID 찾기</summary>
+  
+![아이디 찾기](https://github.com/user-attachments/assets/6e7cbd81-79c9-4df9-ace6-41535c5deb55)
+</details>
 
+<details><summary>비밀번호 찾기</summary>
+  
+![비밀번호 찾기](https://github.com/user-attachments/assets/1457a95c-8be9-4398-9486-5c49c71ba352)
 </details>
 <details><summary>비밀번호 설정</summary>
+  
 ![Image](https://github.com/user-attachments/assets/63f8f5c7-bdb1-47a5-9c2b-f258c3fab306)
 </details>
 <details><summary>회원탈퇴</summary>
+  
 ![Image](https://github.com/user-attachments/assets/83ef9527-b81d-4699-a3fb-f09b13b204d0)
 </details>
 
@@ -215,18 +229,27 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <details><summary><b>마이페이지 / 알림설정 / 친구</b></summary>
 
 <details><summary>마이페이지 정보 조회 및 수정</summary>
+  
+![프로필 수정](https://github.com/user-attachments/assets/ed7bbd2b-5225-4283-9966-bcc8c5698efe)
 
 </details>
-<details><summary>친구 추가 및 알림 ON/OFF</summary>
+<details><summary>친구 추가(알림 ON), 이후 취소</summary>
+  
+![친구 요청 알림OFF](https://github.com/user-attachments/assets/ef6521bd-bba6-4344-b2f5-b80a6ccdb307)
 
 </details>
-<details><summary>친구 추가(알림 ON), 이후 취소</summary></details>
-<details><summary>친구 추가(알림 ON), 이후 수락</summary></details>
-<details><summary>친구 수락(알림 ON)</summary></details>
+<details><summary>친구 추가(알림 ON), 이후 수락</summary>
+  
+![친구 요청 알림 ON 수락](https://github.com/user-attachments/assets/1c57a4a5-44c3-4840-951b-85ec8c02fa49)
+</details>
 <details><summary>친구 상태 조회</summary>
-
+  
+![친구 상태 변경 오프라인온라인](https://github.com/user-attachments/assets/6769b4ba-76cd-49e4-8efc-eca066ad23d5)
+![친구 상태 변경(사용자 지정)](https://github.com/user-attachments/assets/38574999-89a0-4283-a0bc-bdf164853a14)
+![친구 상태 변경 온라인오프라인](https://github.com/user-attachments/assets/3bceb251-cb82-4e18-8954-7bb437a84d8d)
 </details>
 <details><summary>친구 삭제</summary>
+  
 ![친구삭제](https://github.com/user-attachments/assets/ab4032ca-4208-4f59-b5b0-8ed7a2180726)
 </details>
 
@@ -235,110 +258,227 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>개인 대시보드</b></summary>
 
-<details><summary>통계</summary></details>
-<details><summary>빠른 작업</summary></details>
-<details><summary>내 업무</summary></details>
-<details><summary>개인 일정</summary></details>
+<details><summary>통계</summary>
+  
+![개인-통계](https://github.com/user-attachments/assets/1fc4e82a-0b3d-4a3a-91ae-7c758a56f254)
+</details>
 
+<details><summary>빠른 작업</summary>
+
+![개인-빠른 작업](https://github.com/user-attachments/assets/f58cbb9e-b28f-4ee3-b458-c753a813b8b2)
+</details>
+<details><summary>내 업무 및 개인일정</summary>
+  
+![내 업무 및 개인일정](https://github.com/user-attachments/assets/d98b16c8-14b7-4bd5-b01d-a681ff8893ba)
+</details>
+</details>
+<details><summary><b>프로젝트 대시보드</b></summary>
+<details><summary>통계(진행률, 진행중인 업무, 완료된 업무, 팀 멤버)</summary>
+
+![팀-대시보드 통계](https://github.com/user-attachments/assets/8aea211b-a769-42a3-82b2-fa61d99c5611)
+</details>
+<details><summary>프로젝트 진행 흐름(계획/실제), 진행 현황</summary>
+
+![팀-프로젝트 진행 흐름](https://github.com/user-attachments/assets/7d76c7ef-f6d1-4d12-9283-376342d258f8)
+</details>
+<details><summary>마감일 임박 업무 / 담당자별 업무 현황</summary>
+
+![팀-담당자별 업무 현황](https://github.com/user-attachments/assets/2489eb0f-4fd3-4e8e-9e11-6294c642e548)
+</details>
 </details>
 
 
 <details><summary><b>개인 일정</b></summary>
 
-<details><summary>일정 생성</summary></details>
-<details><summary>일정 목록 조회</summary></details>
-<details><summary>일정 상세 조회</summary></details>
-<details><summary>일정 수정</summary></details>
-<details><summary>일정 상태 변경</summary></details>
-<details><summary>일정 삭제</summary></details>
+<details><summary>일정 생성</summary>
 
+![개인 일정 생성](https://github.com/user-attachments/assets/61f54a23-dea6-4316-8509-bf166a0306c0)
 </details>
+<details><summary>일정 목록 조회</summary>
+
+![개인 일정 목록 조회 및 상태 변경](https://github.com/user-attachments/assets/cc5afda2-0166-4ac8-9473-7c25ffc87760)
+</details>
+<details><summary>일정 상세 조회</summary>
+
+![개인 일정 상세 조회](https://github.com/user-attachments/assets/a95a8450-73b8-457d-bc21-25601a7f29cc)
+</details>
+<details><summary>일정 수정</summary>
+
+![개인 일정 수정](https://github.com/user-attachments/assets/ebbb6a60-e547-49a2-8215-9fed2b15156b)
+</details>
+
+<details><summary>일정 삭제</summary>
+
+![개인 일정 삭제](https://github.com/user-attachments/assets/0bcd3b29-8900-48a7-a6ab-2133b96fbb11)
+</details>
+</details>
+
 
 
 <details><summary><b>프로젝트</b></summary>
 
-<details><summary>프로젝트 생성</summary></details>
-<details><summary>프로젝트 생성 후 초대</summary></details>
-<details><summary>프로젝트 멤버 목록 조회</summary></details>
-<details><summary>프로젝트 수정</summary></details>
-<details><summary>프로젝트 권한 위임</summary></details>
-<details><summary>프로젝트 탈퇴</summary></details>
-<details><summary>프로젝트 강제 탈퇴</summary></details>
+<details><summary>프로젝트 생성</summary>
+
+
+![프로젝트 생성](https://github.com/user-attachments/assets/18646e57-685a-4248-9482-2328e66d3db5)
+
+</details>
+<details><summary>프로젝트 생성 후 초대</summary>
+
+
+![프로젝트 생성 후 초대](https://github.com/user-attachments/assets/aa340a3d-aed0-4244-8e23-417f450acc7b)
+
+</details>
+<details><summary>프로젝트 멤버 목록 조회 및 실시간 상태 변경</summary>
+
+
+![프로젝트 멤버 상태 실시간(사용자 지정 상태-오프라인)](https://github.com/user-attachments/assets/dc2e3f11-51d8-45ff-a8b7-612d759edcb9)
+![프로젝트 멤버 상태 실시간(온라인)](https://github.com/user-attachments/assets/aa6d104a-a50b-4ddd-af7d-cbdbd6eae575)
+</details>
+<details><summary>프로젝트 수정</summary>
+
+
+![프로젝트 수정](https://github.com/user-attachments/assets/c67df3de-b3d2-4782-bad1-883464acc18d)
+</details>
+<details><summary>프로젝트 권한 위임</summary>
+
+
+
+![프로젝트 SUPER 권한 위임](https://github.com/user-attachments/assets/5cd5d096-d244-4454-97b5-176651ffad23)
+</details>
+
+<details><summary>프로젝트 탈퇴</summary>
+
+
+![프로젝트 탈퇴](https://github.com/user-attachments/assets/27258972-57e8-47b9-a322-bae04d923fa0)
+</details>
+<details><summary>프로젝트 강제 탈퇴</summary>
+
+
+![프로젝트 강제탈퇴](https://github.com/user-attachments/assets/ba55692a-a251-45ee-bb11-fa30bcc2fe85)
+</details>
 <details><summary>프로젝트 삭제</summary></details>
-
 </details>
-
-
-<details><summary><b>프로젝트 대시보드</b></summary>
-
-<details><summary>통계(진행률, 진행중인 업무, 완료된 업무, 팀 멤버)</summary></details>
-<details><summary>프로젝트 진행 흐름(계획/실제), 월/주/일/사용자정의</summary></details>
-<details><summary>월별 진행 현황</summary></details>
-<details><summary>마감일 임박 업무 상세조회</summary></details>
-<details><summary>담당자별 업무 현황</summary></details>
-
-</details>
-
 
 <details><summary><b>프로젝트 업무</b></summary>
+<details><summary>업무 생성</summary>
+  
+![업무 생성](https://github.com/user-attachments/assets/12172f44-962c-4675-bc10-82d29e507a3d)
+</details>
+<details><summary>내 보드 등록</summary>
 
-<details><summary>업무 생성</summary></details>
-<details><summary>내 개인 일정 화면</summary></details>
-<details><summary>내 보드 등록</summary></details>
-<details><summary>참여 멤버 조회</summary></details>
-<details><summary>내가 담당자 & 보드 미할당 task 목록 조회</summary></details>
-<details><summary>업무 상태 변경</summary></details>
+![보드 생성](https://github.com/user-attachments/assets/6297096c-d295-4a74-abfe-801ae4cd39be)
+</details>
+
+<details><summary>업무 상태 변경</summary>
+
+![업무 항목 상태 변경](https://github.com/user-attachments/assets/5ed5b171-6b8f-4bf9-81ed-94fb5a7e7a77)
+</details>
 <details><summary>업무 수정</summary></details>
-<details><summary>업무 할당 보드 변경</summary></details>
-<details><summary>보드 수정</summary></details>
-<details><summary>업무 상세 조회</summary></details>
-<details><summary>보드 상세 조회</summary></details>
-<details><summary>업무 삭제</summary></details>
-<details><summary>댓글 생성</summary></details>
-<details><summary>댓글 수정</summary></details>
-<details><summary>댓글 목록 조회</summary></details>
-<details><summary>댓글 삭제</summary></details>
+<details><summary>업무 할당 보드 변경</summary>
+
+![보드 항목 이동](https://github.com/user-attachments/assets/449760e8-ddf3-409e-869f-53ab1267aa15)
+</details>
+<details><summary>보드 수정</summary>
+
+![보드 수정](https://github.com/user-attachments/assets/117a710e-524e-409f-b354-6ff6c4ad58c2)
+</details>
+<details><summary>업무 상세 조회</summary>
+
+![보드 업무 상세 조회](https://github.com/user-attachments/assets/0f744a48-bf4b-4c98-8265-86a150a9105a)
+</details>
+
+<details><summary>댓글 생성</summary>
+
+![업무 댓글](https://github.com/user-attachments/assets/2de600c5-2a3f-420d-8d24-a9055587a514)
+</details>
+<details><summary>댓글 수정</summary>
+
+![업무 댓글 수정](https://github.com/user-attachments/assets/b81b0b78-224e-481d-acfa-a00ed5b0072c)
+</details>
+<details><summary>답글</summary>
+
+![업무 댓글 삭제](https://github.com/user-attachments/assets/0f550598-c4b9-49aa-b7e0-b75184af6416)
+</details>
+<details><summary>댓글 삭제</summary>
+
+![업무 댓글 삭제](https://github.com/user-attachments/assets/0f550598-c4b9-49aa-b7e0-b75184af6416)
+</details>
 
 </details>
 
 
 <details><summary><b>개인 드라이브</b></summary>
 
-<details><summary>개인 드라이브 아이템 목록 조회</summary></details>
-<details><summary>폴더 생성</summary></details>
-<details><summary>공유문서 생성</summary></details>
-<details><summary>파일 업로드</summary></details>
-<details><summary>아이템 이동</summary></details>
-<details><summary>폴더 순서 변경</summary></details>
-<details><summary>파일 다운로드</summary></details>
-<details><summary>폴더 이름 변경</summary></details>
-<details><summary>아이템 삭제</summary></details>
-<details><summary>공유문서 잠금/해제</summary></details>
-<details><summary>공유문서 다운로드</summary></details>
-<details><summary>공유문서 실시간 편집</summary></details>
-<details><summary>개인 공유문서 → 프로젝트 이동</summary></details>
-<details><summary>드라이브 채널 조회</summary></details>
-<details><summary>폴더 트리 조회</summary></details>
+<details><summary>개인 드라이브 아이템 목록 조회</summary>
 
+![아이템 조회 방식 변경](https://github.com/user-attachments/assets/5ad37abd-ec88-46cf-9b5d-a6e42e812a05)
+</details>
+<details><summary>폴더 생성</summary>
+
+![폴더 생성](https://github.com/user-attachments/assets/dac4e5e2-5368-4237-8050-fd5ff3a185ac)
+</details>
+<details><summary>공유문서 생성 / 폴더 트리구조 조회</summary>
+
+![폴더 트리 구조 조회 및 공유문서 생성](https://github.com/user-attachments/assets/0cf765e6-1be7-44c0-b709-d59971e04c89)
+</details>
+<details><summary>파일 업로드</summary>
+
+![파일 업로드](https://github.com/user-attachments/assets/c2e8419b-6add-4115-a2b0-ea01fd642d4e)
+</details>
+<details><summary>폴더 및 아이템 이동</summary>
+
+![폴더 및 아이템 이동](https://github.com/user-attachments/assets/0bca4ab9-4cd5-436e-bf79-fec3039c283e)
+</details>
+<details><summary>폴더 순서 변경</summary>
+
+![폴더 순서 변경](https://github.com/user-attachments/assets/2ade1e20-cfb0-4cf4-a5b1-fdaeccf43dad)
+</details>
+<details><summary>공유문서 편집</summary>
+
+![공유문서 편집(실시간 동시 편집X)](https://github.com/user-attachments/assets/3ce47c1e-971a-415c-87e9-5d7580a4d57e)
+</details>
+<details><summary>개인 공유문서 → 프로젝트 이동</summary>
+
+![공유문서 프로젝트로 이동](https://github.com/user-attachments/assets/eb0f0971-e3cc-4776-9b71-d8a0dd9d489b)
+</details>
 </details>
 
 
 <details><summary><b>프로젝트 드라이브</b></summary>
 
-<details><summary>아이템 목록 조회</summary></details>
-<details><summary>폴더 생성</summary></details>
-<details><summary>공유문서 생성</summary></details>
-<details><summary>파일 업로드</summary></details>
-<details><summary>아이템 이동</summary></details>
-<details><summary>폴더 순서 변경</summary></details>
+<details><summary>폴더 생성</summary>
+
+![폴더 생성](https://github.com/user-attachments/assets/39619de1-6cb4-4f60-896e-a14062eca9cb)
+</details>
+<details><summary>공유문서 생성</summary>
+
+![공유문서 만들기](https://github.com/user-attachments/assets/96da4909-73cb-46a8-bd64-4d681d82ab48)
+</details>
+<details><summary>파일 업로드</summary>
+
+![파일 업로드](https://github.com/user-attachments/assets/35be7be3-dd98-41cc-a0e9-7ffc4cf40e82)
+</details>
+
 <details><summary>파일 다운로드</summary></details>
 <details><summary>폴더 이름 변경</summary></details>
 <details><summary>아이템 삭제</summary></details>
-<details><summary>공유문서 목록 조회</summary></details>
-<details><summary>공유문서 참여자 목록 조회</summary></details>
-<details><summary>공유문서 잠금/해제</summary></details>
-<details><summary>공유문서 다운로드</summary></details>
-<details><summary>폴더 트리 조회</summary></details>
+<details><summary>공유문서 실시간 편집</summary>
+
+![공유문서 실시간 동시 편집](https://github.com/user-attachments/assets/de4e4679-1348-4b24-9cbb-8f8de7a20f69)
+</details>
+<details><summary>공유문서 참여자 목록 조회</summary>
+
+
+</details>
+<details><summary>공유문서 잠금/해제</summary>
+
+![공유문서 잠금](https://github.com/user-attachments/assets/9d8f23cd-d429-4338-8099-0fe5fcb79f60)
+</details>
+<details><summary>공유문서 다운로드</summary>
+
+![공유문서 다운로드](https://github.com/user-attachments/assets/95943b7e-d1fb-489f-b9e0-56ac878d6eb1)
+</details>
 <details><summary>문서 이름 변경</summary></details>
 
 </details>
