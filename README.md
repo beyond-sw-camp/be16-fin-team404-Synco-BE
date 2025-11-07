@@ -329,32 +329,90 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>1:1 채팅</b></summary>
 
-<details><summary>메시지 전송</summary></details>
-<details><summary>타이핑 이벤트</summary></details>
-<details><summary>첨부파일 업로드</summary></details>
-<details><summary>1:1 사용자 정보 조회</summary></details>
-<details><summary>메시지 삭제</summary></details>
-<details><summary>이전 메시지 조회</summary></details>
-<details><summary>마지막 읽은 메시지 조회</summary></details>
-<details><summary>마지막 읽은 메시지 업데이트</summary></details>
-<details><summary>채팅 나가기</summary></details>
+<details><summary>메시지 전송 및 타이핑 이벤트</summary>
 
+![Image](https://github.com/user-attachments/assets/81c8bb6c-ca6a-4d6b-b2ea-e96ac5b70d97)
+
+</details>
+<details><summary>첨부파일 개수 제한</summary>
+
+![Image](https://github.com/user-attachments/assets/27583118-b267-437b-9d33-bb336bb90bf6)
+
+</details>
+<details><summary>첨부파일 업로드</summary>
+
+![Image](https://github.com/user-attachments/assets/3c5b12a7-8214-442a-8dac-827f69823b67)
+
+</details>
+<details><summary>1:1 사용자 정보 조회</summary>
+
+![Image](https://github.com/user-attachments/assets/a93cd371-7c58-498f-b9b7-ca61b7f39689)
+
+</details>
+<details><summary>메시지 삭제</summary>
+
+![Image](https://github.com/user-attachments/assets/d7aebe46-f39d-4d50-9f12-d6459872b108)
+
+</details>
+<details><summary>이전 메시지 조회</summary>
+
+![Image](https://github.com/user-attachments/assets/7b1a65e1-2fe7-46ce-a0dc-e5b3bef7f6a3)
+
+</details>
+<details><summary>마지막 읽은 메시지 업데이트 및 조회</summary>
+
+![Image](https://github.com/user-attachments/assets/90598f69-cb8b-47a9-94ea-f3183b8f27e5)
+
+</details>
+<details><summary>채팅 나가기</summary>
+
+![Image](https://github.com/user-attachments/assets/b00e8add-c16f-485b-98e7-641a46fbc579)
+
+</details>
 </details>
 
 
 <details><summary><b>프로젝트 채팅</b></summary>
+<details><summary>메시지 전송 및 타이핑 이벤트</summary>
 
-<details><summary>메시지 전송</summary></details>
-<details><summary>타이핑 이벤트</summary></details>
-<details><summary>첨부파일 업로드</summary></details>
-<details><summary>메시지 삭제</summary></details>
-<details><summary>멘션</summary></details>
-<details><summary>이전 메시지 조회</summary></details>
-<details><summary>마지막 읽은 메시지 조회</summary></details>
-<details><summary>마지막 읽은 메시지 업데이트</summary></details>
-<details><summary>권한 변경</summary></details>
-<details><summary>채널 추가</summary></details>
+![Image](https://github.com/user-attachments/assets/5b3bed84-c609-42d1-9869-1b6351d59832)
+  
+</details>
+<details><summary>첨부파일 업로드</summary>
 
+![Image](https://github.com/user-attachments/assets/97ae1c25-c281-413d-b92b-ef8db6f9a1db)
+
+</details>
+<details><summary>메시지 삭제</summary>
+
+![Image](https://github.com/user-attachments/assets/f449c01d-dee4-4c4a-a847-897d82355013)
+
+</details>
+<details><summary>멘션</summary>
+  
+  ![Image](https://github.com/user-attachments/assets/7e61243d-acf2-4b2a-abd5-89256f4f360e)
+  
+</details>
+<details><summary>이전 메시지 조회</summary>
+
+![Image](https://github.com/user-attachments/assets/c5e6cf76-f2ba-4b12-a731-df12b8b44ad9)
+
+</details>
+<details><summary>마지막 읽은 메시지 업데이트 및 조회</summary>
+
+![Image](https://github.com/user-attachments/assets/41df6411-989e-41bc-b732-17e2f1747bdc)
+
+</details>
+<details><summary>권한 변경</summary>
+  
+  ![Image](https://github.com/user-attachments/assets/6b8318ad-dbd0-430f-977e-d8fdcce4f3ec)
+  
+</details>
+<details><summary>채널 추가</summary>
+
+![Image](https://github.com/user-attachments/assets/16ee7e09-ade4-4685-99f3-7f6c82c9f569)
+
+</details>
 </details>
 
 
