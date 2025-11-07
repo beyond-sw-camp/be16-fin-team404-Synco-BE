@@ -48,6 +48,7 @@ public class Task extends BaseEntity {
         this.startDate = taskUpdateReqDto.getStartDate();
         this.endDate = taskUpdateReqDto.getEndDate();
         this.picMemberSeq = picMemberSeq;
+        this.taskStatus = taskUpdateReqDto.getTaskStatus();
         this.board = board;
     }
 
