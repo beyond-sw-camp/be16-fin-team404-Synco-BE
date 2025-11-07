@@ -476,6 +476,15 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 </details>
 <details> 
   <summary><b> 윤수오</b></summary>
+  <details>
+    <summary>Redis 장애시 DB FallBack</summary>
+  </details>
+  <details>
+    <summary>SSE 알림 전송시 DB Connection Full 문제 해결</summary>
+  </details>
+  <details>
+    <summary>SSE 알림 전송시 연결 끊어지는 문제 해결</summary>
+  </details>
 </details>
 
 ---
