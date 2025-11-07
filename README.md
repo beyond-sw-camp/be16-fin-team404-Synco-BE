@@ -116,10 +116,13 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <a href="https://kafka.apache.org/" target="_blank"><img src="https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/></a>
 <a href="https://www.elastic.co/elasticsearch/" target="_blank"><img src="https://img.shields.io/badge/Elasticsearch-005571?style=for-the-badge&logo=elasticsearch&logoColor=white"/></a>
 <a href="https://livekit.io/" target="_blank"><img src="https://img.shields.io/badge/LiveKit-1FD5F9?style=for-the-badge&logo=livekit&logoColor=white"/></a>
+<a href="https://fastapi.tiangolo.com/" target="_blank"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white"/></a>
+<a><img src="https://img.shields.io/badge/OAuth2-3A3A3A?style=for-the-badge&logo=oauth&logoColor=white"/></a>
 
 ### 🚀 Deployment & DevOps
 
 <div> <a href="https://aws.amazon.com/ec2/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white"/> </a> <a href="https://aws.amazon.com/rds/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20RDS-527FFF?style=for-the-badge&logo=amazonrds&logoColor=white"/> </a> <a href="https://aws.amazon.com/s3/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20S3-569A31?style=for-the-badge&logo=amazons3&logoColor=white"/> </a> <a href="https://aws.amazon.com/cloudfront/" target="_blank"> <img src="https://img.shields.io/badge/AWS%20CloudFront-8C4FFF?style=for-the-badge&logo=amazonaws&logoColor=white"/> </a> <a href="https://nginx.org/" target="_blank"> <img src="https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white"/> </a> <a href="https://github.com/features/actions" target="_blank"> <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/> </a> <a href="https://www.docker.com/" target="_blank"> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/> </a> <a href="https://swagger.io/" target="_blank"> <img src="https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black"/> </a> </div>
+<a href="https://kubernetes.io/" target="_blank"><img src="https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/></a>
 
 <h2>DB</h2>
 
@@ -174,7 +177,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details>
   <summary><b>시스템 아키텍처</b></summary>
-<!-- <img width="900" alt="시스템 아키텍처" src="https://github.com/user-attachments/assets/6a0b09ef-e692-4e70-aecf-91aa6212cca4" /> -->
+  <img width="1287" height="1143" alt="Image" src="https://github.com/user-attachments/assets/534d3d19-097f-4a4e-a0f1-7a1029138d48" />
 </details>
 
 ---
