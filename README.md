@@ -1,6 +1,7 @@
 # 👩‍💻 synco - 통합 협업 지식관리 툴
 
-<img width="1918" height="909" alt="image" src="https://github.com/user-attachments/assets/0497f4c8-dc34-43a3-9964-b6e58021eed8" />
+<!-- <img width="1918" height="909" alt="image" src="https://github.com/user-attachments/assets/0497f4c8-dc34-43a3-9964-b6e58021eed8" /> -->
+<img width="1695" height="884" alt="스크린샷 2025-11-07 오후 5 45 37" src="https://github.com/user-attachments/assets/4c303e06-73f4-45ac-b9e9-3b48b71f607b" />
 
 <!-- <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/3b6f4d87-7c0e-4575-a2af-2910df5dc87b" /> -->
 
