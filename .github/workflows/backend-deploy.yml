@@ -28,7 +28,7 @@ jobs:
       workspace: ${{ steps.filter.outputs.workspace }}
     steps:
       - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -50,8 +50,7 @@ jobs:
   # 공통 설정 (AWS, kubectl)
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      registry: 864981729633.dkr.ecr.ap-northeast-2.amazonaws.com
+    # registry output 제거 (사용하지 않음, 각 deploy job에서 직접 사용)
     steps:
       - name: configure aws
         uses: aws-actions/configure-aws-credentials@v1
@@ -93,7 +92,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push ai-service docker image to ecr
         env:
@@ -136,7 +135,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push apigateway docker image to ecr
         env:
@@ -179,7 +178,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push chat docker image to ecr
         env:
@@ -222,7 +221,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push drive docker image to ecr
         env:
@@ -265,7 +264,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push search docker image to ecr
         env:
@@ -308,7 +307,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push task docker image to ecr
         env:
@@ -351,7 +350,7 @@ jobs:
           version: "v1.25.9"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: build and push workspace docker image to ecr
         env:
