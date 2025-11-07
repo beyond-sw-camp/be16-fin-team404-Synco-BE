@@ -37,6 +37,8 @@ spring:
       ddl-auto: update
     show__sql: true
     open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: Asia/Seoul
   # Email 설정
   mail:
     host: smtp.gmail.com

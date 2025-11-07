@@ -23,6 +23,8 @@ spring:
     hibernate:
       ddl-auto: update
     show__sql: true
+    properties:
+      hibernate.jdbc.time_zone: Asia/Seoul
   kafka:
     bootstrap-servers: kafka-service:9092
     producer:
