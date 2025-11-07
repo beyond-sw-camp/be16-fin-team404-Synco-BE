@@ -137,10 +137,13 @@ public class MemberService {
         // 프로필 이미지 삭제 요청 처리
         if (Boolean.TRUE.equals(memberUpdateDto.getDeleteProfileImage())) {
             if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
-                try {
-                    s3Uploader.delete(member.getProfileImageUrl());
-                } catch (Exception e) {
-                    throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
+                // S3 URL인 경우에만 삭제 시도 (소셜 로그인 회원의 외부 URL은 무시)
+                if (s3Uploader.isS3Url(member.getProfileImageUrl())) {
+                    try {
+                        s3Uploader.delete(member.getProfileImageUrl());
+                    } catch (Exception e) {
+                        throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
+                    }
                 }
             }
             member.updateImageUrl(null);
@@ -150,10 +153,13 @@ public class MemberService {
             MultipartFile profileImage = memberUpdateDto.getProfileImage();
             if (profileImage != null && !profileImage.isEmpty()) {
                 if (member.getProfileImageUrl() != null && !member.getProfileImageUrl().isEmpty()) {
-                    try {
-                        s3Uploader.delete(member.getProfileImageUrl());
-                    } catch (Exception e) {
-                        throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
+                    // S3 URL인 경우에만 삭제 시도 (소셜 로그인 회원의 외부 URL은 무시)
+                    if (s3Uploader.isS3Url(member.getProfileImageUrl())) {
+                        try {
+                            s3Uploader.delete(member.getProfileImageUrl());
+                        } catch (Exception e) {
+                            throw new IllegalStateException("기존 프로필 이미지 삭제에 실패했습니다.", e);
+                        }
                     }
                 }
                 String newProfileImageUrl = s3Uploader.upload(profileImage, PROFILE_IMAGE_DIRECTORY);
