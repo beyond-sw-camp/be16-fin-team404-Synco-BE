@@ -94,35 +94,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ---
 
-### 4. 주요 기능
-
-#### 4.1 회원가입 / 로그인
-<details></details>
-
-#### 4.2 워크스페이스 / 개인 공간
-<details></details>
-
-#### 4.3 채팅
-<details></details>
-
-#### 4.4 드라이브
-<details></details>
-
-#### 4.5 일정 관리
-<details></details>
-
-#### 4.6 알림
-<details></details>
-
-#### 4.7 화상회의
-<details></details>
-
-#### 4.8 검색
-<details></details>
-
----
-
-### 5. 시스템 구성
+### 4. 시스템 구성
 - **Frontend:** Vue.js (SPA)
 - **Backend:** Spring Boot (REST API)
 - **DB:** MariaDB / MySQL
@@ -132,7 +104,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ---
 
-### 6. 기대효과
+### 5. 기대효과
 - 문서/업무/회의 통합으로 생산성 극대화
 - 소규모 팀도 빠른 도입 가능
 - 회의록 자동화
@@ -140,7 +112,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ---
 
-### 7. 향후 계획
+### 6. 향후 계획
 - 모바일 앱
 - 외부 서비스 연동 (Google Drive, Slack, Github)
 - AI 기반 업무 추천
@@ -222,26 +194,224 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details>
   <summary><b> <a href='https://tranquil-fuchsia-64e.notion.site/Synco-2717cd1f5ed981d685b1c0a1776dc85b?source=copy_link' style="text-decoration: none; color: inherit;"> 프로젝트 기획서</a></b></summary>
- 
 </details>
 
 <details>
-  <summary><b>피그마</b></summary>
-  <a href='https://www.figma.com/design/JQZDxh0wwj80OqMN1poe7o/synco?node-id=0-1&p=f&t=zr4p7P0tSrSaxWi3-0' style="text-decoration: none; color: inherit;">🎨 피그마 바로가기</a>
+  <summary><b> <a href='https://www.figma.com/design/JQZDxh0wwj80OqMN1poe7o/synco?node-id=0-1&p=f&t=zr4p7P0tSrSaxWi3-0'  style="text-decoration: none; color: inherit;"> 피그마</a></b></summary>
+  <img width="1869" height="501" alt="Image" src="https://github.com/user-attachments/assets/ef9ef133-1a50-4a5a-aae1-bbf911f592ff" />
 </details>
 
 <details>
   <summary><b>시스템 아키텍처</b></summary>
-
 <!-- <img width="900" alt="시스템 아키텍처" src="https://github.com/user-attachments/assets/6a0b09ef-e692-4e70-aecf-91aa6212cca4" /> -->
 </details>
 
 ---
 
 ## 🧾 화면 테스트 결과
-<details> 
-  <summary><b> 화면 테스트 결과</b></summary>
+
+<details><summary><b>회원가입 / 로그인</b></summary>
+
+<details><summary>회원가입</summary></details>
+<details><summary>소셜회원가입</summary></details>
+<details><summary>로그인</summary></details>
+<details><summary>자동로그인</summary></details>
+<details><summary>ID 찾기</summary></details>
+<details><summary>비밀번호 찾기</summary></details>
+<details><summary>비밀번호 설정</summary></details>
+<details><summary>회원탈퇴</summary></details>
+
 </details>
+
+
+<details><summary><b>마이페이지 / 알림설정 / 친구</b></summary>
+
+<details><summary>마이페이지 정보 조회</summary></details>
+<details><summary>마이페이지 정보 수정</summary></details>
+<details><summary>친구 추가(알림 OFF), 이후 거부</summary></details>
+<details><summary>친구 추가(알림 ON), 이후 취소</summary></details>
+<details><summary>친구 추가(알림 ON), 이후 수락</summary></details>
+<details><summary>친구 수락(알림 ON)</summary></details>
+<details><summary>친구 상태 조회</summary></details>
+<details><summary>친구 삭제</summary></details>
+
+</details>
+
+
+<details><summary><b>개인 대시보드</b></summary>
+
+<details><summary>통계</summary></details>
+<details><summary>빠른 작업</summary></details>
+<details><summary>내 업무</summary></details>
+<details><summary>개인 일정</summary></details>
+
+</details>
+
+
+<details><summary><b>개인 일정</b></summary>
+
+<details><summary>일정 생성</summary></details>
+<details><summary>일정 목록 조회</summary></details>
+<details><summary>일정 상세 조회</summary></details>
+<details><summary>일정 수정</summary></details>
+<details><summary>일정 상태 변경</summary></details>
+<details><summary>일정 삭제</summary></details>
+
+</details>
+
+
+<details><summary><b>프로젝트</b></summary>
+
+<details><summary>프로젝트 생성</summary></details>
+<details><summary>프로젝트 생성 후 초대</summary></details>
+<details><summary>프로젝트 멤버 목록 조회</summary></details>
+<details><summary>프로젝트 수정</summary></details>
+<details><summary>프로젝트 권한 위임</summary></details>
+<details><summary>프로젝트 탈퇴</summary></details>
+<details><summary>프로젝트 강제 탈퇴</summary></details>
+<details><summary>프로젝트 삭제</summary></details>
+
+</details>
+
+
+<details><summary><b>프로젝트 대시보드</b></summary>
+
+<details><summary>통계(진행률, 진행중인 업무, 완료된 업무, 팀 멤버)</summary></details>
+<details><summary>프로젝트 진행 흐름(계획/실제), 월/주/일/사용자정의</summary></details>
+<details><summary>월별 진행 현황</summary></details>
+<details><summary>마감일 임박 업무 상세조회</summary></details>
+<details><summary>담당자별 업무 현황</summary></details>
+
+</details>
+
+
+<details><summary><b>프로젝트 업무</b></summary>
+
+<details><summary>업무 생성</summary></details>
+<details><summary>내 개인 일정 화면</summary></details>
+<details><summary>내 보드 등록</summary></details>
+<details><summary>참여 멤버 조회</summary></details>
+<details><summary>내가 담당자 & 보드 미할당 task 목록 조회</summary></details>
+<details><summary>업무 상태 변경</summary></details>
+<details><summary>업무 수정</summary></details>
+<details><summary>업무 할당 보드 변경</summary></details>
+<details><summary>보드 수정</summary></details>
+<details><summary>업무 상세 조회</summary></details>
+<details><summary>보드 상세 조회</summary></details>
+<details><summary>업무 삭제</summary></details>
+<details><summary>댓글 생성</summary></details>
+<details><summary>댓글 수정</summary></details>
+<details><summary>댓글 목록 조회</summary></details>
+<details><summary>댓글 삭제</summary></details>
+
+</details>
+
+
+<details><summary><b>개인 드라이브</b></summary>
+
+<details><summary>개인 드라이브 아이템 목록 조회</summary></details>
+<details><summary>폴더 생성</summary></details>
+<details><summary>공유문서 생성</summary></details>
+<details><summary>파일 업로드</summary></details>
+<details><summary>아이템 이동</summary></details>
+<details><summary>폴더 순서 변경</summary></details>
+<details><summary>파일 다운로드</summary></details>
+<details><summary>폴더 이름 변경</summary></details>
+<details><summary>아이템 삭제</summary></details>
+<details><summary>공유문서 잠금/해제</summary></details>
+<details><summary>공유문서 다운로드</summary></details>
+<details><summary>공유문서 실시간 편집</summary></details>
+<details><summary>개인 공유문서 → 프로젝트 이동</summary></details>
+<details><summary>드라이브 채널 조회</summary></details>
+<details><summary>폴더 트리 조회</summary></details>
+
+</details>
+
+
+<details><summary><b>프로젝트 드라이브</b></summary>
+
+<details><summary>아이템 목록 조회</summary></details>
+<details><summary>폴더 생성</summary></details>
+<details><summary>공유문서 생성</summary></details>
+<details><summary>파일 업로드</summary></details>
+<details><summary>아이템 이동</summary></details>
+<details><summary>폴더 순서 변경</summary></details>
+<details><summary>파일 다운로드</summary></details>
+<details><summary>폴더 이름 변경</summary></details>
+<details><summary>아이템 삭제</summary></details>
+<details><summary>공유문서 목록 조회</summary></details>
+<details><summary>공유문서 참여자 목록 조회</summary></details>
+<details><summary>공유문서 잠금/해제</summary></details>
+<details><summary>공유문서 다운로드</summary></details>
+<details><summary>폴더 트리 조회</summary></details>
+<details><summary>문서 이름 변경</summary></details>
+
+</details>
+
+
+<details><summary><b>1:1 채팅</b></summary>
+
+<details><summary>메시지 전송</summary></details>
+<details><summary>타이핑 이벤트</summary></details>
+<details><summary>첨부파일 업로드</summary></details>
+<details><summary>1:1 사용자 정보 조회</summary></details>
+<details><summary>메시지 삭제</summary></details>
+<details><summary>이전 메시지 조회</summary></details>
+<details><summary>마지막 읽은 메시지 조회</summary></details>
+<details><summary>마지막 읽은 메시지 업데이트</summary></details>
+<details><summary>채팅 나가기</summary></details>
+
+</details>
+
+
+<details><summary><b>프로젝트 채팅</b></summary>
+
+<details><summary>메시지 전송</summary></details>
+<details><summary>타이핑 이벤트</summary></details>
+<details><summary>첨부파일 업로드</summary></details>
+<details><summary>메시지 삭제</summary></details>
+<details><summary>멘션</summary></details>
+<details><summary>이전 메시지 조회</summary></details>
+<details><summary>마지막 읽은 메시지 조회</summary></details>
+<details><summary>마지막 읽은 메시지 업데이트</summary></details>
+<details><summary>권한 변경</summary></details>
+<details><summary>채널 추가</summary></details>
+
+</details>
+
+
+<details><summary><b>화상회의</b></summary>
+
+<details><summary>채널 권한 설정</summary></details>
+<details><summary>화상회의 방 생성</summary></details>
+<details><summary>화상회의 방 참여</summary></details>
+<details><summary>화상회의 방 취소</summary></details>
+<details><summary>채팅 전송</summary></details>
+<details><summary>채팅 목록 조회</summary></details>
+<details><summary>녹화 시작</summary></details>
+<details><summary>진행중인 회의 목록</summary></details>
+<details><summary>종료된 회의 목록</summary></details>
+<details><summary>특정 회의 요약 조회</summary></details>
+<details><summary>녹화 영상 다운로드</summary></details>
+
+</details>
+
+
+<details><summary><b>검색</b></summary></details>
+
+
+<details><summary><b>알림</b></summary>
+
+<details><summary>알림 목록 조회</summary></details>
+<details><summary>단건 읽음 처리</summary></details>
+<details><summary>특정 알림 라우팅</summary></details>
+<details><summary>모두 읽음 처리</summary></details>
+<details><summary>단건 삭제 처리</summary></details>
+<details><summary>모두 삭제 처리</summary></details>
+
+</details>
+
+
 
 ---
 
