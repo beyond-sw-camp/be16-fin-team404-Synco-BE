@@ -8,131 +8,135 @@ metadata:
 data:
   springboot-overview.json: |
     {
-      "dashboard": {
-        "title": "Spring Boot Services Overview",
-        "tags": ["springboot", "microservices"],
-        "timezone": "browser",
-        "schemaVersion": 27,
-        "version": 1,
-        "refresh": "30s",
-        "panels": [
-          {
-            "id": 1,
-            "title": "Request Rate",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-            "targets": [
-              {
-                "expr": "sum(rate(http_server_requests_seconds_count[5m])) by (service, method)",
-                "legendFormat": "{{service}} - {{method}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "reqps",
-                "custom": {"drawStyle": "line", "lineInterpolation": "smooth"}
-              }
+      "title": "Spring Boot Services Overview",
+      "tags": ["springboot", "microservices"],
+      "timezone": "browser",
+      "schemaVersion": 27,
+      "version": 1,
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Request Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count[5m])) by (service, method)",
+              "legendFormat": "{{service}} - {{method}}",
+              "refId": "A"
             }
-          },
-          {
-            "id": 2,
-            "title": "Error Rate",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-            "targets": [
-              {
-                "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) by (service)",
-                "legendFormat": "{{service}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "reqps",
-                "color": {"mode": "palette-classic"},
-                "custom": {"drawStyle": "line"}
-              }
-            }
-          },
-          {
-            "id": 3,
-            "title": "Response Time (95th percentile)",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-            "targets": [
-              {
-                "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (service, le))",
-                "legendFormat": "{{service}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "s",
-                "custom": {"drawStyle": "line"}
-              }
-            }
-          },
-          {
-            "id": 4,
-            "title": "JVM Memory Usage",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-            "targets": [
-              {
-                "expr": "(jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}) * 100",
-                "legendFormat": "{{service}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "percent",
-                "min": 0,
-                "max": 100,
-                "custom": {"drawStyle": "line"}
-              }
-            }
-          },
-          {
-            "id": 5,
-            "title": "Active Threads",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
-            "targets": [
-              {
-                "expr": "jvm_threads_live_threads",
-                "legendFormat": "{{service}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "short",
-                "custom": {"drawStyle": "line"}
-              }
-            }
-          },
-          {
-            "id": 6,
-            "title": "GC Pause Time",
-            "type": "timeseries",
-            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-            "targets": [
-              {
-                "expr": "rate(jvm_gc_pause_seconds_sum[5m])",
-                "legendFormat": "{{service}} - {{gc}}",
-                "refId": "A"
-              }
-            ],
-            "fieldConfig": {
-              "defaults": {
-                "unit": "s",
-                "custom": {"drawStyle": "line"}
-              }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "custom": {"drawStyle": "line", "lineInterpolation": "smooth"}
             }
           }
-        ]
-      }
+        },
+        {
+          "id": 2,
+          "title": "Error Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) by (service)",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line"}
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Response Time (95th percentile)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (service, le))",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {"drawStyle": "line"}
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "JVM Memory Usage",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "(jvm_memory_used_bytes{area=\"heap\"} / jvm_memory_max_bytes{area=\"heap\"}) * 100",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "custom": {"drawStyle": "line"}
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Active Threads",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "jvm_threads_live_threads",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {"drawStyle": "line"}
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "GC Pause Time",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "datasource": {"type": "prometheus", "uid": "default"},
+          "targets": [
+            {
+              "expr": "rate(jvm_gc_pause_seconds_sum[5m])",
+              "legendFormat": "{{service}} - {{gc}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {"drawStyle": "line"}
+            }
+          }
+        }
+      ]
     }
