@@ -9,6 +9,7 @@ import com.team404.synco.virtualmeeting.dto.Room.RoomDetailDto;
 import com.team404.synco.virtualmeeting.dto.Room.RoomEndedListDto;
 import com.team404.synco.virtualmeeting.service.VirtualMeetingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -129,9 +130,9 @@ public class VirtualMeetingController {
         return ResponseEntity.ok(ResponseDto.ok(roomDetail, HttpStatus.OK));
     }
 
-    // 녹화 영상 다운로드 (S3에서 바이트 스트리밍)
+    // 녹화 영상 다운로드 (S3에서 스트리밍 - 메모리 효율적)
     @GetMapping(value = "/rooms/{roomSeq}/recording/download")
-    public ResponseEntity<byte[]> downloadRecording(
+    public ResponseEntity<Resource> downloadRecording(
             @PathVariable Long roomSeq,
             @RequestHeader("X-Member-Seq") Long memberSeq) {
         return virtualMeetingService.downloadRecordingFile(roomSeq, memberSeq);
