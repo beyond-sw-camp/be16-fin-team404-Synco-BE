@@ -672,6 +672,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 </details>
 
 ---
+## 🛠️ 트러블 슈팅
 
 <details> 
   <summary><b> 김건동</b></summary>
