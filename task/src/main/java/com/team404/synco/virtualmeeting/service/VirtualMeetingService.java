@@ -248,6 +248,7 @@ public class VirtualMeetingService {
                     .downloadUrl(null)
                     .participants(participantDtoList)
                     .participantCount(participantDtoList.size())
+                    .isRecording(room.getIsRecording())
                     .build();
         }
 
@@ -285,6 +286,7 @@ public class VirtualMeetingService {
                 .downloadUrl(recordingSummary.getRecording().getOutputUrl())
                 .participants(participantDtoList)
                 .participantCount(participantDtoList.size())
+                .isRecording(recordingSummary.getRecording().getRoom().getIsRecording())
                 .build();
     }
 

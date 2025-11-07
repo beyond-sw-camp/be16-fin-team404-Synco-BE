@@ -29,6 +29,10 @@ public class Room extends BaseEntity {
     @Column(name = "room_description", length = 500)
     private String roomDescription;
 
+    @Column(name = "is_recording", nullable = false)
+    @Builder.Default
+    private Boolean isRecording = false;
+
     @Column(name = "host_id", nullable = false)
     private Long hostId;
 
