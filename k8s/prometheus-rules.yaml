@@ -1,0 +1,104 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kubernetes-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: kubernetes.rules
+      interval: 30s
+      rules:
+        # Node 알람
+        - alert: NodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} is not ready"
+            description: "Node {{ $labels.node }} has been not ready for more than 5 minutes."
+
+        - alert: NodeHighMemoryUsage
+          expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} has high memory usage"
+            description: "Memory usage is above 90% for more than 5 minutes."
+
+        - alert: NodeHighCPUUsage
+          expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} has high CPU usage"
+            description: "CPU usage is above 90% for more than 5 minutes."
+
+        # Pod 알람
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is restarting frequently."
+
+        - alert: PodNotReady
+          expr: sum by (namespace, pod) (kube_pod_status_phase{phase!~"Running|Succeeded"}) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is not ready"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in {{ $labels.phase }} state for more than 10 minutes."
+
+        - alert: PodHighMemoryUsage
+          expr: sum(container_memory_working_set_bytes{pod!=""}) / sum(kube_pod_container_resource_limits{resource="memory"}) * 100 > 90
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has high memory usage"
+            description: "Pod memory usage is above 90% of its limit."
+
+        # Spring Boot 알람 (actuator/prometheus 메트릭 기반)
+        - alert: SpringBootHighErrorRate
+          expr: rate(http_server_requests_seconds_count{status=~"5.."}[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Spring Boot service {{ $labels.service }} has high error rate"
+            description: "Error rate is above 0.1 req/s for more than 5 minutes."
+
+        - alert: SpringBootHighResponseTime
+          expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Spring Boot service {{ $labels.service }} has high response time"
+            description: "95th percentile response time is above 2 seconds for more than 5 minutes."
+
+        - alert: SpringBootDown
+          expr: up{job=~".*springboot.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Spring Boot service {{ $labels.job }} is down"
+            description: "Spring Boot service {{ $labels.job }} has been down for more than 2 minutes."
+
+        - alert: SpringBootHighJVMMemoryUsage
+          expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Spring Boot service {{ $labels.service }} has high JVM memory usage"
+            description: "JVM heap memory usage is above 85% for more than 5 minutes."

@@ -53,3 +53,17 @@ jwt:
   secretKeyAt: ${JWT_SECRET_KEY_AT}
   expirationRt: 10000
   secretKeyRt: ${JWT_SECRET_KEY_RT}
+
+## Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true

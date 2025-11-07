@@ -1,0 +1,78 @@
+name: Deploy Monitoring
+
+on:
+  push:
+    paths:
+      - "k8s/values-monitoring.yml"
+      - "k8s/alertmanager-slack-webhook.yaml"
+      - "k8s/prometheus-rules.yaml"
+      - "k8s/springboot-servicemonitor.yaml"
+      - ".github/workflows/deploy-monitoring.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # OIDC 사용 시
+          # role-to-assume: arn:aws:iam::864981729633:role/<GHA_OIDC_ROLE>
+          # aws-region: ap-northeast-2
+          # 기존 방식 사용 시
+          aws-access-key-id: ${{ secrets.AWS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ap-northeast-2
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.25.9"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "3.12.0"
+
+      - name: Helm repo update
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+
+      - name: Create monitoring namespace
+        run: kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+      # Slack 웹훅은 사용하지 않으므로 제거
+      # 필요시 주석 해제: - name: Apply Slack webhook secret
+      #   run: kubectl apply -f k8s/alertmanager-slack-webhook.yaml
+
+      - name: Deploy kube-prometheus-stack
+        run: |
+          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+            -n monitoring --create-namespace \
+            -f k8s/values-monitoring.yml
+
+      - name: Apply ServiceMonitor
+        run: kubectl apply -f k8s/springboot-servicemonitor.yaml
+
+      - name: Apply PrometheusRules
+        run: kubectl apply -f k8s/prometheus-rules.yaml
+
+      - name: Apply Grafana dashboard
+        run: kubectl apply -f k8s/grafana-dashboard-import.yaml
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n monitoring
+          kubectl get ingress -n monitoring

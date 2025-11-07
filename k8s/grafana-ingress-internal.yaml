@@ -1,0 +1,28 @@
+# 내부 접근용 Grafana Ingress (CIDR 제한)
+# 사용법: 기존 ingress를 이 설정으로 교체하거나 별도 호스트로 추가
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-internal
+  namespace: monitoring
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal  # 내부 ALB
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:864981729633:certificate/<CERT_ID>
+    # 보안 그룹에 CIDR 제한 추가 필요
+    # ALB 보안 그룹 인바운드 규칙에서 특정 CIDR만 허용
+    # 예: 203.0.113.0/24 (사무실 IP 대역)
+spec:
+  ingressClassName: alb
+  rules:
+    - host: grafana-internal.synco1.shop
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-grafana
+                port:
+                  number: 80

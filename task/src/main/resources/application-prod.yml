@@ -59,3 +59,17 @@ naver:
     api:
       url: https://clovastudio.stream.ntruss.com/v1/api-tools/summarization/v2
       api-key: ${NAVER_SUMMARY_API_KEY}
+
+## Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true
