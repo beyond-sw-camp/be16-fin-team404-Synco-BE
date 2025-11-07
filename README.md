@@ -470,11 +470,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 | 기술명 | 내용 |
 |------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  |  |
-|  |  |
-|  |  |
-|  |  |
-|  |  |
+| **화상회의 (LiveKit)** | WebRTC 기반 오픈소스 SFU인 LiveKit을 사용하여 실시간 화상회의 구현. LiveKit Server SDK로 방 생성/관리 및 JWT 토큰 발급. Egress를 통한 회의 녹화 및 S3 자동 저장. Webhook을 통한 참가자 입장/퇴장, 녹화 완료 등 이벤트 처리. STOMP WebSocket으로 회의 내 채팅 메시지 전송. |
+| **문서 편집 (실시간 협업)** | TipTap 리치 텍스트 에디터 사용. STOMP WebSocket으로 실시간 양방향 통신. Redis Pub/Sub으로 멀티 인스턴스 간 변경사항 동기화. CRDT 대신 라인 단위 관리로 충돌 최소화. 라인 락 메커니즘으로 동시 편집 충돌 방지 (30초 TTL 자동 해제). |
+| **모니터링 (Prometheus + Grafana)** | Spring Boot Actuator로 `/actuator/prometheus` 엔드포인트 제공. Prometheus Operator의 ServiceMonitor로 자동 타겟 발견 및 메트릭 수집. Grafana 대시보드로 시각화 및 알람 관리. AWS EKS 환경에서 AWS Load Balancer Controller로 ALB Ingress 관리. EBS CSI Driver로 PVC 동적 프로비저닝. |
+| **최종 배포 (AWS EKS)** | AWS EKS Kubernetes 클러스터 사용. AWS Load Balancer Controller로 ALB 기반 Ingress 관리. Kafka KRaft 모드로 Zookeeper 없이 단일 노드 Kafka 실행. GitHub Actions로 CI/CD 파이프라인 구축. Docker + ECR로 컨테이너 이미지 관리. |
 
 ---
 
