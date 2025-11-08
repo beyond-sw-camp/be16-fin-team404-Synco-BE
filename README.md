@@ -479,6 +479,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 ![업무 댓글 삭제](https://github.com/user-attachments/assets/0f550598-c4b9-49aa-b7e0-b75184af6416)
 </details>
 
+<details><summary>참여자 목록 조회 및 권한변경</summary>
+
+![참여자 목록 조회 및 권한 변경](https://github.com/user-attachments/assets/92d99b85-a4eb-4bbd-bc30-efd90251afd7)
+</details>
 </details>
 
 
