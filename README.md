@@ -546,10 +546,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ![폴더 이름 변경](https://github.com/user-attachments/assets/c44b5149-d7fe-49c3-b173-818e0581eae1)
 </details>
-<details><summary>아이템 삭제</summary>
 
-
-</details>
 <details><summary>공유문서 실시간 편집</summary>
 
 ![공유문서 실시간 동시 편집](https://github.com/user-attachments/assets/de4e4679-1348-4b24-9cbb-8f8de7a20f69)
@@ -727,12 +724,28 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>알림</b></summary>
 
-<details><summary>알림 목록 조회</summary></details>
-<details><summary>단건 읽음 처리</summary></details>
-<details><summary>특정 알림 라우팅</summary></details>
-<details><summary>모두 읽음 처리</summary></details>
-<details><summary>단건 삭제 처리</summary></details>
-<details><summary>모두 삭제 처리</summary></details>
+<details><summary>알림 목록 조회</summary>
+
+![알림 목록 조회](https://github.com/user-attachments/assets/7e5e7166-f06a-47d8-8932-741e52f3caaa)
+
+</details>
+
+<details><summary>특정 알림 라우팅</summary>
+
+![알림 라우팅](https://github.com/user-attachments/assets/ff8c2264-190d-4e78-a749-5319175b19ce)
+</details>
+<details><summary>알림 타입별 조회</summary>
+
+![알림 타입별 조회](https://github.com/user-attachments/assets/5c98d007-1bf2-4ae6-9f74-c3a9b6cd0633)
+</details>
+<details><summary>단건 읽음/삭제 처리</summary>
+
+![단건 읽음_삭제](https://github.com/user-attachments/assets/49916203-2c01-4a36-b647-d0313178c295)
+</details>
+<details><summary>모두 읽음/삭제 처리</summary>
+
+![모두읽음_삭제](https://github.com/user-attachments/assets/233381a6-3f7a-4a89-9ccf-623487ac03e1)
+</details>
 
 </details>
 
