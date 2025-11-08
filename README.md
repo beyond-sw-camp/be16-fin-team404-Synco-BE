@@ -1650,7 +1650,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   - Redis 조회가 이상하더라도 DB에서 똑같은 정보를 안전하게 가져옴
   </details>
   <details>
-    <summary>SSE 알림 전송시 DB Connection Full 문제 해결</summary>
+    <summary><b>SSE 알림 전송시 DB Connection Full 문제 해결</b></summary>
 
   **증상**
   
@@ -1677,7 +1677,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   - DB ConnectionPool 문제 해결 및 원할하게 알림 전송됨
   </details>
   <details>
-    <summary>SSE 알림 전송시 연결 끊어지는 문제 해결</summary>
+    <summary><b>SSE 알림 전송시 연결 끊어지는 문제 해결</b></summary>
     
   **증상**
   
