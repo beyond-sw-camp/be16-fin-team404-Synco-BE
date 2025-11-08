@@ -704,11 +704,9 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <details><summary><b>검색</b></summary>
   
 <details><summary>일정 검색</summary>
-![일정검색](https://github.com/user-attachments/assets/4572f771-a650-4fcd-9c2f-c165f2e96b3b)
 
 </details>
 <details><summary>드라이브 검색</summary>
-![파일검색](https://github.com/user-attachments/assets/e59c3fed-29d1-409f-86bb-c04fb1752d13)
 
 </details>
 </details>
@@ -1564,6 +1562,36 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 </details>
 <details> 
   <summary><b> 김찬진</b></summary>
+  <details>
+  <summary><b>한글 검색 누락 (Elasticsearch Nori 커스터마이저 도입)</b></summary>
+
+  **증상**
+  
+  - “회의록공유”, “프로젝트현황”처럼 붙여 쓴 키워드를 검색하면 결과가 비어 있음
+  - 사용자들이 실제로 입력하는 한글 키워드가 제대로 분해되지 않아 관련 문서가 검색되지 않음
+  - 검색 실패 CS가 반복되고, 팀 내부 테스트에서도 동일 현상 재현
+
+  **원인 분석**
+  
+  - Elasticsearch 기본 분석기는 한글 복합어를 분해하지 못해 하나의 토큰으로만 색인
+  - 형태소 분석기를 적용하지 않아 “회의록”으로 검색해도 “회의록공유” 문서를 찾지 못하는 구조
+  - Task·Chat·Drive·Meeting 인덱스 모두 동일한 analyzer를 쓰고 있어 전 영역에서 문제가 발생
+
+  **해결 과정**
+  
+  1. Elasticsearch 인덱스 설정에 Nori tokenizer 도입
+  2. `decompound_mode=mixed`로 설정해 원형+분해 형태를 동시에 색인
+  3. 품사 필터(nori_part_of_speech), Reading Form 필터 등을 추가해 조사/표기 흔들림 보정
+  4. 커스텀 analyzer (nori_synco_custom)를 생성하고 각 인덱스 매핑에 적용
+  5. 기존 데이터 재색인 및 Kibana/통합 검색 API로 재현 테스트
+
+  **결과**
+  
+  - “회의록공유”, “회의록 공유” 등 다양한 입력 형태에서 안정적으로 검색 가능
+  - 검색 실패 건수가 크게 감소하고 사용자 만족도 향상
+  - Task·Chat·Drive·Meeting 전반에서 일관된 형태소 분석 결과 확보
+
+</details>
 </details>
 <details> 
   <summary><b> 김지현</b></summary>
