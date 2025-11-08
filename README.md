@@ -451,7 +451,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ![업무 항목 상태 변경](https://github.com/user-attachments/assets/5ed5b171-6b8f-4bf9-81ed-94fb5a7e7a77)
 </details>
-<details><summary>업무 수정</summary></details>
+<details><summary>업무 수정</summary>
+  
+![일정상세수정](https://github.com/user-attachments/assets/f62d1995-0a4a-45c6-b911-e99fb987f1c5)
+</details>
 <details><summary>업무 할당 보드 변경</summary>
 
 ![보드 항목 이동](https://github.com/user-attachments/assets/449760e8-ddf3-409e-869f-53ab1267aa15)
@@ -700,6 +703,14 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>검색</b></summary></details>
 
+<details><summary>일정 검색</summary>
+![일정검색](https://github.com/user-attachments/assets/a4d4797e-bfca-4f56-9aaa-7a8489114a6b)
+  
+</details>
+<details><summary>드라이브 검색</summary>
+![파일검색](https://github.com/user-attachments/assets/bae3b1b1-c7a1-4e49-b720-60e7fd16571d)
+
+</details>
 
 <details><summary><b>알림</b></summary>
 
