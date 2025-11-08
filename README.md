@@ -141,6 +141,20 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <br>
 
+## 🧾 주요 화면
+
+공유 문서 편집<br>
+<img src="https://github.com/user-attachments/assets/2a124458-012d-49be-b805-ee9ddf70c3ba" alt="GIF 설명" />
+
+화상회의 녹화 및 화면공유 회의<br>
+<img src="https://github.com/user-attachments/assets/9939ad79-46c6-4f35-b6c9-31394f9146c3" alt="GIF 설명" />
+
+실시간 사용량 모니터링(Prometheus + Grafana)
+<img width="2560" height="1347" alt="스크린샷 2025-11-08 오후 3 09 34" src="https://github.com/user-attachments/assets/c7ca28b1-fcce-4b5b-9f1d-66c6947cb09d" />
+
+---
+
+
 ## 📌 주요 기술
 
 | 기술명 | 내용 |
@@ -248,19 +262,6 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <summary><b>시스템 아키텍처</b></summary>
   <img width="1287" height="1143" alt="Image" src="https://github.com/user-attachments/assets/534d3d19-097f-4a4e-a0f1-7a1029138d48" />
 </details>
----
-
-## 🧾 주요 화면
-
-공유 문서 편집<br>
-<img src="https://github.com/user-attachments/assets/2a124458-012d-49be-b805-ee9ddf70c3ba" alt="GIF 설명" />
-
-화상회의 녹화 및 화면공유 회의<br>
-<img src="https://github.com/user-attachments/assets/9939ad79-46c6-4f35-b6c9-31394f9146c3" alt="GIF 설명" />
-
-실시간 사용량 모니터링(Prometheus + Grafana)
-<img width="2560" height="1347" alt="스크린샷 2025-11-08 오후 3 09 34" src="https://github.com/user-attachments/assets/c7ca28b1-fcce-4b5b-9f1d-66c6947cb09d" />
-
 ---
 
 ## 🧾 화면 테스트 결과
