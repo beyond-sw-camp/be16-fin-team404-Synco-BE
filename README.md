@@ -1625,13 +1625,78 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <details> 
   <summary><b> 윤수오</b></summary>
   <details>
-    <summary>Redis 장애시 DB FallBack</summary>
+    <summary><b>Redis 장애시 DB FallBack</b></summary>
+    
+  **증상**
+
+  - Redis 먹통 또는 Redis 조회 이상시 서버가 바로 멈춰버리는 현상
+
+  **원인 분석**
+  
+  - WorkSpace정보, 워크스페이스에 소속되어 있는 멤버 정보등을 Redis에서 조회해옴
+  - WorkSpace 정보는 DB에서 바로 조회가 가능하나, 소속되어 있는 멤버 정보들은 WorkSpace DB에 생성자 정보만 저장하기 때문에 실패.
+
+  **해결 과정**
+  
+  1. AOP를 활용한 RedisFallBack 서비스를 WorkSpace 모듈에 만들기
+  2. ```@RedisFallBack``` 어노테이션을 FallBack이 필요한 메서드에 붙임.
+  3. 컨트롤러가 어노테이션이 붙은 메서드 호출할 경우 바로 RedisFallBack 서비스를 호출함
+  4. RedisFallBack 서비스에서 Redis 조회 결과 이상이 발생시 메서드 명에 따라 분기, 해당하는 정보를 TaskModule에 Feign 통신 요청.
+  5. 요청 받은 TaskModule은 DB에서 조회 후 해당 결과를 다시 WorkSpaceModule에 반환하여 정보를 가져옴.
+
+  **결과**
+  
+  - Redis 장애 발생시 DB로 신속하게 FallBack
+  - Redis 조회가 이상하더라도 DB에서 똑같은 정보를 안전하게 가져옴
   </details>
   <details>
     <summary>SSE 알림 전송시 DB Connection Full 문제 해결</summary>
+
+  **증상**
+  
+  - SSE 알림 전송시 여러 클라이언트가 SSE 연결 요청을 해 DB Connection이 고갈되어 DB ConnectionPool 문제 발생
+  - 기본값인 10개 ConnectionPool이 모두 꽉 차게되어 아무런 API 호출이 되지 않는 문제 발생
+  
+  **원인 분석**
+  
+  - DB Connection을 사용하고 반환해줘야하는데 반환하지 않아 계속 기존 Pool을 사용하면서 새로운 Pool을 가져가서 고갈되는 문제 발생
+  - 트랜잭션이 끝났을때 DB Connection을 반납하지 않음
+  - HTTP Connection이 열려있는 동안 DB Connection도 같이 열려있어 Connection 고갈 문제 발생
+  
+  **해결 과정**
+  
+  1. ```Open-In-View```를 false로 설정해 트랜잭션이 끝나면 DB Connection을 반납하도록 설정
+  ```
+  jpa:
+    open-in-view: false
+  ```
+  2. 알림 트랜잭션 서비스와 SSE 서비스를 분리.
+  
+  **결과**
+  
+  - DB ConnectionPool 문제 해결 및 원할하게 알림 전송됨
   </details>
   <details>
     <summary>SSE 알림 전송시 연결 끊어지는 문제 해결</summary>
+    
+  **증상**
+  
+  - SSE 연결이 지속적으로 끊어짐
+  - 연결 끊어짐으로 인해 알림 실시간 전송이 안되는 문제 발생
+  
+  **원인 분석**
+  
+  - SSE Emitter와 Client의 EventSource-Pool의 Connection 시간이 너무 짧음
+  - 서버에서 주기적으로 연결 신호를 보내줘야하는데 그렇지 않고 있음.
+  
+  **해결 과정**
+  
+  1. SSE Emitter와 클라이언트의 SSE Connection 유효기간을 10일로 길게 설정.
+  2. 스케줄러를 이용해 15초 간격으로 클라이언트에 ping 신호를 주기적으로 보내서 연결이 끊기지 않게끔 설정
+
+  **결과**
+  
+  - SSE 연결이 안정적으로 연결되어 실시간 알림이 원할하게 작동됨
   </details>
 </details>
 
@@ -1645,6 +1710,11 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 | 권수연 |  |
 | 김찬진 |  |
 | 김지현 |  |
-| 윤수오 |  |
+| 윤수오 | 이번 부트캠프에서 직접 OpenFeign을 사용해 MSA 설계방식하의 통신 방법을 배우고 구현하였으며, 이를 통해 MSA 구조를 이해할 수 있었다.<br>
+또한 Redis 장애시 FallBack 기능, SSE DB ConnectionPool 문제 등을 직면하고 이를 직접 해결하여 문제 해결 역량 및 성능 개선 역량도 키울 수 있었다.<br>
+이번 프로젝트를 통해 의사소통의 중요성을 깨달았으며, 무엇보다 Git 활용의 중요성을 뼈저리게 느꼈다.<br>
+다만 개발 일정의 촉박함으로 인해 알림 구독시 kafka를 도입하지 못해 Redis Pub/Sub으로 이벤트를 발행하는것은 아쉬웠다.<br>
+이번 대규모 프로젝트를 진행하면서 실무적으로 성장했다고 느껴졌던 시간이었다. 팀장을 비롯한 팀원들에게 모두 고생많았다고 이야기 하고 싶다.
+|
 
 
