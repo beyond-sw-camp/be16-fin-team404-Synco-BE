@@ -167,8 +167,9 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 | **카프카 (Apache Kafka)** | 각 모듈(Task, Drive, Chat, Meeting)에서 발생한 생성·수정·삭제 이벤트를 Kafka 토픽으로 송출. Search 서비스가 동일 토픽을 구독해 Elasticsearch 인덱스를 실시간 갱신. API 트랜잭션과 검색 인덱싱을 분리함으로써 응답 지연 최소화. 동일 이벤트 스트림을 알림·로그·통계 등 후속 서비스가 재사용하도록 확장성 확보. |
 | **검색 (Elasticsearch + Nori)** | 통합 검색 품질 최적화를 위해 Elasticsearch 도입. Nori 기반 분석기 커스터마이징으로 복합어 분해(Mixed 모드), 품사 필터, Reading Form 필터 적용. “회의록공유” 등 붙임표 없는 표현도 정밀 색인/검색. Task·Chat·Drive·Meeting 인덱스에 동일 설정을 적용해 일관된 형태소 처리와 빠른 응답 제공. |
 | **소셜 로그인 (OAuth 2.0)** | Google·Kakao·Naver OAuth 플로우를 서비스별로 구현. 공통 후처리에서 회원 등록, 탈퇴 상태 검증, JWT 발급 수행. 신규 소셜 사용자는 즉시 Member 엔티티로 저장되며 Synco 전용 아이디 추가 등록을 유도. 다중 인증 경로를 유지하면서 회원 데이터 정합성 보장. |
-| **이메일 서비스 (SMTP)** | 비밀번호 찾기 요청 시 EmailService가 임시 비밀번호 생성. JavaMailSender로 SMTP 서버(AWS SES·Gmail 등) 연동 후 인증 메일 자동 발송. 생성된 임시 비밀번호는 즉시 암호화되어 저장. Thymeleaf 템플릿(tempPassword.html)로 HTML 메일 구성해 계정 보안과 사용자 경험 강화. |
-
+| **이메일 서비스 (SMTP)** | 비밀번호 찾기 요청 시 EmailService가 임시 비밀번호 생성. JavaMailSender로 SMTP 서버(AWS SES·Gmail 등) 연동 후 인증 메일 자동 발송. 생성된 임시 비밀번호는 즉시 암호화되어 저장. Thymeleaf 템플릿(tempPassword.html)로 HTML 메일 구성해 계정 보안과 사용자 경험 강화. 
+| **OpenFeign을 이용한 모듈간 통신** | MSA 설계 구조로 인해 WorkSpace 모듈과 다른 모듈간의 통신을 OpenFeign을 통해 동기적 통신방식으로 구현 |
+| **알림 (SSE / Redis Pub&Sub)** | SSE를 이용한 서버->클라이언트로의 실시간 알림 생성. MSA 설계방식으로 인해 알림이 발생하는 모듈을 알림 모듈이 구독(Subscribe)하고 알림이 발생하는 모듈은 메시지를 발행(Publish)해서 알림을 받아옴. |
 ---
 
 ## ⚙️🛠️ Technical Stack
