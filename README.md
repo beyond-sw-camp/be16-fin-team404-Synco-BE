@@ -18,25 +18,25 @@
     </td>
     <td align="center">
       <a href="https://github.com/suyeonkwong" target="_blank">
-        <img src="https://avatars.githubusercontent.com/suyeonkwong" width="100px;" alt="이승지"/>
+        <img src="https://avatars.githubusercontent.com/suyeonkwong" width="100px;" alt="권수연"/>
       </a><br />
       <b>권수연</b>
     </td>
     <td align="center">
       <a href="https://github.com/Chanjin629" target="_blank">
-        <img src="https://avatars.githubusercontent.com/Chanjin629" width="100px;" alt="최재혁"/>
+        <img src="https://avatars.githubusercontent.com/Chanjin629" width="100px;" alt="김찬진"/>
       </a><br />
       <b>김찬진</b>
     </td>
     <td align="center">
       <a href="https://github.com/userkimjihyeon" target="_blank">
-        <img src="https://avatars.githubusercontent.com/userkimjihyeon" width="100px;" alt="조민형"/>
+        <img src="https://avatars.githubusercontent.com/userkimjihyeon" width="100px;" alt="김지현"/>
       </a><br />
       <b>김지현</b>
     </td>
     <td align="center">
       <a href="https://github.com/SuOhYoon" target="_blank">
-        <img src="https://avatars.githubusercontent.com/SuOhYoon" width="100px;" alt="김상환"/>
+        <img src="https://avatars.githubusercontent.com/SuOhYoon" width="100px;" alt="윤수오"/>
       </a><br />
       <b>윤수오</b>
     </td>
@@ -1710,11 +1710,6 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 | 권수연 |  |
 | 김찬진 |  |
 | 김지현 |  |
-| 윤수오 | 이번 부트캠프에서 직접 OpenFeign을 사용해 MSA 설계방식하의 통신 방법을 배우고 구현하였으며, 이를 통해 MSA 구조를 이해할 수 있었다.<br>
-또한 Redis 장애시 FallBack 기능, SSE DB ConnectionPool 문제 등을 직면하고 이를 직접 해결하여 문제 해결 역량 및 성능 개선 역량도 키울 수 있었다.<br>
-이번 프로젝트를 통해 의사소통의 중요성을 깨달았으며, 무엇보다 Git 활용의 중요성을 뼈저리게 느꼈다.<br>
-다만 개발 일정의 촉박함으로 인해 알림 구독시 kafka를 도입하지 못해 Redis Pub/Sub으로 이벤트를 발행하는것은 아쉬웠다.<br>
-이번 대규모 프로젝트를 진행하면서 실무적으로 성장했다고 느껴졌던 시간이었다. 팀장을 비롯한 팀원들에게 모두 고생많았다고 이야기 하고 싶다.
-|
+| 윤수오 |  이번 부트캠프에서 직접 OpenFeign을 사용해 MSA 설계방식하의 통신 방법을 배우고 구현하였으며, 이를 통해 MSA 구조를 이해할 수 있었다.<br><br> 또한 Redis 장애시 FallBack 기능, SSE DB ConnectionPool 문제 등을 직면하고 이를 직접 해결하여 문제 해결 역량 및 성능 개선 역량도 키울 수 있었다.<br><br> 이번 프로젝트를 통해 의사소통의 중요성을 깨달았으며, 무엇보다 Git 활용의 중요성을 뼈저리게 느꼈다. 다만 개발 일정의 촉박함으로 인해 알림 시스템 개발시 kafka를 도입하지 못해 Redis Pub/Sub으로 이벤트를 발행하는것은 아쉬웠다. 이번 대규모 프로젝트를 진행하면서 실무적으로 성장했다고 느껴졌던 시간이었다.<br><br> 팀장을 비롯한 팀원들에게 모두 고생많았다고 이야기 하고 싶다. |
 
 
