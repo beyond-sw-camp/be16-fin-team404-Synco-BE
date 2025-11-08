@@ -730,7 +730,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 </details>
 
-<details><summary>특정 알림 라우팅</summary>
+<details><summary>특정 알림 클릭시 이동</summary>
 
 ![알림 라우팅](https://github.com/user-attachments/assets/ff8c2264-190d-4e78-a749-5319175b19ce)
 </details>
