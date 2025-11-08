@@ -701,16 +701,19 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 
 
-<details><summary><b>검색</b></summary></details>
-
-<details><summary>일정 검색</summary>
-![일정검색](https://github.com/user-attachments/assets/a4d4797e-bfca-4f56-9aaa-7a8489114a6b)
+<details><summary><b>검색</b></summary>
   
+<details><summary>일정 검색</summary>
+![일정검색](https://github.com/user-attachments/assets/4572f771-a650-4fcd-9c2f-c165f2e96b3b)
+
 </details>
 <details><summary>드라이브 검색</summary>
-![파일검색](https://github.com/user-attachments/assets/bae3b1b1-c7a1-4e49-b720-60e7fd16571d)
+![파일검색](https://github.com/user-attachments/assets/e59c3fed-29d1-409f-86bb-c04fb1752d13)
 
 </details>
+</details>
+
+
 
 <details><summary><b>알림</b></summary>
 
