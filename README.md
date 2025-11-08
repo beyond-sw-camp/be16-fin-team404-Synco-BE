@@ -259,7 +259,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 <img src="https://github.com/user-attachments/assets/9939ad79-46c6-4f35-b6c9-31394f9146c3" alt="GIF 설명" />
 
 실시간 사용량 모니터링(Prometheus + Grafana)
-<img width="2553" height="1211" alt="스크린샷 2025-11-08 오후 2 57 37" src="https://github.com/user-attachments/assets/e54c4487-ccf3-4504-b848-a27bc8a4e281" />
+<img width="2560" height="1347" alt="스크린샷 2025-11-08 오후 3 09 34" src="https://github.com/user-attachments/assets/c7ca28b1-fcce-4b5b-9f1d-66c6947cb09d" />
 
 ---
 
