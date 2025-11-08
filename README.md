@@ -534,16 +534,25 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 ![파일 업로드](https://github.com/user-attachments/assets/35be7be3-dd98-41cc-a0e9-7ffc4cf40e82)
 </details>
 
-<details><summary>파일 다운로드</summary></details>
-<details><summary>폴더 이름 변경</summary></details>
-<details><summary>아이템 삭제</summary></details>
+<details><summary>파일 다운로드</summary>
+
+![파일 다운로드](https://github.com/user-attachments/assets/886d2bf9-c9f1-40cf-912e-d0fe64b007af)
+</details>
+<details><summary>폴더 이름 변경</summary>
+
+![폴더 이름 변경](https://github.com/user-attachments/assets/c44b5149-d7fe-49c3-b173-818e0581eae1)
+</details>
+<details><summary>아이템 삭제</summary>
+
+
+</details>
 <details><summary>공유문서 실시간 편집</summary>
 
 ![공유문서 실시간 동시 편집](https://github.com/user-attachments/assets/de4e4679-1348-4b24-9cbb-8f8de7a20f69)
 </details>
 <details><summary>공유문서 참여자 목록 조회</summary>
 
-
+![참여자 목록 조회](https://github.com/user-attachments/assets/b2e211ec-8c4b-4547-80e5-b5d3969e9745)
 </details>
 <details><summary>공유문서 잠금/해제</summary>
 
@@ -553,7 +562,10 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 ![공유문서 다운로드](https://github.com/user-attachments/assets/95943b7e-d1fb-489f-b9e0-56ac878d6eb1)
 </details>
-<details><summary>문서 이름 변경</summary></details>
+<details><summary>문서 이름 변경</summary>
+
+![문서 이름 변경](https://github.com/user-attachments/assets/84ea2274-0992-40d0-8f26-a8d50415c1fd)
+</details>
 
 </details>
 
