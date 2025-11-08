@@ -380,8 +380,6 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 </details>
 </details>
 
-
-
 <details><summary><b>프로젝트</b></summary>
 
 <details><summary>프로젝트 생성</summary>
@@ -645,19 +643,50 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>화상회의</b></summary>
 
-<details><summary>채널 권한 설정</summary></details>
-<details><summary>화상회의 방 생성</summary></details>
-<details><summary>화상회의 방 참여</summary></details>
-<details><summary>화상회의 방 취소</summary></details>
-<details><summary>채팅 전송</summary></details>
-<details><summary>채팅 목록 조회</summary></details>
-<details><summary>녹화 시작</summary></details>
-<details><summary>진행중인 회의 목록</summary></details>
-<details><summary>종료된 회의 목록</summary></details>
-<details><summary>특정 회의 요약 조회</summary></details>
-<details><summary>녹화 영상 다운로드</summary></details>
+<details><summary>채널 권한 설정</summary>
+  <img src="https://github.com/user-attachments/assets/ab6830af-0606-448c-8ebd-05310a7f2ab9" alt="GIF 설명" />
 
 </details>
+<details><summary>화상회의 방 생성</summary>
+  <img src="https://github.com/user-attachments/assets/75816971-c3cc-4860-84e6-a32271dada0d" alt="GIF 설명" />
+
+</details>
+<details><summary>화상회의 방 참여</summary>
+  <img src="https://github.com/user-attachments/assets/a1c40779-3b3a-4934-9d12-4d2676581847" alt="GIF 설명" />
+
+</details>
+
+<details><summary>채팅 전송</summary>
+  <img src="https://github.com/user-attachments/assets/dd92de8c-ac1f-49fb-a9b5-b3ede501b3b4" alt="GIF 설명" />
+
+</details>
+<details><summary>채팅 목록 조회</summary>
+  <img src="https://github.com/user-attachments/assets/92b3992d-21fc-4ad4-8dab-a9041657010f" alt="GIF 설명" />
+
+</details>
+<details><summary>녹화 시작</summary>
+  <img src="https://github.com/user-attachments/assets/9939ad79-46c6-4f35-b6c9-31394f9146c3" alt="GIF 설명" />
+
+</details>
+<details><summary>진행중인 회의 목록</summary>
+<img src="https://github.com/user-attachments/assets/2f514eaf-204b-4bf9-8a39-353a9a20476c" alt="GIF 설명" />
+
+</details>
+<details><summary>종료된 회의 목록</summary>
+  <img src="https://github.com/user-attachments/assets/9b446b5c-8f20-4f9d-b6e9-d06ec3c9812f" alt="GIF 설명" />
+
+</details>
+<details><summary>특정 회의 요약 조회</summary>
+  <img src="https://github.com/user-attachments/assets/e19f3cea-47c4-4012-918c-3b44389c6e6a" alt="GIF 설명" />
+
+</details>
+<details><summary>녹화 영상 다운로드</summary>
+  <img src="https://github.com/user-attachments/assets/74e61275-668e-4332-8b9f-e39943246a3e" alt="GIF 설명" />
+
+</details>
+
+</details>
+
 
 
 <details><summary><b>검색</b></summary></details>
