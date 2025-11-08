@@ -254,10 +254,9 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 
 <details><summary><b>회원가입 / 로그인</b></summary>
 
-<details><summary>회원가입
+<details><summary>회원가입</summary>
 
 ![회원가입](https://github.com/user-attachments/assets/c0ea5412-97ba-48d7-aae2-647d51f35dd1)
-</summary>
 
 </details>
 <details><summary>소셜회원가입</summary>
