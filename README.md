@@ -1706,7 +1706,8 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   - 기본값인 10개 ConnectionPool이 모두 꽉 차게되어 아무런 API 호출이 되지 않는 문제 발생
   
   **원인 분석**
-  
+
+  - 알림 서비스 트랜잭션이랑 SSE 연결이랑 분리되지 않아 SSE로 알림 전송시 DB Connection을 사용
   - DB Connection을 사용하고 반환해줘야하는데 반환하지 않아 계속 기존 Pool을 사용하면서 새로운 Pool을 가져가서 고갈되는 문제 발생
   - 트랜잭션이 끝났을때 DB Connection을 반납하지 않음
   - HTTP Connection이 열려있는 동안 DB Connection도 같이 열려있어 Connection 고갈 문제 발생
