@@ -16,7 +16,7 @@ import java.util.List;
 @Component
 @Slf4j
 public class JwtAuthFilter implements GlobalFilter {
- 
+
     @Value("${jwt.secretKey}")
     private String secretKey;
 
