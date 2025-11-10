@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -247,6 +248,7 @@ public class VirtualMeetingService {
                     .downloadUrl(null)
                     .participants(participantDtoList)
                     .participantCount(participantDtoList.size())
+                    .isRecording(room.getIsRecording())
                     .build();
         }
 
@@ -284,12 +286,13 @@ public class VirtualMeetingService {
                 .downloadUrl(recordingSummary.getRecording().getOutputUrl())
                 .participants(participantDtoList)
                 .participantCount(participantDtoList.size())
+                .isRecording(recordingSummary.getRecording().getRoom().getIsRecording())
                 .build();
     }
 
-    // 녹화 영상 파일 바이트 다운로드 (S3에서 직접 읽어서 내려줌)
+    // 녹화 영상 파일 스트리밍 다운로드 (메모리 효율적)
     @Transactional(readOnly = true)
-    public ResponseEntity<byte[]> downloadRecordingFile(Long roomSeq, Long memberSeq) {
+    public ResponseEntity<Resource> downloadRecordingFile(Long roomSeq, Long memberSeq) {
         Recording recording = recordingRepository.findByRoom_RoomSeq(roomSeq)
                 .orElseThrow(() -> new EntityNotFoundException("해당 화상회의의 녹화 정보를 찾을 수 없습니다."));
 
@@ -303,7 +306,8 @@ public class VirtualMeetingService {
             throw new EntityNotFoundException("다운로드할 녹화 파일이 없습니다.");
         }
 
-        byte[] fileContent = s3Uploader.download(outputUrl);
+        // 스트리밍 방식으로 다운로드 (메모리 효율적)
+        Resource resource = s3Uploader.downloadAsStream(outputUrl);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -315,7 +319,7 @@ public class VirtualMeetingService {
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(fileContent);
+                .body(resource);
     }
 
 

@@ -1,0 +1,43 @@
+grafana:
+  adminPassword: "change-me"
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: gp2
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    hosts: ["grafana.synco1.shop"]
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:864981729633:certificate/594ebe5e-b2af-4dac-8108-05ef826a282a
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests: { cpu: "200m", memory: "1Gi" }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: gp2
+          resources:
+            requests: { storage: 20Gi }
+
+alertmanager:
+  # Slack 알림 없이 사용 (Grafana에서 알람 확인 가능)
+  # 나중에 Slack을 추가하려면 alertmanager-slack-webhook.yaml을 적용하고
+  # 아래 config에 slack receiver를 추가하면 됩니다.
+  config:
+    receivers:
+      - name: default
+        # 기본 receiver (알람은 Grafana에서 확인)
+    route:
+      receiver: default
+      group_by: [alertname, namespace]
+      group_wait: 30s
+      group_interval: 3m
+      repeat_interval: 4h

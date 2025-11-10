@@ -30,7 +30,12 @@ class STTKafkaClient:
             bootstrap_servers=self.bootstrap_servers,
             value_deserializer=lambda m: json.loads(m.decode('utf-8')),
             group_id='stt-service-group',
-            auto_offset_reset='latest'
+            auto_offset_reset='latest',
+            enable_auto_commit=False,  # 수동 commit 사용
+            max_poll_interval_ms=1800000,  # 30분 (STT 처리 시간 고려)
+            max_poll_records=1,  # 한 번에 하나씩만 처리
+            session_timeout_ms=30000,  # 30초
+            heartbeat_interval_ms=10000  # 10초마다 heartbeat
         )
 
     def download_file(self, url: str, save_path: str) -> bool:
@@ -130,6 +135,8 @@ class STTKafkaClient:
                 
                 if not self.download_file(output_url, tmp_path):
                     logger.error(f"파일 다운로드 실패: recordingSeq={recording_seq}")
+                    # 다운로드 실패 시에도 commit하여 중복 처리 방지
+                    self.consumer.commit()
                     continue
 
                 # STT 처리
@@ -155,7 +162,21 @@ class STTKafkaClient:
                 )
 
                 # 임시 파일 정리
-                os.unlink(tmp_path)
+                try:
+                    os.unlink(tmp_path)
+                except Exception as e:
+                    logger.warning(f"임시 파일 삭제 실패: {e}")
+
+                # 처리 완료 후 수동 commit
+                self.consumer.commit()
+                logger.info(f"✅ Offset commit 완료: recordingSeq={recording_seq}")
 
             except Exception as e:
                 logger.error(f"STT 처리 중 오류 발생: {e}", exc_info=True)
+                # 오류 발생 시에도 commit하여 무한 재시도 방지 (선택적)
+                # 필요시 DLQ(Dead Letter Queue)로 전송하는 로직 추가 가능
+                try:
+                    self.consumer.commit()
+                    logger.warning(f"오류 발생 후 commit 완료: recordingSeq={recording_seq}")
+                except Exception as commit_error:
+                    logger.error(f"Commit 실패: {commit_error}", exc_info=True)

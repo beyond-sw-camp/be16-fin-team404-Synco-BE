@@ -89,3 +89,17 @@ cookie:
   secure: true       # 프로덕션 환경 (HTTPS만 허용)
   max-age: 604800     # 7일 (초 단위)
   same-site: None    # 크로스 도메인 쿠키 전송 필요 (None 사용 시 secure: true 필수)
+
+## Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true

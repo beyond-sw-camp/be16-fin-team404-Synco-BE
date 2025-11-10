@@ -1,0 +1,27 @@
+# 기존 서비스에 모니터링 라벨 추가 (kubectl patch 사용)
+# 아래 명령어로 각 서비스에 라벨 추가:
+# kubectl label service task-service -n synco-namespace app.kubernetes.io/name=springboot --overwrite
+# kubectl label service workspace-service -n synco-namespace app.kubernetes.io/name=springboot --overwrite
+# kubectl label service chat-service -n synco-namespace app.kubernetes.io/name=springboot --overwrite
+# kubectl label service drive-service -n synco-namespace app.kubernetes.io/name=springboot --overwrite
+---
+# ServiceMonitor - Spring Boot 서비스들을 모니터링
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: springboot-services
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: springboot
+  namespaceSelector:
+    matchNames:
+      - synco-namespace
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+      scrapeTimeout: 10s

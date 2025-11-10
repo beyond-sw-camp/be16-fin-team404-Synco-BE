@@ -49,3 +49,17 @@ logging:
     root: INFO
     org.springframework.web: DEBUG
     com.team404.synco: DEBUG
+
+## Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  endpoint:
+    prometheus:
+      enabled: true

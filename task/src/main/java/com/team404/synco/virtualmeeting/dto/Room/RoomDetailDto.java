@@ -19,6 +19,7 @@ public class RoomDetailDto {
     private String downloadUrl; // 녹화 파일 다운로드 URL
     private List<ParticipantDto> participants; // 참가자 목록
     private Integer participantCount; // 참가자 수
+    private Boolean isRecording;
 
 
     @Getter
