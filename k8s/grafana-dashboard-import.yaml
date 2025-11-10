@@ -348,8 +348,8 @@ data:
                 "type": "prometheus",
                 "uid": "default"
               },
-              "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$node\"}[5m])) * 100)",
-              "legendFormat": "{{instance}}",
+              "expr": "(100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)) * on(instance) group_left(nodename) node_uname_info * on(nodename) group_left() (count by(node) (kube_pod_info{namespace=\"synco-namespace\"}) > 0)",
+              "legendFormat": "{{nodename}}",
               "refId": "A"
             }
           ],
@@ -437,8 +437,8 @@ data:
                 "type": "prometheus",
                 "uid": "default"
               },
-              "expr": "(1 - (node_memory_MemAvailable_bytes{instance=~\"$node\"} / node_memory_MemTotal_bytes{instance=~\"$node\"})) * 100",
-              "legendFormat": "{{instance}}",
+              "expr": "((1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100) * on(instance) group_left(nodename) node_uname_info * on(nodename) group_left() (count by(node) (kube_pod_info{namespace=\"synco-namespace\"}) > 0)",
+              "legendFormat": "{{nodename}}",
               "refId": "A"
             }
           ],
@@ -516,9 +516,29 @@ data:
                 "type": "prometheus",
                 "uid": "default"
               },
-              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod!=\"\",container!=\"POD\"}[5m])) by (namespace, pod, instance)",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",pod!=\"\",container!=\"POD\"}[5m])) by (namespace, pod, instance) * on(pod, namespace) group_left(node) kube_pod_info{namespace=~\"$namespace\"}",
               "format": "table",
               "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "instance": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "node": 1,
+                  "namespace": 2,
+                  "pod": 3,
+                  "Value": 4
+                },
+                "renameByName": {
+                  "node": "Node Name"
+                }
+              }
             }
           ],
           "title": "Pod CPU Usage",
@@ -587,9 +607,29 @@ data:
                 "type": "prometheus",
                 "uid": "default"
               },
-              "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod!=\"\",container!=\"POD\"}) by (namespace, pod, instance)",
+              "expr": "sum(container_memory_working_set_bytes{namespace=~\"$namespace\",pod!=\"\",container!=\"POD\"}) by (namespace, pod, instance) * on(pod, namespace) group_left(node) kube_pod_info{namespace=~\"$namespace\"}",
               "format": "table",
               "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "instance": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "node": 1,
+                  "namespace": 2,
+                  "pod": 3,
+                  "Value": 4
+                },
+                "renameByName": {
+                  "node": "Node Name"
+                }
+              }
             }
           ],
           "title": "Pod Memory Usage",
@@ -870,7 +910,7 @@ data:
               "type": "prometheus",
               "uid": "default"
             },
-            "definition": "label_values(node_uname_info, instance)",
+            "definition": "label_values(container_cpu_usage_seconds_total{namespace=\"synco-namespace\",pod!=\"\"}, instance)",
             "hide": 0,
             "includeAll": true,
             "label": "Node",
@@ -878,7 +918,7 @@ data:
             "name": "node",
             "options": [],
             "query": {
-              "query": "label_values(node_uname_info, instance)",
+              "query": "label_values(container_cpu_usage_seconds_total{namespace=\"synco-namespace\",pod!=\"\"}, instance)",
               "refId": "StandardVariableQuery"
             },
             "refresh": 1,
@@ -890,30 +930,33 @@ data:
           {
             "allValue": ".*",
             "current": {
-              "selected": false,
-              "text": "All",
-              "value": "$__all"
+              "selected": true,
+              "text": "synco-namespace",
+              "value": "synco-namespace"
             },
             "datasource": {
               "type": "prometheus",
               "uid": "default"
             },
-            "definition": "label_values(kube_pod_info, namespace)",
+            "definition": "synco-namespace",
             "hide": 0,
-            "includeAll": true,
+            "includeAll": false,
             "label": "Namespace",
-            "multi": true,
+            "multi": false,
             "name": "namespace",
-            "options": [],
-            "query": {
-              "query": "label_values(kube_pod_info, namespace)",
-              "refId": "StandardVariableQuery"
-            },
-            "refresh": 1,
+            "options": [
+              {
+                "selected": true,
+                "text": "synco-namespace",
+                "value": "synco-namespace"
+              }
+            ],
+            "query": "synco-namespace",
+            "refresh": 0,
             "regex": "",
             "skipUrlSync": false,
-            "sort": 1,
-            "type": "query"
+            "sort": 0,
+            "type": "constant"
           }
         ]
       },
@@ -923,7 +966,7 @@ data:
       },
       "timepicker": {},
       "timezone": "browser",
-      "title": "Kubernetes Cluster Overview",
+      "title": "Synco Namespace Overview",
       "uid": "kubernetes-cluster-overview",
       "version": 1,
       "weekStart": ""
