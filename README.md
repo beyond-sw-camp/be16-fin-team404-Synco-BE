@@ -170,6 +170,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
 | **이메일 서비스 (SMTP)** | 비밀번호 찾기 요청 시 EmailService가 임시 비밀번호 생성. JavaMailSender로 SMTP 서버(AWS SES·Gmail 등) 연동 후 인증 메일 자동 발송. 생성된 임시 비밀번호는 즉시 암호화되어 저장. Thymeleaf 템플릿(tempPassword.html)로 HTML 메일 구성해 계정 보안과 사용자 경험 강화. 
 | **OpenFeign을 이용한 모듈간 통신** | MSA 설계 구조로 인해 WorkSpace 모듈과 다른 모듈간의 통신을 OpenFeign을 통해 동기적 통신방식으로 구현 |
 | **알림 (SSE / Redis Pub&Sub)** | SSE를 이용한 서버->클라이언트로의 실시간 알림 생성. MSA 설계방식으로 인해 알림이 발생하는 모듈을 알림 모듈이 구독(Subscribe)하고 알림이 발생하는 모듈은 메시지를 발행(Publish)해서 알림을 받아옴. |
+| **채팅(WebSocket / STOMP)** | SockJS + STOMP 기반 WebSocket을 채택해 채팅, 문서 편집, 화상회의 채팅 등 실시간 시나리오를 공통 프로토콜로 지원. 서버 측에서 채널 단위 구독을 관리하고 Redis Pub/Sub과 연동하여 멀티 인스턴스 간 세션 정보를 동기화, 대규모 동시 접속에도 일관된 메시지 전달을 보장. |
 ---
 
 ## ⚙️🛠️ Technical Stack
@@ -256,6 +257,7 @@ Synco의 핵심은 **팀 워크스페이스 + 개인 공간 동시 지원**과 *
   <summary><b>시스템 아키텍처</b></summary>
   <img width="1287" height="1143" alt="Image" src="https://github.com/user-attachments/assets/534d3d19-097f-4a4e-a0f1-7a1029138d48" />
 </details>
+
 ---
 
 ## 🧾 화면 테스트 결과
