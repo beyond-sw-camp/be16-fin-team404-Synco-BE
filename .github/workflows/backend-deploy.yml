@@ -3,7 +3,7 @@ name: deploy synco-backend
 on:
   push:
     branches:
-      - deploy-branch1
+      - develop
     paths:
       - 'ai-service/**'
       - 'apigateway/**'
