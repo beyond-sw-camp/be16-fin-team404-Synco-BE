@@ -26,4 +26,6 @@ public interface ScheduleManagementChannelMemberRepository extends JpaRepository
                                      @Param("memberSeq")Long memberSeq);
 
     List<ScheduleManagementChannelMember> findByWorkSpaceSeq(Long workSpaceSeq);
+
+    boolean existsByWorkSpaceSeqAndMemberSeq(Long workSpaceSeq, Long memberSeq);
 }
