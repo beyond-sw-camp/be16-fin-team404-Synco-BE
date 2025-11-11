@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Member;
 import java.nio.file.AccessDeniedException;
 import java.util.Collections;
 import java.util.List;
@@ -104,16 +103,24 @@ public class TaskService {
     }
 
     // 멤버 추가
+    @Transactional
     public Long addMemberToChannel(ChannelInviteReqDto channelInviteReqDto) {
         List<Long> memberList = Optional.ofNullable(channelInviteReqDto.getMemberList())
                 .orElse(Collections.emptyList());
 
-        return memberList.stream().filter(Objects::nonNull).map(memberSeq -> ScheduleManagementChannelMember.builder()
+        Long workSpaceSeq = channelInviteReqDto.getWorkSpaceSeq();
+
+        return memberList.stream()
+                .filter(Objects::nonNull)
+                .filter(memberSeq ->
+                        !scheduleManagementChannelMemberRepository.existsByWorkSpaceSeqAndMemberSeq(workSpaceSeq, memberSeq)
+                ) // 중복 방지
+                .map(memberSeq -> ScheduleManagementChannelMember.builder()
                         .memberSeq(memberSeq)
                         .authority(Authority.PARTICIPANT)
-                        .workSpaceSeq(channelInviteReqDto.getWorkSpaceSeq())
+                        .workSpaceSeq(workSpaceSeq)
                         .build())
-                .map(scheduleManagementChannelMemberRepository::save) // save된 객체 반환
+                .map(scheduleManagementChannelMemberRepository::save)
                 .count();
     }
 
