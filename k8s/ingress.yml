@@ -14,7 +14,7 @@ metadata:
     
 spec:
   tls:
-  - hosts:
+  - hosts: 
     - server.synco1.shop
     secretName: server-synco1-shop-tls
   rules:
