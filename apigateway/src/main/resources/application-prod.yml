@@ -12,10 +12,13 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      server:
-        webflux:
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      httpclient:
+        connect-timeout: 30000
+        response-timeout: 120s
+        pool:
+          max-connections: 500
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       globalcors:
         cors-configurations:
           '[/**]':
