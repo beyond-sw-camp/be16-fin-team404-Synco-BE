@@ -4,7 +4,7 @@ import com.team404.synco.common.constant.Authority;
 import com.team404.synco.task.entity.ScheduleManagementChannelMember;
 import lombok.Builder;
 import lombok.Getter;
-
+ 
 @Getter
 @Builder
 public class ChannelMemberResDto {
